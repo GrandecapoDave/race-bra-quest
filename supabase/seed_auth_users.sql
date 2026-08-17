@@ -4,6 +4,9 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Remove conflicting emails to prevent unique constraint failures (violates users_email_partial_key)
+DELETE FROM auth.users WHERE email IN ('justdave@pechino.it', 'lorenzom@pechino.it', 'pietrom@pechino.it');
+
 -- 1. ADMIN USER: justdave / Zioporco01
 INSERT INTO auth.users (
   id,
@@ -33,10 +36,7 @@ INSERT INTO auth.users (
   now(),
   '',
   ''
-) ON CONFLICT (id) DO UPDATE SET 
-  encrypted_password = crypt('Zioporco01', gen_salt('bf')),
-  email_confirmed_at = now(),
-  email = 'justdave@pechino.it';
+);
 
 -- 2. TEAM 1: lorenzom / LorenzoM834 (Fost & Loud)
 INSERT INTO auth.users (
@@ -67,10 +67,7 @@ INSERT INTO auth.users (
   now(),
   '',
   ''
-) ON CONFLICT (id) DO UPDATE SET 
-  encrypted_password = crypt('LorenzoM834', gen_salt('bf')),
-  email_confirmed_at = now(),
-  email = 'lorenzom@pechino.it';
+);
 
 -- 3. TEAM 2: pietrom / PietroM610 (Ciccioni Bislunghi)
 INSERT INTO auth.users (
@@ -101,10 +98,7 @@ INSERT INTO auth.users (
   now(),
   '',
   ''
-) ON CONFLICT (id) DO UPDATE SET 
-  encrypted_password = crypt('PietroM610', gen_salt('bf')),
-  email_confirmed_at = now(),
-  email = 'pietrom@pechino.it';
+);
 
 -- 4. INSERT USER ROLES
 INSERT INTO public.user_roles (id, user_id, role)

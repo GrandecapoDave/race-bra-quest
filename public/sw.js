@@ -1,5 +1,5 @@
 // Service Worker — Pechino Express Bra PWA
-const CACHE_VERSION = "pechino-bra-v1.0.0";
+const CACHE_VERSION = "pechino-bra-v1.1.0";
 const STATIC_CACHE_NAME = `static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `dynamic-${CACHE_VERSION}`;
 

@@ -57,7 +57,8 @@ function AuthPage() {
         navigate({ to: "/dashboard" });
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Errore di autenticazione");
+      const errMsg = (err as any)?.message || String(err) || "Errore di autenticazione";
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
