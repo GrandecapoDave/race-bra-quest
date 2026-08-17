@@ -30,6 +30,7 @@ export function useIsAdmin(user: User | null | undefined) {
       if (!user) return false;
       if (
         user.id === "11111111-1111-1111-1111-111111111111" ||
+        user.email === "justdave@pechino.it" ||
         user.email === "justdave@admin.pechino.local" ||
         user.email === "admin@example.com" ||
         user.email === "test@example.com" ||

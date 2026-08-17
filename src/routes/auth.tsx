@@ -44,10 +44,7 @@ function AuthPage() {
     try {
       // Map username to internal Supabase Auth email format
       const formattedUsername = parsed.data.username.trim().toLowerCase();
-      const email =
-        formattedUsername === "justdave"
-          ? "justdave@admin.pechino.local"
-          : `${formattedUsername}@team.pechino.local`;
+      const email = `${formattedUsername}@pechino.it`;
 
       const { error } = await supabase.auth.signInWithPassword(
         { email, password: parsed.data.password },
