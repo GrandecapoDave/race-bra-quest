@@ -5,25 +5,20 @@ import { runLocalDbAction } from "./localDbServer";
 const SESSION_KEY = "mock_supabase_session";
 const PERSIST_FLAG = "mock_supabase_persistent";
 
-/** Read session from sessionStorage first, fall back to localStorage (persistent). */
+/** Read session from sessionStorage first, fall back to localStorage. */
 function readStoredSession(): any | null {
   if (typeof window === "undefined") return null;
   const ss = sessionStorage.getItem(SESSION_KEY);
   if (ss) {
     try { return JSON.parse(ss); } catch { return null; }
   }
-  // Only restore from localStorage if the user previously chose "persist"
-  const isPersistent = localStorage.getItem(PERSIST_FLAG) === "1";
-  if (isPersistent) {
-    const ls = localStorage.getItem(SESSION_KEY);
-    if (ls) {
-      try {
-        const parsed = JSON.parse(ls);
-        // Mirror to sessionStorage so subsequent reads are fast
-        sessionStorage.setItem(SESSION_KEY, ls);
-        return parsed;
-      } catch { return null; }
-    }
+  const ls = localStorage.getItem(SESSION_KEY);
+  if (ls) {
+    try {
+      const parsed = JSON.parse(ls);
+      sessionStorage.setItem(SESSION_KEY, ls);
+      return parsed;
+    } catch { return null; }
   }
   return null;
 }
@@ -214,13 +209,9 @@ class MockSupabaseClient {
 
         if (typeof window !== "undefined") {
           sessionStorage.setItem(SESSION_KEY, serialized);
-
+          localStorage.setItem(SESSION_KEY, serialized);
           if (persist) {
-            localStorage.setItem(SESSION_KEY, serialized);
             localStorage.setItem(PERSIST_FLAG, "1");
-          } else {
-            localStorage.removeItem(SESSION_KEY);
-            localStorage.removeItem(PERSIST_FLAG);
           }
         }
 
