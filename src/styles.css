@@ -1,0 +1,223 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Pechino Express Bra — design system.
+ * Adventure / videogame aesthetic: deep night-jungle base, sunset orange
+ * primary, jade accent. All values are oklch semantic tokens.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --font-display: "Bebas Neue", system-ui, sans-serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+}
+
+:root {
+  --radius: 1rem;
+  --background: oklch(0.17 0.032 258);
+  --foreground: oklch(0.97 0.01 95);
+  --card: oklch(0.23 0.035 258);
+  --card-foreground: oklch(0.97 0.01 95);
+  --popover: oklch(0.21 0.035 258);
+  --popover-foreground: oklch(0.97 0.01 95);
+  --primary: oklch(0.72 0.19 45);
+  --primary-foreground: oklch(0.18 0.03 258);
+  --secondary: oklch(0.3 0.04 258);
+  --secondary-foreground: oklch(0.95 0.01 95);
+  --muted: oklch(0.27 0.03 258);
+  --muted-foreground: oklch(0.72 0.025 258);
+  --accent: oklch(0.72 0.14 175);
+  --accent-foreground: oklch(0.18 0.03 258);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 95);
+  --success: oklch(0.72 0.17 150);
+  --success-foreground: oklch(0.16 0.03 258);
+  --gold: oklch(0.83 0.16 88);
+  --gold-foreground: oklch(0.18 0.03 258);
+  --border: oklch(0.34 0.035 258);
+  --input: oklch(0.3 0.035 258);
+  --ring: oklch(0.72 0.19 45);
+
+  --gradient-hero: linear-gradient(
+    150deg,
+    oklch(0.24 0.05 268) 0%,
+    oklch(0.2 0.04 230) 45%,
+    oklch(0.3 0.09 40) 100%
+  );
+  --gradient-primary: linear-gradient(100deg, oklch(0.74 0.19 40), oklch(0.82 0.16 75));
+  --gradient-accent: linear-gradient(100deg, oklch(0.68 0.14 185), oklch(0.75 0.15 150));
+  --gradient-card: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--card) 96%, white 4%),
+    var(--card)
+  );
+  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent),
+    0 18px 40px -18px color-mix(in oklab, var(--primary) 55%, transparent);
+  --shadow-card: 0 20px 45px -30px oklch(0 0 0 / 0.9);
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    background-image: radial-gradient(
+        ellipse 80% 60% at 50% -10%,
+        color-mix(in oklab, var(--primary) 18%, transparent),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 90% 100%,
+        color-mix(in oklab, var(--accent) 14%, transparent),
+        transparent
+      );
+    background-attachment: fixed;
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+}
+
+@utility surface {
+  background-image: var(--gradient-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-xl);
+}
+
+@utility hero-gradient {
+  background-image: var(--gradient-hero);
+}
+
+@utility primary-gradient {
+  background-image: var(--gradient-primary);
+}
+
+@utility accent-gradient {
+  background-image: var(--gradient-accent);
+}
+
+@utility glow {
+  box-shadow: var(--shadow-glow);
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes float-badge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@utility animate-pop-in {
+  animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-float-badge {
+  animation: float-badge 3s ease-in-out infinite;
+}
+
+/* Mobile PWA & Safe Area Insets */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+@utility safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility safe-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+@utility safe-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Standalone mobile optimizations */
+@media all and (display-mode: standalone) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+

@@ -1,0 +1,37 @@
+{
+  "name": "Pechino Express Bra",
+  "short_name": "Pechino Bra",
+  "description": "Piattaforma ufficiale gamificata per la gara urbana Pechino Express Bra: tappe, sfide, quiz, foto, marketplace e classifica live.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0d14",
+  "theme_color": "#ea580c",
+  "categories": ["games", "entertainment", "sports"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,3269 @@
+{
+  "admin": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "username": "justdave",
+      "password_hash": "Zioporco01"
+    }
+  ],
+  "teams": [
+    {
+      "id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "created_at": "2026-08-05T14:43:07.657Z",
+      "nome_squadra": "Fost & Loud",
+      "username": "lorenzom",
+      "password_plain": "LorenzoM834",
+      "active": true,
+      "updated_at": "2026-08-06T20:07:14.600Z",
+      "name": "Fost & Loud",
+      "motto": null,
+      "color": "#f97316",
+      "avatar_url": "🐅",
+      "token_balance": 80,
+      "freeze_started_at": null,
+      "freeze_expires_at": null,
+      "freeze_duration_seconds": null
+    },
+    {
+      "id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "created_at": "2026-08-05T23:59:21.064Z",
+      "nome_squadra": "Ciccioni Bislunghi",
+      "username": "pietrom",
+      "password_plain": "PietroM610",
+      "active": true,
+      "updated_at": "2026-08-11T09:00:34.479Z",
+      "name": "Ciccioni Bislunghi",
+      "motto": null,
+      "color": "#84cc16",
+      "avatar_url": "🔥",
+      "token_balance": 80,
+      "freeze_started_at": null,
+      "freeze_expires_at": null,
+      "freeze_duration_seconds": null
+    }
+  ],
+  "stages": [
+    {
+      "id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "nome_tappa": "Il Passaporto di Bra",
+      "descrizione": "Piazza Caduti per la Libertà, 14",
+      "ordine": 1,
+      "latitude": 44.6982,
+      "longitude": 7.8507,
+      "stato": "open"
+    },
+    {
+      "id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "nome_tappa": "Il Rebus Visivo",
+      "descrizione": "Via Mendicità Istruita, 12",
+      "ordine": 2,
+      "latitude": 44.6976,
+      "longitude": 7.8544,
+      "stato": "open"
+    },
+    {
+      "id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "nome_tappa": "La Banca",
+      "descrizione": "Stazione Ferroviaria di Bra",
+      "ordine": 3,
+      "latitude": 44.6946,
+      "longitude": 7.8542,
+      "stato": "open"
+    },
+    {
+      "id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "nome_tappa": "Enigmi",
+      "descrizione": "Risolvi gli enigmi e inserisci le soluzioni per avanzare.",
+      "ordine": 4,
+      "latitude": null,
+      "longitude": null,
+      "stato": "open"
+    },
+    {
+      "id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "nome_tappa": "Tappa Finale",
+      "descrizione": "Traguardo finale della gara! Raggiungete la destinazione.",
+      "ordine": 5,
+      "latitude": 44.71631488741777,
+      "longitude": 7.842901351857487,
+      "stato": "open"
+    }
+  ],
+  "challenges": [
+    {
+      "id": "81b2f378-dc50-4bb8-a0e8-8f20f6d2fb47",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "titolo": "Creazione squadra",
+      "descrizione": "Scegliete nome, motto, avatar e colore della vostra squadra.",
+      "tipo_sfida": "team_setup",
+      "punteggio_massimo": 5,
+      "ordine": 1
+    },
+    {
+      "id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "titolo": "Quiz Bra",
+      "descrizione": "Rispondete alle domande sulla città di Bra.",
+      "tipo_sfida": "quiz",
+      "punteggio_massimo": 15,
+      "ordine": 2
+    },
+    {
+      "id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "titolo": "Foto ufficiale",
+      "descrizione": "Scattate la foto ufficiale della squadra.",
+      "tipo_sfida": "photo",
+      "punteggio_massimo": 10,
+      "ordine": 3
+    },
+    {
+      "id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "titolo": "Il Rebus Visivo",
+      "descrizione": "Raggiungete il luogo rappresentato dal simbolo.",
+      "tipo_sfida": "photo",
+      "punteggio_massimo": 25,
+      "ordine": 1
+    },
+    {
+      "id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "titolo": "Indovina il film dalle emoji",
+      "descrizione": "Viaggiatori, si spengono le luci, si alza il sipario: benvenuti nella sala più insolita della caccia!",
+      "tipo_sfida": "emoji_movies",
+      "punteggio_massimo": 15,
+      "ordine": 2
+    },
+    {
+      "id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "titolo": "La locandina vivente",
+      "descrizione": "La vostra squadra ha appena ricevuto la locandina di un film iconico.",
+      "tipo_sfida": "living_poster",
+      "punteggio_massimo": 15,
+      "ordine": 3
+    },
+    {
+      "id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "titolo": "La Banca",
+      "descrizione": "Quattro indizi, quattro parole, Viaggiatori. Risolveteli come veri enigmisti da settimana enigmistica: una definizione, una risposta, una sola lettera che conta davvero — la prima.",
+      "tipo_sfida": "banca",
+      "punteggio_massimo": 25,
+      "ordine": 1,
+      "unlock_condition": "marketplace_active"
+    },
+    {
+      "id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "titolo": "Missione Social",
+      "descrizione": "Viaggiatori, questa volta la sfida non è contro il tempo, ma contro la vostra capacità di entrare in contatto con il mondo. Dimostrate di saper comunicare, convincere e creare un legame con persone mai incontrate prima.",
+      "tipo_sfida": "social",
+      "punteggio_massimo": 20,
+      "ordine": 2,
+      "unlock_condition": "marketplace_active"
+    },
+    {
+      "id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "titolo": "Il Codice Segreto",
+      "descrizione": "Viaggiatori, per sbloccare la destinazione finale della gara dovete inserire il PIN a 10 cifre. Ma ricordate: voi avete solo mezza chiave. Dovete trovare il vostro partner economico e acquistare il frammento mancante usando i vostri Token.",
+      "tipo_sfida": "codice",
+      "punteggio_massimo": 15,
+      "ordine": 3,
+      "unlock_condition": "marketplace_active"
+    },
+    {
+      "id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "titolo": "Rebus Musicale",
+      "descrizione": "Ricevete il rebus cartaceo, scoprite le 3 note e inseritele nell'ordine corretto.",
+      "tipo_sfida": "enigma_musicale",
+      "punteggio_massimo": 5,
+      "ordine": 1,
+      "wrong_answer_penalty": -8
+    },
+    {
+      "id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "titolo": "Lucchetto Direzionale",
+      "descrizione": "Risolvete l'enigma cartaceo e ricavate la sequenza di 4 direzioni.",
+      "tipo_sfida": "lucchetto_direzionale",
+      "punteggio_massimo": 5,
+      "ordine": 2,
+      "wrong_answer_penalty": -8
+    },
+    {
+      "id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "titolo": "Le Coordinate Finali",
+      "descrizione": "Risolvete l'enigma cartaceo per ricavare le coordinate finali.",
+      "tipo_sfida": "enigma_coordinate",
+      "punteggio_massimo": 5,
+      "ordine": 3,
+      "wrong_answer_penalty": -8
+    },
+    {
+      "id": "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "titolo": "Sfida Cornhole",
+      "descrizione": "Torneo fisico di Cornhole 1vs1 gestito dalla regia.",
+      "tipo_sfida": "cornhole",
+      "punteggio_massimo": 20,
+      "ordine": 1
+    },
+    {
+      "id": "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "titolo": "Boxe Gonfiabile",
+      "descrizione": "Torneo fisico a eliminazione diretta di Boxe Gonfiabile 1vs1.",
+      "tipo_sfida": "boxe",
+      "punteggio_massimo": 20,
+      "ordine": 2
+    },
+    {
+      "id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "titolo": "Jackpot della Regia",
+      "descrizione": "Sfida Bonus opzionale. Sfida la fortuna alla slot machine scommettendo i tuoi punti.",
+      "tipo_sfida": "jackpot",
+      "punteggio_massimo": 20,
+      "ordine": 3
+    }
+  ],
+  "quiz_questions": [
+    {
+      "id": "q1",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "question": "Qual è il piatto tipico a base di carne cruda di Bra?",
+      "options": [
+        "Salsiccia di Bra",
+        "Prosciutto di Cuneo",
+        "Vitello Tonnato",
+        "Battuta di Fassona"
+      ],
+      "correct_option": 0,
+      "points": 3,
+      "order_index": 1
+    },
+    {
+      "id": "q2",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "question": "In quale regione italiana si trova Bra?",
+      "options": [
+        "Lombardia",
+        "Piemonte",
+        "Liguria",
+        "Veneto"
+      ],
+      "correct_option": 1,
+      "points": 3,
+      "order_index": 2
+    },
+    {
+      "id": "q3",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "question": "Quale importante movimento internazionale è nato a Bra?",
+      "options": [
+        "Slow Food",
+        "WWF",
+        "Greenpeace",
+        "Caritas"
+      ],
+      "correct_option": 0,
+      "points": 3,
+      "order_index": 3
+    },
+    {
+      "id": "q4",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "question": "Quale celebre scrittore piemontese nacque nei pressi di Bra?",
+      "options": [
+        "Cesare Pavese",
+        "Beppe Fenoglio",
+        "Giovanni Arpino",
+        "Italo Calvino"
+      ],
+      "correct_option": 2,
+      "points": 3,
+      "order_index": 4
+    },
+    {
+      "id": "q5",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "question": "Che tipo di formaggio DOP prende il nome da questa città?",
+      "options": [
+        "Castelmagno",
+        "Murazzano",
+        "Raschera",
+        "Bra DOP"
+      ],
+      "correct_option": 3,
+      "points": 3,
+      "order_index": 5
+    }
+  ],
+  "team_progress": [
+    {
+      "id": "fdf380a3-4ba4-4a5f-a4d7-af9726602c66",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "challenge_id": "81b2f378-dc50-4bb8-a0e8-8f20f6d2fb47",
+      "stato": "completed",
+      "started_at": "2026-08-05T20:34:03.708Z",
+      "completata_at": "2026-08-05T20:36:50.549Z"
+    },
+    {
+      "id": "bb0f462e-a961-413d-a9de-47f9ad29e8b1",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "stato": "completed",
+      "started_at": "2026-08-05T20:38:21.255Z",
+      "completata_at": "2026-08-05T20:40:05.679Z"
+    },
+    {
+      "id": "e0f9cbeb-75f8-403b-b262-86dc39f4367c",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "stato": "completed",
+      "started_at": "2026-08-05T20:40:06.581Z",
+      "completata_at": "2026-08-05T23:24:17.970Z"
+    },
+    {
+      "id": "0431a399-eeee-4aac-a189-06dd28340a2b",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stato": "completed",
+      "started_at": "2026-08-05T21:20:52.305Z",
+      "completata_at": "2026-08-05T23:25:04.240Z"
+    },
+    {
+      "id": "759a0435-4eea-43cc-b2bb-2c8dd7465c6c",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "challenge_id": "81b2f378-dc50-4bb8-a0e8-8f20f6d2fb47",
+      "stato": "completed",
+      "started_at": "2026-08-05T23:59:42.658Z",
+      "completata_at": "2026-08-06T00:00:12.711Z"
+    },
+    {
+      "id": "1cdda8ff-d9a6-469b-a731-7d2e063c5935",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:01:16.197Z",
+      "completata_at": "2026-08-06T10:18:02.766Z"
+    },
+    {
+      "id": "ae0e5698-6332-4034-a1a1-9d5085b655f8",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:34:18.368Z",
+      "completata_at": "2026-08-06T10:41:32.891Z"
+    },
+    {
+      "id": "7a3a6a36-ac36-4be1-8fe6-4639e598b14a",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:37:42.249Z",
+      "completata_at": "2026-08-06T10:37:51.057Z"
+    },
+    {
+      "id": "20c5775a-e7d4-40b0-98b2-f129ee955f7f",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "4a57212e-7e83-430c-b5fe-6cf38db7be2e",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:37:51.721Z",
+      "completata_at": "2026-08-06T10:41:38.788Z"
+    },
+    {
+      "id": "5e978e07-ad24-46c5-8614-78c02db77a78",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:38:13.475Z",
+      "completata_at": "2026-08-06T12:50:24.410Z"
+    },
+    {
+      "id": "62f89e26-9dbf-4b02-ae16-ff3e7d75057a",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:38:21.057Z",
+      "completata_at": "2026-08-06T12:50:17.190Z"
+    },
+    {
+      "id": "800f7436-81f7-41bd-864c-7a0f196718cc",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "dfa9e6db-4e1b-41be-94be-21cf2980fa2a",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "stato": "completed",
+      "started_at": "2026-08-06T10:38:56.337Z",
+      "completata_at": "2026-08-06T12:58:31.285Z"
+    },
+    {
+      "id": "060cf852-342c-43eb-bf11-62120e0f787f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "stato": "completed",
+      "started_at": "2026-08-06T14:33:43.853Z",
+      "completata_at": "2026-08-06T14:34:39.928Z"
+    },
+    {
+      "id": "a7e3d785-beeb-430f-ba90-26a3012ebbaa",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "stato": "completed",
+      "started_at": "2026-08-06T14:39:54.691Z",
+      "completata_at": "2026-08-06T14:42:27.849Z"
+    },
+    {
+      "id": "e194aab8-9ebf-4b59-af8b-20cc453e18f3",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "stato": "completed",
+      "started_at": "2026-08-06T14:47:11.608Z",
+      "completata_at": "2026-08-06T14:53:01.209Z"
+    },
+    {
+      "id": "1263d98a-7916-4600-8721-f89f8ddade9d",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "stato": "completed",
+      "started_at": "2026-08-06T15:00:38.674Z",
+      "completata_at": "2026-08-06T15:00:55.220Z"
+    },
+    {
+      "id": "0e0edd58-20d2-4808-a3bf-dc94b8a3ebb9",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "stato": "completed",
+      "started_at": "2026-08-06T15:00:56.004Z",
+      "completata_at": "2026-08-06T15:01:08.620Z"
+    },
+    {
+      "id": "76684186-cb03-4775-8757-574b41e53c6b",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "stato": "completed",
+      "started_at": "2026-08-06T15:01:09.479Z",
+      "completata_at": "2026-08-06T15:01:23.321Z"
+    },
+    {
+      "id": "24bdedcf-0bf3-4acf-a67e-e6a31759c10e",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "stato": "completed",
+      "started_at": "2026-08-10T09:25:43.776Z",
+      "completata_at": "2026-08-10T09:31:35.271Z"
+    },
+    {
+      "id": "1230fd4e-4b9b-4347-b0d5-f48f3dccecf8",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "stato": "completed",
+      "started_at": "2026-08-10T09:35:24.771Z",
+      "completata_at": "2026-08-10T12:59:06.390Z"
+    },
+    {
+      "id": "ae68a207-eb1a-42a2-98fa-a3db19205e81",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "stato": "completed",
+      "started_at": "2026-08-10T13:10:21.498Z",
+      "completata_at": "2026-08-10T13:14:43.499Z"
+    },
+    {
+      "id": "93897e9d-fabc-422c-8350-fe4774db8ea7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
+      "stato": "completed",
+      "started_at": "2026-08-10T13:36:31.770Z",
+      "completata_at": "2026-08-10T13:49:11.429Z"
+    },
+    {
+      "id": "progress_abj8nlg2k",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
+      "stato": "completed",
+      "started_at": "2026-08-10T13:36:46.630Z",
+      "completata_at": "2026-08-10T13:49:11.429Z"
+    },
+    {
+      "id": "3b6fe650-7169-4a1b-b719-cd26ab26f56b",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
+      "stato": "completed",
+      "started_at": "2026-08-10T13:57:39.063Z",
+      "completata_at": "2026-08-10T14:00:09.601Z"
+    },
+    {
+      "id": "progress_boxe_j0mv0vq4u",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
+      "stato": "completed",
+      "started_at": "2026-08-10T14:00:09.601Z",
+      "completata_at": "2026-08-10T14:00:09.601Z"
+    },
+    {
+      "id": "9319f073-2ad1-4859-b1f7-e349e1dd6b14",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "stato": "completed",
+      "started_at": "2026-08-10T14:11:39.762Z",
+      "completata_at": "2026-08-10T14:14:58.209Z"
+    },
+    {
+      "id": "e51cc10d-c4c3-492e-86d0-08a96c831ea7",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "stato": "completed",
+      "started_at": "2026-08-10T14:16:10.969Z",
+      "completata_at": "2026-08-10T14:16:11.847Z"
+    },
+    {
+      "id": "46912f82-a3fb-4028-a0f0-bc65ce6fc8a4",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "stato": "completed",
+      "started_at": "2026-08-10T14:16:19.003Z",
+      "completata_at": "2026-08-10T14:16:19.849Z"
+    },
+    {
+      "id": "434b7774-3043-4491-869f-a5ec8fd11252",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "4b4b4c4d-5e5f-6061-7172-838485868788",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "stato": "completed",
+      "started_at": "2026-08-10T14:16:29.066Z",
+      "completata_at": "2026-08-10T14:16:31.070Z"
+    },
+    {
+      "id": "b4e463fe-de2f-415b-8241-b537f9c35121",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "stato": "completed",
+      "started_at": "2026-08-10T14:16:37.559Z",
+      "completata_at": "2026-08-10T14:16:46.330Z"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "d0dfeb73-4d0c-4fab-9338-a03c478b69f4",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "risposta": "Risposto a domanda quiz",
+      "stato_approvazione": "approved",
+      "timestamp": "2026-08-05T20:39:57.317Z"
+    },
+    {
+      "id": "e271dc8b-825d-4223-bbbf-583fb9edde11",
+      "created_at": "2026-08-05T20:40:28.523Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "file_upload": "676dfae3-e0c8-4d50-8555-b5a61472522a/0147e750-f0a3-4b72-8e76-a003fe2ef143-1785962428512.png",
+      "risposta": "photo",
+      "latitude": 44.70118878664682,
+      "longitude": 7.846844818945601,
+      "stato_approvazione": "approved"
+    },
+    {
+      "id": "2a72ce58-155e-454d-9a04-49fa63455cf6",
+      "created_at": "2026-08-05T23:19:30.720Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "file_upload": "676dfae3-e0c8-4d50-8555-b5a61472522a/999f4e1f-7443-42e7-9d7a-115f2122888f-1785971970696.png",
+      "risposta": "Rifiutata",
+      "latitude": null,
+      "longitude": null,
+      "stato_approvazione": "rejected"
+    },
+    {
+      "id": "0ad12963-1c64-48fe-b7c0-736d2eac5dfa",
+      "created_at": "2026-08-06T10:36:51.089Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "poster_id": "poster_09",
+      "poster_file_name": "Poster9.jpg",
+      "file_upload": "676dfae3-e0c8-4d50-8555-b5a61472522a/555f4e1f-7443-42e7-9d7a-115f2122888f-1786012611023.png",
+      "risposta": "living_poster",
+      "latitude": null,
+      "longitude": null,
+      "stato_approvazione": "approved",
+      "voto": 4,
+      "approved_at": "2026-08-06T10:46:57.401Z",
+      "approved_by": "11111111-1111-1111-1111-111111111111"
+    },
+    {
+      "id": "896e2f46-731e-4f8e-912b-991a50e9acae",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "risposta": "Risposto a domanda quiz",
+      "stato_approvazione": "approved",
+      "timestamp": "2026-08-06T10:37:43.342Z"
+    },
+    {
+      "id": "7fecf673-f8a7-4f8d-bf4a-116fa61cf19a",
+      "created_at": "2026-08-06T10:38:06.561Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "file_upload": "155e40fe-29ea-47dc-8f23-37f3fa560049/0147e750-f0a3-4b72-8e76-a003fe2ef143-1786012686548.png",
+      "risposta": "photo",
+      "latitude": null,
+      "longitude": null,
+      "stato_approvazione": "approved"
+    },
+    {
+      "id": "f64156bd-edb1-4052-a9e2-8bca264474aa",
+      "created_at": "2026-08-06T10:38:17.707Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "file_upload": "155e40fe-29ea-47dc-8f23-37f3fa560049/999f4e1f-7443-42e7-9d7a-115f2122888f-1786012697695.png",
+      "risposta": "Rifiutata",
+      "latitude": null,
+      "longitude": null,
+      "stato_approvazione": "rejected"
+    },
+    {
+      "id": "590d737a-c1a5-4683-a558-327e33277422",
+      "created_at": "2026-08-06T10:39:21.030Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "poster_id": "poster_10",
+      "poster_file_name": "Poster10.jpg",
+      "file_upload": "155e40fe-29ea-47dc-8f23-37f3fa560049/555f4e1f-7443-42e7-9d7a-115f2122888f-1786012761003.png",
+      "risposta": "Rifiutata",
+      "latitude": null,
+      "longitude": null,
+      "stato_approvazione": "approved",
+      "voto": 6,
+      "approved_at": "2026-08-06T10:46:52.481Z",
+      "approved_by": "11111111-1111-1111-1111-111111111111"
+    },
+    {
+      "id": "2ed4f78a-9039-4fcd-8aeb-21620e7468b7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "risposta": "BPER",
+      "stato_approvazione": "auto_approved",
+      "timestamp": "2026-08-06T14:34:32.461Z"
+    },
+    {
+      "id": "e8fa06a9-a904-473e-9c51-0eca42f47aed",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "risposta": "social_submitted",
+      "file_upload": "676dfae3-e0c8-4d50-8555-b5a61472522a/social-1-1786027229991.png",
+      "file_upload_2": "676dfae3-e0c8-4d50-8555-b5a61472522a/social-2-1786027230060.png",
+      "stato_approvazione": "approved",
+      "timestamp": "2026-08-06T14:40:30.071Z",
+      "voto": 11
+    },
+    {
+      "id": "4dd85cc1-89c3-4c5b-80e1-f768dfd531dd",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "risposta": "Acquistato frammento da Ciccioni Bislunghi per 4 token",
+      "stato_approvazione": "auto_approved",
+      "timestamp": "2026-08-06T14:52:25.145Z"
+    },
+    {
+      "id": "51a6325a-fe26-4320-ae17-35da164ef40e",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "risposta": "BPER",
+      "stato_approvazione": "auto_approved",
+      "timestamp": "2026-08-06T15:00:53.238Z"
+    },
+    {
+      "id": "92a64373-c68a-4d0a-9ed7-2f5c92fae4a1",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "risposta": "social_submitted",
+      "file_upload": "155e40fe-29ea-47dc-8f23-37f3fa560049/social-1-1786028466962.png",
+      "file_upload_2": "155e40fe-29ea-47dc-8f23-37f3fa560049/social-2-1786028466978.png",
+      "stato_approvazione": "approved",
+      "timestamp": "2026-08-06T15:01:07.029Z",
+      "voto": 16
+    },
+    {
+      "id": "cf6924ad-ae09-48cb-9373-b520e677af68",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "risposta": "Acquistato frammento da Fost & Loud per 5 token",
+      "stato_approvazione": "auto_approved",
+      "timestamp": "2026-08-06T15:01:14.456Z"
+    }
+  ],
+  "scores": [
+    {
+      "id": "d0448c22-3d8a-4db6-adaa-697e57012e32",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-05T20:39:58.420Z"
+    },
+    {
+      "id": "7292cef4-20ca-4591-b139-ec0333599c79",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-05T20:39:59.973Z"
+    },
+    {
+      "id": "8e5b8008-50e3-4d8e-bd9d-d1fe25d0e5ff",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-05T20:40:02.320Z"
+    },
+    {
+      "id": "3d39fc4d-880f-4142-8f2c-f18b04b12635",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-05T20:40:04.918Z"
+    },
+    {
+      "id": "61b8dce8-9f29-4ad3-adc9-4ee6ec603bfa",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Completamento prova: Quiz Bra",
+      "created_at": "2026-08-05T20:40:05.679Z"
+    },
+    {
+      "id": "9b986fd6-ec38-493a-9380-1b6fd3fa8da6",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "punti": 10,
+      "motivazione": "Completamento prova: Foto ufficiale",
+      "created_at": "2026-08-05T20:40:31.453Z"
+    },
+    {
+      "id": "5b9fef5d-3dda-40f4-85c7-b66870f51b87",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 25,
+      "motivazione": "Completamento prova: Il Rebus Visivo",
+      "created_at": "2026-08-05T23:19:32.885Z"
+    },
+    {
+      "id": "c3f8efe6-0030-4381-8c9e-c2a5f7dacad0",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "punti": 10,
+      "motivazione": "Approvazione prova: Foto ufficiale",
+      "created_at": "2026-08-05T23:24:17.970Z"
+    },
+    {
+      "id": "5f704fdd-86f9-47b8-bea2-8a39e59381c6",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 25,
+      "motivazione": "Completamento prova: Il Rebus Visivo",
+      "created_at": "2026-08-05T23:25:04.240Z"
+    },
+    {
+      "id": "07ff9be9-d48d-4d64-8423-90fd32f38e80",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "81b2f378-dc50-4bb8-a0e8-8f20f6d2fb47",
+      "punti": 5,
+      "motivazione": "Completamento prova: Creazione squadra",
+      "created_at": "2026-08-06T00:00:12.711Z"
+    },
+    {
+      "id": "895f513f-f46f-47ba-9695-53f57fcc4ed2",
+      "created_at": "2026-08-06T10:01:49.545Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Venom (1/8)"
+    },
+    {
+      "id": "47d8ce9e-fc0e-4347-b59f-aae92b80f0f5",
+      "created_at": "2026-08-06T10:02:22.050Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Titanic (3/8)"
+    },
+    {
+      "id": "c5bc4316-0bc4-4913-988e-99180dad3f09",
+      "created_at": "2026-08-06T10:02:34.727Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Oceania (5/8)"
+    },
+    {
+      "id": "3e365030-5745-4f5a-a451-c55eb163ae1b",
+      "created_at": "2026-08-06T10:02:52.366Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: It (7/8)"
+    },
+    {
+      "id": "3923e944-feb2-4b49-90b8-a7caa3275107",
+      "created_at": "2026-08-06T10:02:57.341Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Avatar (8/8)"
+    },
+    {
+      "id": "010ec6a7-59e7-4788-bea7-38ccf1befaab",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 7,
+      "motivazione": "Completamento prova: Indovina il film dalle emoji",
+      "created_at": "2026-08-06T10:03:10.720Z"
+    },
+    {
+      "id": "98e5a4cb-08a3-4a83-bfbc-a1bb25c73fc7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 15,
+      "motivazione": "Valutazione Locandina Vivente (Voto: 4/10)",
+      "created_at": "2026-08-06T10:46:57.401Z"
+    },
+    {
+      "id": "161ddd02-7112-4b46-97c7-df874af6e70c",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-06T10:37:43.342Z"
+    },
+    {
+      "id": "cedef7c3-d313-404b-b125-4473e97a19a4",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-06T10:37:44.542Z"
+    },
+    {
+      "id": "09ff1818-0217-4d2a-b43b-a623fb77edcd",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-06T10:37:45.974Z"
+    },
+    {
+      "id": "c5e5dda3-10e8-4e89-b07c-b431ad365a4f",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-06T10:37:48.542Z"
+    },
+    {
+      "id": "10c61622-01f9-40f2-9ce6-bcac41d311ff",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Risposta corretta al quiz",
+      "created_at": "2026-08-06T10:37:50.292Z"
+    },
+    {
+      "id": "15f98ae4-f220-4b03-9145-d9ea868bd7ca",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c4e6c385-69ba-4f17-a6d0-36b78776d527",
+      "punti": 15,
+      "motivazione": "Completamento prova: Quiz Bra",
+      "created_at": "2026-08-06T10:37:51.057Z"
+    },
+    {
+      "id": "3bfa8fdf-f07f-4641-8d29-700038eb383a",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "punti": 10,
+      "motivazione": "Completamento prova: Foto ufficiale",
+      "created_at": "2026-08-06T10:38:07.773Z"
+    },
+    {
+      "id": "e6ec0129-5d92-4123-acc3-5ce86cf9f305",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 25,
+      "motivazione": "Completamento prova: Il Rebus Visivo",
+      "created_at": "2026-08-06T10:38:19.041Z"
+    },
+    {
+      "id": "d1b98b39-d7cb-4e96-a25f-07539540d3a5",
+      "created_at": "2026-08-06T10:38:24.275Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Venom (1/8)"
+    },
+    {
+      "id": "0ac9e653-ab85-4fab-ad9f-61efd85f6be4",
+      "created_at": "2026-08-06T10:38:27.689Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Inside Out (2/8)"
+    },
+    {
+      "id": "50f4e04e-bef8-4ee2-865e-b717ee265000",
+      "created_at": "2026-08-06T10:38:30.896Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Titanic (3/8)"
+    },
+    {
+      "id": "fd6cc2c6-1dad-4074-ad0b-0beb116be061",
+      "created_at": "2026-08-06T10:38:35.859Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Toy Story (4/8)"
+    },
+    {
+      "id": "5bc55367-695f-4be2-8b36-300df934f5f3",
+      "created_at": "2026-08-06T10:38:42.435Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Oceania (5/8)"
+    },
+    {
+      "id": "76f46dad-b353-483b-a573-c70801ceedeb",
+      "created_at": "2026-08-06T10:38:50.765Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: It (7/8)"
+    },
+    {
+      "id": "2c4e3949-6b0d-4b88-bdd7-33e4e1a16008",
+      "created_at": "2026-08-06T10:38:53.371Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 1,
+      "motivazione": "Indovinato film dalle emoji: Avatar (8/8)"
+    },
+    {
+      "id": "abb57aa2-05b0-4d95-be11-f3b5dd818348",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "777f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 7,
+      "motivazione": "Completamento prova: Indovina il film dalle emoji",
+      "created_at": "2026-08-06T10:38:55.189Z"
+    },
+    {
+      "id": "f43fb2b8-bcab-4715-992c-82c28fc966df",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 15,
+      "motivazione": "Valutazione Locandina Vivente (Voto: 6/10)",
+      "created_at": "2026-08-06T10:46:52.481Z"
+    },
+    {
+      "id": "3487590e-dd8b-4dae-a424-1178a5e09eeb",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "555f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 15,
+      "motivazione": "Approvazione prova: La locandina vivente",
+      "created_at": "2026-08-06T10:41:32.891Z"
+    },
+    {
+      "id": "74e4e247-bd96-4fb5-8917-20150f7f9bb0",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "0147e750-f0a3-4b72-8e76-a003fe2ef143",
+      "punti": 10,
+      "motivazione": "Approvazione prova: Foto ufficiale",
+      "created_at": "2026-08-06T10:41:38.788Z"
+    },
+    {
+      "id": "95e1702b-6f3a-4e1e-b580-c98279d13456",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": null,
+      "punti": -5,
+      "motivazione": "Acquisto: Penalità Punti (-5 PT)",
+      "created_at": "2026-08-06T12:21:43.491Z"
+    },
+    {
+      "id": "6a066c97-705b-4e24-8917-0347418b28ae",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "999f4e1f-7443-42e7-9d7a-115f2122888f",
+      "punti": 25,
+      "motivazione": "Completamento prova: Il Rebus Visivo",
+      "created_at": "2026-08-06T12:50:24.410Z"
+    },
+    {
+      "id": "c9317aa7-0c6c-455f-99ab-6aec1fd657c0",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 1 - La Banca",
+      "created_at": "2026-08-06T14:34:12.260Z"
+    },
+    {
+      "id": "412e5859-eb6e-4e8f-a168-e6c2d1f7d015",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 2 - La Banca",
+      "created_at": "2026-08-06T14:34:23.881Z"
+    },
+    {
+      "id": "3d228fac-f890-4767-a321-a2b2b1bce68d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 3 - La Banca",
+      "created_at": "2026-08-06T14:34:29.222Z"
+    },
+    {
+      "id": "15946408-e93f-4b82-8f67-23090b9213e3",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 4 - La Banca",
+      "created_at": "2026-08-06T14:34:32.461Z"
+    },
+    {
+      "id": "eafda24d-2905-45c9-ba3d-628d209f7ae6",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 1 - La Banca",
+      "created_at": "2026-08-06T15:00:45.356Z"
+    },
+    {
+      "id": "21a72517-ca4e-4b4b-bffa-c8fe44ac3dba",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 2 - La Banca",
+      "created_at": "2026-08-06T15:00:48.179Z"
+    },
+    {
+      "id": "9eeaf1c2-7582-41c0-93fc-af96df85ff78",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 3 - La Banca",
+      "created_at": "2026-08-06T15:00:50.490Z"
+    },
+    {
+      "id": "a041cc1a-dbfb-4227-a4c1-4384e64f6d35",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "punti": 25,
+      "motivazione": "Risposta esatta enigma 4 - La Banca",
+      "created_at": "2026-08-06T15:00:53.238Z"
+    },
+    {
+      "id": "f65b206b-475c-4492-948e-b46c28c1d6a2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "punti": 20,
+      "motivazione": "Valutazione Missione Social dalla Regia: 11/20 punti",
+      "created_at": "2026-08-06T20:43:07.853Z"
+    },
+    {
+      "id": "721edbc9-eb46-4f77-aee9-c45476a2332d",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "punti": 20,
+      "motivazione": "Valutazione Missione Social dalla Regia: 16/20 punti",
+      "created_at": "2026-08-06T20:43:10.215Z"
+    },
+    {
+      "id": "0f86a6ea-388d-4468-9d7b-cdee151b68a1",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "punti": 5,
+      "motivazione": "Enigma risolto: Rebus Musicale",
+      "created_at": "2026-08-10T09:25:52.590Z"
+    },
+    {
+      "id": "084dbf76-2226-4494-9141-c8a2d4e5b415",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "punti": 5,
+      "motivazione": "Enigma risolto: Lucchetto Direzionale",
+      "created_at": "2026-08-10T12:59:05.175Z"
+    },
+    {
+      "id": "58f74048-1c84-4706-ab8c-01ddfa1f433a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "punti": -8,
+      "motivazione": "Risposta errata — Le Coordinate Finali",
+      "created_at": "2026-08-10T13:10:21.498Z"
+    },
+    {
+      "id": "ed91a9f9-381b-41c7-a6ba-1cd79aa8614b",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "punti": 5,
+      "motivazione": "Enigma risolto: Le Coordinate Finali",
+      "created_at": "2026-08-10T13:10:32.362Z"
+    },
+    {
+      "id": "score_2g1v2zqee",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
+      "punti": 20,
+      "motivazione": "Vincitore Torneo Cornhole (Tappa 5)",
+      "created_at": "2026-08-10T13:49:11.429Z"
+    },
+    {
+      "id": "score_tgx54vgrx",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
+      "punti": 10,
+      "motivazione": "Partecipazione Torneo Cornhole (Tappa 5)",
+      "created_at": "2026-08-10T13:49:11.429Z"
+    },
+    {
+      "id": "score_boxe_gf568j84d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
+      "punti": 20,
+      "motivazione": "Vincitore Torneo Boxe Gonfiabile (Tappa 5)",
+      "created_at": "2026-08-10T14:00:09.600Z"
+    },
+    {
+      "id": "score_boxe_odbi1qzf7",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
+      "punti": 10,
+      "motivazione": "Partecipazione Torneo Boxe Gonfiabile (Tappa 5)",
+      "created_at": "2026-08-10T14:00:09.600Z"
+    },
+    {
+      "id": "score_jackpot_l79eubtd2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "punti": -10,
+      "motivazione": "Jackpot della Regia: PERSA (🔔 🍋 🍒)",
+      "created_at": "2026-08-10T14:14:53.685Z"
+    },
+    {
+      "id": "c759cbdd-8886-40a4-89b3-656bf2741079",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "punti": 5,
+      "motivazione": "Enigma risolto: Rebus Musicale",
+      "created_at": "2026-08-10T14:16:10.969Z"
+    },
+    {
+      "id": "8810f197-906c-4548-a778-9a9ba5815ca4",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "punti": 5,
+      "motivazione": "Enigma risolto: Lucchetto Direzionale",
+      "created_at": "2026-08-10T14:16:19.003Z"
+    },
+    {
+      "id": "8b1f6c55-e2fc-4bff-81c2-9ae6ec59c306",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "punti": 5,
+      "motivazione": "Enigma risolto: Le Coordinate Finali",
+      "created_at": "2026-08-10T14:16:29.066Z"
+    },
+    {
+      "id": "score_jackpot_k5dq7q13k",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "punti": -20,
+      "motivazione": "Jackpot della Regia: PERSA (🍋 🔔 🔔)",
+      "created_at": "2026-08-10T14:16:41.818Z"
+    },
+    {
+      "id": "7dff1a59-eb4b-4752-a04a-d1616911f2c8",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": null,
+      "punti": 5,
+      "motivazione": "Ruota della Fortuna: 🎯 DOPPIO PREMIO",
+      "created_at": "2026-08-10T20:19:32.298Z"
+    },
+    {
+      "id": "030fbbdc-415a-4cb8-9cfd-13e18f04a7c4",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": null,
+      "punti": 20,
+      "motivazione": "Acquisto Bonus Punti (+20 PT)",
+      "created_at": "2026-08-10T20:24:42.048Z"
+    }
+  ],
+  "team_answers": [
+    {
+      "id": "913e05b5-3ab4-402f-8d18-443a9668f961",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "question_id": "q1",
+      "selected_answer": 2,
+      "correct": false,
+      "created_at": "2026-08-05T20:39:57.317Z"
+    },
+    {
+      "id": "68dd9d6a-97af-458f-8479-1ba93a9ff405",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "question_id": "q2",
+      "selected_answer": 1,
+      "correct": true,
+      "created_at": "2026-08-05T20:39:58.420Z"
+    },
+    {
+      "id": "bcbbff5d-b1d8-4443-87df-7ce0031095a3",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "question_id": "q3",
+      "selected_answer": 0,
+      "correct": true,
+      "created_at": "2026-08-05T20:39:59.973Z"
+    },
+    {
+      "id": "cb67dd06-cca1-4793-bd10-c34f18d73ee7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "question_id": "q4",
+      "selected_answer": 2,
+      "correct": true,
+      "created_at": "2026-08-05T20:40:02.320Z"
+    },
+    {
+      "id": "4566f7f3-b8d1-42a9-9ed9-3a3a530ba061",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "question_id": "q5",
+      "selected_answer": 3,
+      "correct": true,
+      "created_at": "2026-08-05T20:40:04.918Z"
+    },
+    {
+      "id": "b6003b31-966a-48df-b6b5-cf3dd8f7f489",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "question_id": "q1",
+      "selected_answer": 0,
+      "correct": true,
+      "created_at": "2026-08-06T10:37:43.342Z"
+    },
+    {
+      "id": "2c97ad3b-2fc0-4c8a-b876-3dc50c138e0b",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "question_id": "q2",
+      "selected_answer": 1,
+      "correct": true,
+      "created_at": "2026-08-06T10:37:44.542Z"
+    },
+    {
+      "id": "9723325b-ef65-410e-bf10-026c6114be74",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "question_id": "q3",
+      "selected_answer": 0,
+      "correct": true,
+      "created_at": "2026-08-06T10:37:45.974Z"
+    },
+    {
+      "id": "f4c825f1-767b-40f2-8ef8-410a0cd03632",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "question_id": "q4",
+      "selected_answer": 2,
+      "correct": true,
+      "created_at": "2026-08-06T10:37:48.542Z"
+    },
+    {
+      "id": "bdc61dca-ba7f-4d79-af1a-adf46e58b01c",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "question_id": "q5",
+      "selected_answer": 3,
+      "correct": true,
+      "created_at": "2026-08-06T10:37:50.292Z"
+    }
+  ],
+  "user_roles": [
+    {
+      "user_id": "11111111-1111-1111-1111-111111111111",
+      "role": "admin"
+    },
+    {
+      "user_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "role": "player"
+    },
+    {
+      "user_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "role": "player"
+    }
+  ],
+  "activity_log": [
+    {
+      "id": "act_5c7b1914-c929-4fd8-a8d5-38ac3549c847",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:03.709Z"
+    },
+    {
+      "id": "act_aa207ba8-460e-474b-b90a-ece8e2a0cfb9",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:10.172Z"
+    },
+    {
+      "id": "act_8c2a05c2-c0d8-40e2-980f-5a130da88a33",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:10.985Z"
+    },
+    {
+      "id": "act_be00b14b-5552-4191-8e67-350e8cf97b20",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:19.036Z"
+    },
+    {
+      "id": "act_e75b610e-8531-4ef1-8946-afd494fa5805",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:19.837Z"
+    },
+    {
+      "id": "act_47a81157-e07b-478a-b4f6-e83005664cbd",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:21.209Z"
+    },
+    {
+      "id": "act_80b6c5b5-5d61-44a1-b45f-6e48e393add4",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Sfida Let's Fib\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:27.469Z"
+    },
+    {
+      "id": "act_91fcab69-1e12-46f7-b2bc-2359e3df2ed9",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Sfida Let's Fib\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:34:28.303Z"
+    },
+    {
+      "id": "act_569473fe-e0cd-46e4-a93a-884ed3db67fe",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:35:13.035Z"
+    },
+    {
+      "id": "act_9df87cc3-c092-4ae7-aab8-39a67f524208",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:35:36.705Z"
+    },
+    {
+      "id": "act_dd9d9e71-ce50-4e16-b0fa-01f425963236",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:38:16.207Z"
+    },
+    {
+      "id": "act_c124501f-5163-4655-b4a7-54afecc4b3b6",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:38:17.036Z"
+    },
+    {
+      "id": "act_0e68ed82-4f1a-42c3-a1c4-9c665f942166",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Quiz Bra\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:38:21.255Z"
+    },
+    {
+      "id": "act_6367a7d3-1a8e-4904-aef4-fa83b70abbc6",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:39:05.493Z"
+    },
+    {
+      "id": "act_fb411bf0-85e2-47e2-bd07-69968adf01a2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risposto alla domanda quiz: \"Qual è il piatto tipico a base...\" (Errato)",
+      "points": null,
+      "timestamp": "2026-08-05T20:39:57.317Z"
+    },
+    {
+      "id": "act_a849fcd8-c2d9-476a-a354-6211e531c35f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risposto alla domanda quiz: \"In quale regione italiana si t...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-05T20:39:58.421Z"
+    },
+    {
+      "id": "act_e6ae42e5-b9e2-4033-9a8e-5e50911e8081",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risposto alla domanda quiz: \"Quale importante movimento int...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-05T20:39:59.973Z"
+    },
+    {
+      "id": "act_6e16459d-2e68-4927-8d23-6fb944758ab2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risposto alla domanda quiz: \"Quale celebre scrittore piemon...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-05T20:40:02.320Z"
+    },
+    {
+      "id": "act_a815f217-b419-4516-91f0-1aded87f8617",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risposto alla domanda quiz: \"Che tipo di formaggio DOP pren...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-05T20:40:04.918Z"
+    },
+    {
+      "id": "act_78f92865-e967-4836-8292-6383cee8723c",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Quiz Bra\".",
+      "points": 20,
+      "timestamp": "2026-08-05T20:40:05.679Z"
+    },
+    {
+      "id": "act_5bae15d8-7e60-478d-9e83-0f4c0daacc7d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Foto ufficiale\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:40:06.581Z"
+    },
+    {
+      "id": "act_565e1c45-cbd5-48b2-bb8f-ef66251cbc5a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha inviato la prova \"Foto ufficiale\" (in attesa di approvazione).",
+      "points": null,
+      "timestamp": "2026-08-05T20:40:28.523Z"
+    },
+    {
+      "id": "act_08bc4e16-e74f-45f5-999d-22444d827b7a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Foto ufficiale\".",
+      "points": 20,
+      "timestamp": "2026-08-05T20:40:31.453Z"
+    },
+    {
+      "id": "act_2e12aafb-be25-4243-a4e1-bdf833dd23b2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:41:13.644Z"
+    },
+    {
+      "id": "act_042c63ff-450c-4314-a794-32a1e37b968d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:41:18.692Z"
+    },
+    {
+      "id": "act_f7d1df58-d19e-4a8d-ae22-6f3ef2394992",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T20:41:21.228Z"
+    },
+    {
+      "id": "act_3576eeb9-10f4-4a94-ba80-efe22b3e8248",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Il Rebus Visivo\".",
+      "points": null,
+      "timestamp": "2026-08-05T21:20:52.305Z"
+    },
+    {
+      "id": "act_80d2bc9b-6a91-4ff9-a045-73252db45150",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:16:30.047Z"
+    },
+    {
+      "id": "act_8a504650-301b-467c-a784-bd5861ee32b6",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:18:41.999Z"
+    },
+    {
+      "id": "act_1913e90c-1a29-4658-8eba-ab68a6ed51bc",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:18:53.702Z"
+    },
+    {
+      "id": "act_d763b3bf-7823-4cf2-8669-5bd2ce72df9d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:18:54.584Z"
+    },
+    {
+      "id": "act_7b451226-30c4-472e-b154-ad8c970c7b7d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:18:55.417Z"
+    },
+    {
+      "id": "act_b8a67fe3-1f7a-4cd1-b610-5b6ecf92f004",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha inviato la prova \"Il Rebus Visivo\" (in attesa di approvazione).",
+      "points": null,
+      "timestamp": "2026-08-05T23:19:30.720Z"
+    },
+    {
+      "id": "act_cd3ce885-5f08-4404-92dc-be1e31c7c803",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Il Rebus Visivo\".",
+      "points": 20,
+      "timestamp": "2026-08-05T23:19:32.885Z"
+    },
+    {
+      "id": "act_fcdbbb02-19f7-4324-a0e4-fe8f24cea4a1",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha RIFIUTATO la prova \"Il Rebus Visivo\" della squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:24:08.589Z"
+    },
+    {
+      "id": "act_6648f9a9-9229-4a3f-9776-449ec8975bf0",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha APPROVATO la prova \"Foto ufficiale\" della squadra \"Fost & Loud\".",
+      "points": 20,
+      "timestamp": "2026-08-05T23:24:17.970Z"
+    },
+    {
+      "id": "act_e1846197-5123-4770-a4c8-986a320c8fbf",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Il Rebus Visivo\".",
+      "points": 20,
+      "timestamp": "2026-08-05T23:25:04.240Z"
+    },
+    {
+      "id": "act_e807e4ad-5f64-4a39-98e0-651c94a3661f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:36:56.578Z"
+    },
+    {
+      "id": "act_01c83d95-8421-4d76-b616-3d1786552a8c",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:37:13.761Z"
+    },
+    {
+      "id": "act_bc8d2516-16fb-4d3d-ac34-14f6d5a6e2ea",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:43:54.317Z"
+    },
+    {
+      "id": "act_80c38d83-fb1f-448d-8be1-856dcc013b9d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:44:28.747Z"
+    },
+    {
+      "id": "act_87f79b8c-f27b-4df8-bea3-9e77ddbc50be",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:48:35.095Z"
+    },
+    {
+      "id": "act_f43ac22b-f421-4ffc-adf7-f6c26f7b55d4",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:48:35.979Z"
+    },
+    {
+      "id": "act_53f44e0b-efc8-43e7-bb56-97aa7587db4d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:48:36.810Z"
+    },
+    {
+      "id": "act_e43f7669-4435-4e45-91c9-c4a3d8405b93",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:48:37.794Z"
+    },
+    {
+      "id": "act_8bcec87e-3778-4cea-945c-9986f4962243",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:48:38.630Z"
+    },
+    {
+      "id": "act_c2b26eba-d20e-41a1-9c8d-2e8efe0c7a5b",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:48:39.464Z"
+    },
+    {
+      "id": "act_e5a72e64-8c32-4e97-937e-fbcc504af067",
+      "team_id": "c4f87bd3-9e36-4b0b-8755-807095434ba9",
+      "action": "Squadra \"Ciccioni Bislunghi\" creata ed iscritta alla competizione.",
+      "points": null,
+      "timestamp": "2026-08-05T23:49:55.720Z"
+    },
+    {
+      "id": "act_64187d99-0a2a-43e2-b1eb-d714b639ca47",
+      "team_id": "c4f87bd3-9e36-4b0b-8755-807095434ba9",
+      "action": "La regia ha ATTIVATO l'account della squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:50:04.326Z"
+    },
+    {
+      "id": "act_6b2667fa-e948-46f6-9fae-7b82469366a3",
+      "team_id": "c4f87bd3-9e36-4b0b-8755-807095434ba9",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:51:18.258Z"
+    },
+    {
+      "id": "act_21d2c18b-5af9-4352-b32e-6ca0fdf71581",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" creata ed iscritta alla competizione.",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:21.065Z"
+    },
+    {
+      "id": "act_823d9fff-d47e-45e8-9de7-d40031531592",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha DISATTIVATO l'account della squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:26.228Z"
+    },
+    {
+      "id": "act_ea79f907-8d46-4a04-90dc-d25c99e76fcd",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha ATTIVATO l'account della squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:27.262Z"
+    },
+    {
+      "id": "act_6411312e-a981-4986-8121-d74dff2cfc93",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Creazione squadra\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:42.658Z"
+    },
+    {
+      "id": "act_6adeebb2-a1d9-4350-8902-28de8e636cda",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:43.461Z"
+    },
+    {
+      "id": "act_0d4aa52a-0451-41ba-ba02-7d6e466fbc07",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:45.010Z"
+    },
+    {
+      "id": "act_c640beb5-4af4-4f96-b75f-18243d7ad6f1",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:45.845Z"
+    },
+    {
+      "id": "act_0e31bcae-d362-41d9-89e4-3c85d9d2e3e6",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:48.085Z"
+    },
+    {
+      "id": "act_78edddfd-3e7d-4977-b446-28aadb6993eb",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:48.908Z"
+    },
+    {
+      "id": "act_2dd19a48-bc7f-446a-bd76-fc2681e45fed",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:49.931Z"
+    },
+    {
+      "id": "act_419ffac2-1501-40a6-9e08-50d4df7eab4f",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:50.814Z"
+    },
+    {
+      "id": "act_94795450-74f0-46df-beda-f64e436d4f53",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:51.650Z"
+    },
+    {
+      "id": "act_47e005da-5018-4438-ae1b-9b812f8f102c",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:52.766Z"
+    },
+    {
+      "id": "act_2e5c36de-d46b-4661-89f8-4c0d0e538b22",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-05T23:59:53.593Z"
+    },
+    {
+      "id": "act_c27ceb8f-4167-4fa0-a5fd-2c4fe9a04c5b",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-06T00:00:03.611Z"
+    },
+    {
+      "id": "act_8d42eef4-e7fc-4727-8d1d-690775cecfa6",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"Creazione squadra\".",
+      "points": 10,
+      "timestamp": "2026-08-06T00:00:12.711Z"
+    },
+    {
+      "id": "act_2086895b-8aed-4068-a46a-3586578ff15d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-06T09:27:21.675Z"
+    },
+    {
+      "id": "act_9242b0d3-773a-4b8d-9923-d361735666c2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Indovina il film dalle emoji\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:01:16.197Z"
+    },
+    {
+      "id": "act_a5ac1a15-2471-41b9-885c-ddc201ded388",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Indovina il film dalle emoji\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:03:10.720Z"
+    },
+    {
+      "id": "act_a4136da3-ceb0-4440-9da3-77cf10ac40fe",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"La locandina vivente\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:34:18.368Z"
+    },
+    {
+      "id": "act_12495f8b-80b2-48a5-a0fa-69980cac17a2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha inviato la prova \"La locandina vivente\" (in attesa di approvazione).",
+      "points": null,
+      "timestamp": "2026-08-06T10:36:51.089Z"
+    },
+    {
+      "id": "act_86a6b922-5bcc-4649-907b-f51e9b5affa7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"La locandina vivente\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:36:51.100Z"
+    },
+    {
+      "id": "act_f9caa314-fdc6-4806-ad16-d01aeb4d9c90",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Quiz Bra\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:37:42.249Z"
+    },
+    {
+      "id": "act_704e12b4-a330-4489-85bb-59f61d314d71",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risposto alla domanda quiz: \"Qual è il piatto tipico a base...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-06T10:37:43.342Z"
+    },
+    {
+      "id": "act_c3496561-2575-40fa-99cb-11f270cd86a8",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risposto alla domanda quiz: \"In quale regione italiana si t...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-06T10:37:44.542Z"
+    },
+    {
+      "id": "act_25e02dbc-d10d-46f1-8e73-07e76a0e5be6",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risposto alla domanda quiz: \"Quale importante movimento int...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-06T10:37:45.974Z"
+    },
+    {
+      "id": "act_9df68453-9fb3-4a0f-9fc8-c08043a83bcd",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risposto alla domanda quiz: \"Quale celebre scrittore piemon...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-06T10:37:48.542Z"
+    },
+    {
+      "id": "act_94cc9739-859a-4497-bc98-4b4c5145d2f5",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risposto alla domanda quiz: \"Che tipo di formaggio DOP pren...\" (Corretto)",
+      "points": 4,
+      "timestamp": "2026-08-06T10:37:50.292Z"
+    },
+    {
+      "id": "act_457a1506-7064-4d3e-ad3b-74020df9b980",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"Quiz Bra\".",
+      "points": 20,
+      "timestamp": "2026-08-06T10:37:51.058Z"
+    },
+    {
+      "id": "act_bb52143a-3114-45d6-92ed-8e31381d7d13",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Foto ufficiale\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:37:51.721Z"
+    },
+    {
+      "id": "act_9a9f95fd-d817-410a-bc12-40d0d4b53aac",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha inviato la prova \"Foto ufficiale\" (in attesa di approvazione).",
+      "points": null,
+      "timestamp": "2026-08-06T10:38:06.561Z"
+    },
+    {
+      "id": "act_4ba04dec-2821-44c2-b3d2-1ac466d788d1",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"Foto ufficiale\".",
+      "points": 20,
+      "timestamp": "2026-08-06T10:38:07.773Z"
+    },
+    {
+      "id": "act_264536f0-5ccb-4e12-b70d-2e478fdaccf0",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Il Rebus Visivo\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:38:13.475Z"
+    },
+    {
+      "id": "act_e2bccdf3-4e4e-464a-adff-39ac2f719407",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha inviato la prova \"Il Rebus Visivo\" (in attesa di approvazione).",
+      "points": null,
+      "timestamp": "2026-08-06T10:38:17.707Z"
+    },
+    {
+      "id": "act_ee9ecd2e-9d86-4d2b-be65-e9f64d1f17fb",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"Il Rebus Visivo\".",
+      "points": 20,
+      "timestamp": "2026-08-06T10:38:19.041Z"
+    },
+    {
+      "id": "act_b308969e-c16d-42aa-9708-61d907b958ed",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Indovina il film dalle emoji\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:38:21.057Z"
+    },
+    {
+      "id": "act_76fd8bdd-4129-41c8-9522-03c1aafc3888",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"Indovina il film dalle emoji\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:38:55.189Z"
+    },
+    {
+      "id": "act_43eae756-396c-4440-abf2-8bdb7922a3b9",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"La locandina vivente\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:38:56.337Z"
+    },
+    {
+      "id": "act_5a1940ec-40ad-4c6d-bec1-c8ce81630be6",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha inviato la prova \"La locandina vivente\" (in attesa di approvazione).",
+      "points": null,
+      "timestamp": "2026-08-06T10:39:21.030Z"
+    },
+    {
+      "id": "act_0362fb61-c78b-4de4-ad17-89669a9085d4",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"La locandina vivente\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:39:21.038Z"
+    },
+    {
+      "id": "act_46803c29-6d17-41ba-b1cc-5a18c974e5e8",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha APPROVATO la prova \"La locandina vivente\" della squadra \"Fost & Loud\".",
+      "points": 10,
+      "timestamp": "2026-08-06T10:41:32.891Z"
+    },
+    {
+      "id": "act_7b0c7bb4-321d-434c-a154-e9400214815f",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha APPROVATO la prova \"Foto ufficiale\" della squadra \"Ciccioni Bislunghi\".",
+      "points": 12,
+      "timestamp": "2026-08-06T10:41:38.788Z"
+    },
+    {
+      "id": "act_af065233-6faa-4e67-8353-6bfe1059ab58",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha RIFIUTATO la prova \"Il Rebus Visivo\" della squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:42:26.255Z"
+    },
+    {
+      "id": "act_667b561a-f017-4088-9b11-51baaa6eb589",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha RIFIUTATO la prova \"La locandina vivente\" della squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-06T10:42:28.122Z"
+    },
+    {
+      "id": "act_6f97ac1c-8e70-4c99-996c-d37adac4487c",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Regia ha assegnato 6 punti alla squadra \"Ciccioni Bislunghi\" per la sfida \"La locandina vivente\".",
+      "points": 6,
+      "timestamp": "2026-08-06T10:46:52.482Z"
+    },
+    {
+      "id": "act_f079bf1b-d5c6-42b1-b4ec-b88b6efef0ff",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Regia ha assegnato 4 punti alla squadra \"Fost & Loud\" per la sfida \"La locandina vivente\".",
+      "points": 4,
+      "timestamp": "2026-08-06T10:46:57.401Z"
+    },
+    {
+      "id": "act_ab6ecbbf-5ea1-4b89-8048-692f5d355898",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha acquistato \"Penalità Punti (-5 PT)\" per 15 token. Saldo residuo: 35 token.",
+      "points": -5,
+      "timestamp": "2026-08-06T12:21:43.491Z"
+    },
+    {
+      "id": "act_26eb94cd-26ca-4599-b4b3-1f0de95d13a0",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Il regista \"justdave\" ha APERTO il Marketplace!",
+      "points": null,
+      "timestamp": "2026-08-06T12:41:28.660Z"
+    },
+    {
+      "id": "act_00178112-5715-44bf-bcdb-d9de863762e6",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Il regista \"justdave\" ha CHIUSO il Marketplace!",
+      "points": null,
+      "timestamp": "2026-08-06T12:41:31.976Z"
+    },
+    {
+      "id": "act_d77bce6c-f43d-4c3c-8d80-759c6e280d27",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Il regista \"justdave\" ha APERTO il Marketplace!",
+      "points": null,
+      "timestamp": "2026-08-06T12:41:33.024Z"
+    },
+    {
+      "id": "act_69066a22-af83-4405-8c06-217027ab8e3b",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha completato la prova \"Il Rebus Visivo\".",
+      "points": 20,
+      "timestamp": "2026-08-06T12:50:24.410Z"
+    },
+    {
+      "id": "act_3b1488c5-a676-4369-a911-9ee0c363f85a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"La Banca\".",
+      "points": null,
+      "timestamp": "2026-08-06T14:33:43.853Z"
+    },
+    {
+      "id": "act_7ac1c3c8-f93c-4b99-b1d5-c13b56d3dad9",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha risolto la sfida finale \"La Banca\" sbloccando la parola BPER!",
+      "points": 20,
+      "timestamp": "2026-08-06T14:34:32.461Z"
+    },
+    {
+      "id": "act_ae4983c8-fa58-42c0-897a-e121f8686f6c",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Missione Social\".",
+      "points": null,
+      "timestamp": "2026-08-06T14:39:54.691Z"
+    },
+    {
+      "id": "act_168f0e9a-d6e8-45ea-8c4c-747fc1ccae9e",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha inviato la \"Missione Social\" (in attesa di valutazione)",
+      "points": null,
+      "timestamp": "2026-08-06T14:40:30.071Z"
+    },
+    {
+      "id": "act_ff16427c-39fa-43ab-be77-f3ca59b7d02d",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha completato la prova \"Missione Social\".",
+      "points": 10,
+      "timestamp": "2026-08-06T14:42:27.849Z"
+    },
+    {
+      "id": "act_c2aa5c6f-4c91-4736-9407-543234d8121e",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Il Codice Segreto\".",
+      "points": null,
+      "timestamp": "2026-08-06T14:47:11.608Z"
+    },
+    {
+      "id": "act_d09b852d-79af-4b33-b0d6-edc6c4c3a577",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha acquistato il frammento dalla squadra \"Ciccioni Bislunghi\" per 4 Token. ",
+      "points": null,
+      "timestamp": "2026-08-06T14:52:25.145Z"
+    },
+    {
+      "id": "act_905f14f4-2796-4226-ad59-31dff2ba990f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha DECIFRATO IL CODICE SEGRETO ed ha completato la Tappa 3!",
+      "points": null,
+      "timestamp": "2026-08-06T14:52:49.812Z"
+    },
+    {
+      "id": "act_ce1db872-97d6-4f88-b08a-037f1c5c410d",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"La Banca\".",
+      "points": null,
+      "timestamp": "2026-08-06T15:00:38.674Z"
+    },
+    {
+      "id": "act_6916dd94-34b1-48ee-a169-bc92e50c0905",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La squadra \"Ciccioni Bislunghi\" ha risolto la sfida finale \"La Banca\" sbloccando la parola BPER!",
+      "points": 20,
+      "timestamp": "2026-08-06T15:00:53.238Z"
+    },
+    {
+      "id": "act_98d6606b-0da4-4d29-a25f-3f0997834b0c",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Missione Social\".",
+      "points": null,
+      "timestamp": "2026-08-06T15:00:56.004Z"
+    },
+    {
+      "id": "act_1e095d3e-2bf2-4d61-bf20-dbf3adb268d9",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La squadra \"Ciccioni Bislunghi\" ha inviato la \"Missione Social\" (in attesa di valutazione)",
+      "points": null,
+      "timestamp": "2026-08-06T15:01:07.029Z"
+    },
+    {
+      "id": "act_02023a55-d0b9-4770-b4dd-962da70d6220",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Il Codice Segreto\".",
+      "points": null,
+      "timestamp": "2026-08-06T15:01:09.479Z"
+    },
+    {
+      "id": "act_d833271a-2408-41f8-848e-3c3133ef26cb",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha acquistato il frammento dalla squadra \"Fost & Loud\" per 5 Token. ",
+      "points": null,
+      "timestamp": "2026-08-06T15:01:14.456Z"
+    },
+    {
+      "id": "act_303ac4d6-6ecf-452d-a2cc-a0c323c3ff2c",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La squadra \"Ciccioni Bislunghi\" ha DECIFRATO IL CODICE SEGRETO ed ha completato la Tappa 3!",
+      "points": null,
+      "timestamp": "2026-08-06T15:01:21.824Z"
+    },
+    {
+      "id": "act_8b6f2904-93dd-4ad6-bee8-d2987931223f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La regia ha modificato le informazioni per la squadra \"Fost & Loud\".",
+      "points": null,
+      "timestamp": "2026-08-06T20:07:14.600Z"
+    },
+    {
+      "id": "act_3472949c-1f88-47a0-9809-8f793dca0e8a",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Regia ha valutato la \"Missione Social\" per la squadra \"Fost & Loud\": 11/20 PT.",
+      "points": null,
+      "timestamp": "2026-08-06T20:43:07.853Z"
+    },
+    {
+      "id": "act_72374909-4987-437c-8184-ba0e14088b61",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Regia ha valutato la \"Missione Social\" per la squadra \"Ciccioni Bislunghi\": 16/20 PT.",
+      "points": null,
+      "timestamp": "2026-08-06T20:43:10.215Z"
+    },
+    {
+      "id": "act_3ebba1da-70a9-4655-9405-f9710b23304a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risolto l'enigma \"Rebus Musicale\" al tentativo 2.",
+      "points": 5,
+      "timestamp": "2026-08-10T09:25:52.590Z"
+    },
+    {
+      "id": "act_c77158e9-44ca-41c4-8cce-00a579ae9f2f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Lucchetto Direzionale\".",
+      "points": null,
+      "timestamp": "2026-08-10T09:35:24.771Z"
+    },
+    {
+      "id": "act_7f9928ca-51d3-4766-91c2-cfd7861a0698",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risolto l'enigma \"Lucchetto Direzionale\" al tentativo 2.",
+      "points": 5,
+      "timestamp": "2026-08-10T12:59:05.175Z"
+    },
+    {
+      "id": "act_5127cc8e-8071-4976-a186-47ca858f11a7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha ricevuto una penalità di -8 PT per risposta errata su \"Le Coordinate Finali\".",
+      "points": -8,
+      "timestamp": "2026-08-10T13:10:21.498Z"
+    },
+    {
+      "id": "act_4059d426-4397-4e09-830c-dae3bf67b87a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha risolto l'enigma \"Le Coordinate Finali\" al tentativo 2.",
+      "points": 5,
+      "timestamp": "2026-08-10T13:10:32.362Z"
+    },
+    {
+      "id": "act_41db6478-59ac-4804-8e4e-c78d74137a62",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Sfida Cornhole\".",
+      "points": null,
+      "timestamp": "2026-08-10T13:36:31.770Z"
+    },
+    {
+      "id": "act_87dc8844-8c68-4a04-8926-2e3e6a7fe193",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Match Cornhole match_0_0_fq9t1gumt completato con vincitore 155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "points": null,
+      "timestamp": "2026-08-10T13:36:46.630Z"
+    },
+    {
+      "id": "act_48bd7a0a-513b-4cb0-aa4e-168d4f67e926",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Rollback match Cornhole match_0_0_fq9t1gumt",
+      "points": null,
+      "timestamp": "2026-08-10T13:37:02.210Z"
+    },
+    {
+      "id": "act_92ff4e4f-1a17-43a4-ab5d-82c93f76b943",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Match Cornhole match_0_0_fq9t1gumt completato con vincitore 155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "points": null,
+      "timestamp": "2026-08-10T13:44:14.534Z"
+    },
+    {
+      "id": "act_daa9c219-882c-44f5-9d14-06b121d73dde",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Rollback match Cornhole match_0_0_fq9t1gumt",
+      "points": null,
+      "timestamp": "2026-08-10T13:44:17.280Z"
+    },
+    {
+      "id": "act_6b403cbf-7722-4b18-a2ff-d1669b03537d",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Match Cornhole match_0_0_fq9t1gumt completato con vincitore 676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "points": null,
+      "timestamp": "2026-08-10T13:49:11.429Z"
+    },
+    {
+      "id": "act_0d6854a1-dfc9-431d-9446-15e33e793957",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Boxe Gonfiabile\".",
+      "points": null,
+      "timestamp": "2026-08-10T13:57:39.063Z"
+    },
+    {
+      "id": "act_26c262ec-1b8b-46f0-b6a1-74ebf8a25ddb",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Match Boxe Gonfiabile match_boxe_0_0_0ntt9den4 completato con vincitore 676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "points": null,
+      "timestamp": "2026-08-10T14:00:09.601Z"
+    },
+    {
+      "id": "act_d692b2b5-298f-4bac-984f-206b396d7d5e",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Traguardo Finale\".",
+      "points": null,
+      "timestamp": "2026-08-10T14:00:45.695Z"
+    },
+    {
+      "id": "act_9d041697-6594-4c36-9069-25b6ff21a531",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Squadra \"Fost & Loud\" ha iniziato la prova \"Jackpot della Regia\".",
+      "points": null,
+      "timestamp": "2026-08-10T14:11:39.762Z"
+    },
+    {
+      "id": "act_3758f47f-4213-40a2-8535-ee48bbc6d3a4",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "Ha giocato al Jackpot scommettendo 10 PT: PERSA (🔔🍋🍒)",
+      "points": null,
+      "timestamp": "2026-08-10T14:14:53.685Z"
+    },
+    {
+      "id": "act_529bd060-9871-47c6-ae0d-fd4517e6d25e",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risolto l'enigma \"Rebus Musicale\" al tentativo 1.",
+      "points": 5,
+      "timestamp": "2026-08-10T14:16:10.969Z"
+    },
+    {
+      "id": "act_f2053a4c-76b5-428b-9546-10f5bdcdd14b",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risolto l'enigma \"Lucchetto Direzionale\" al tentativo 1.",
+      "points": 5,
+      "timestamp": "2026-08-10T14:16:19.003Z"
+    },
+    {
+      "id": "act_9b94c54f-ea9f-4676-9a6a-0e7b9ba912c2",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha risolto l'enigma \"Le Coordinate Finali\" al tentativo 1.",
+      "points": 5,
+      "timestamp": "2026-08-10T14:16:29.066Z"
+    },
+    {
+      "id": "act_1a78666e-9a97-4677-9a76-27e5d57448ed",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Squadra \"Ciccioni Bislunghi\" ha iniziato la prova \"Jackpot della Regia\".",
+      "points": null,
+      "timestamp": "2026-08-10T14:16:37.559Z"
+    },
+    {
+      "id": "act_84f862c8-02fa-438f-a8d8-1581c5eeee2e",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "Ha giocato al Jackpot scommettendo 20 PT: PERSA (🍋🔔🔔)",
+      "points": null,
+      "timestamp": "2026-08-10T14:16:41.819Z"
+    },
+    {
+      "id": "act_1c49abd3-73b3-4c46-ae25-eddae32a587b",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha acquistato \"RUOTA DELLA FORTUNA\" per 25 token. Risultato Ruota: \"🎯 DOPPIO PREMIO\". Saldo residuo: 31 token.",
+      "points": null,
+      "timestamp": "2026-08-10T20:19:32.299Z"
+    },
+    {
+      "id": "act_2b18a585-db64-41f3-b8fb-ceb253715bab",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha acquistato \"BONUS PUNTI\" per 40 token. Saldo residuo: 10 token.",
+      "points": null,
+      "timestamp": "2026-08-10T20:24:42.048Z"
+    },
+    {
+      "id": "act_1d91adbb-137e-46b6-b4ca-051065002e17",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha acquistato \"BONUS CLASSIFICA\" per 30 token. Saldo residuo: 20 token.",
+      "points": null,
+      "timestamp": "2026-08-10T20:40:20.033Z"
+    },
+    {
+      "id": "act_41faf79a-e08f-422b-9b8f-094e41bf4c9f",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La squadra \"Ciccioni Bislunghi\" ha acquistato \"PARTENZA ANTICIPATA\" per 35 token. Saldo residuo: 14 token.",
+      "points": null,
+      "timestamp": "2026-08-10T20:59:08.055Z"
+    },
+    {
+      "id": "act_a9df1a8b-6f09-4414-9fa7-6d7a2bd51a75",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La squadra \"Ciccioni Bislunghi\" è stata congelata da \"Fost & Loud\" per 120 secondi!",
+      "points": null,
+      "timestamp": "2026-08-11T09:00:08.041Z"
+    },
+    {
+      "id": "act_98883675-32cf-48dc-b1c2-10f0ab6e249f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "action": "La squadra \"Fost & Loud\" ha acquistato \"FREEZE 2 MINUTI\" per 20 token. Bersaglio: \"Ciccioni Bislunghi\". Risultato Ruota: \"undefined\". Saldo residuo: 0 token.",
+      "points": null,
+      "timestamp": "2026-08-11T09:00:08.041Z"
+    },
+    {
+      "id": "act_cd7259ef-2864-410b-aac3-68b63a2bd315",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "action": "La regia ha modificato le informazioni per la squadra \"Ciccioni Bislunghi\".",
+      "points": null,
+      "timestamp": "2026-08-11T09:00:34.479Z"
+    },
+    {
+      "id": "act_34dde024-a554-497c-8d18-6af245345737",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Il regista \"justdave\" ha CHIUSO il Marketplace!",
+      "points": null,
+      "timestamp": "2026-08-12T13:55:57.319Z"
+    },
+    {
+      "id": "act_9d630724-a2a6-46e2-b4d9-1cadf47114e3",
+      "team_id": "11111111-1111-1111-1111-111111111111",
+      "action": "Il regista \"justdave\" ha APERTO il Marketplace!",
+      "points": null,
+      "timestamp": "2026-08-17T13:32:39.906Z"
+    }
+  ],
+  "settings": [
+    {
+      "id": "game_status",
+      "value": "Gara attiva",
+      "updated_at": "2026-08-05T20:17:47.948Z"
+    },
+    {
+      "id": "game_started_at",
+      "value": "2026-08-05T20:09:04.332Z"
+    },
+    {
+      "id": "database_migration_version",
+      "value": "1.0.0"
+    }
+  ],
+  "team_members": [
+    {
+      "id": "d85f148d-3d1f-4ea5-a53f-2ce1ede121d7",
+      "created_at": "2026-08-05T20:39:24.067Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "name": "Anna"
+    },
+    {
+      "id": "cb2b1401-f53a-479d-aac8-1d67de05ed82",
+      "created_at": "2026-08-05T20:39:28.850Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "name": "Renger"
+    },
+    {
+      "id": "5a2defae-db19-4010-9c59-7a7ce3ceae55",
+      "created_at": "2026-08-06T00:00:08.027Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "name": "pie"
+    }
+  ],
+  "team_emoji_movies": [
+    {
+      "id": "e82899e4-a7e8-47a0-8503-1aaa5c4f3290",
+      "created_at": "2026-08-06T10:01:49.540Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 1,
+      "attempts": 1,
+      "last_answer": "venom",
+      "is_correct": true,
+      "points": 1,
+      "letter": "V",
+      "timestamp": "2026-08-06T10:01:49.533Z"
+    },
+    {
+      "id": "54d2c496-37f2-4e51-b64d-45556e25ac98",
+      "created_at": "2026-08-06T10:01:56.333Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 2,
+      "attempts": 3,
+      "last_answer": "rossq",
+      "is_correct": false,
+      "points": 0,
+      "letter": "I",
+      "timestamp": "2026-08-06T10:02:02.246Z",
+      "updated_at": "2026-08-06T10:02:02.254Z"
+    },
+    {
+      "id": "6d50ee9e-2517-4eef-b6f4-cd35fcc9ebda",
+      "created_at": "2026-08-06T10:02:22.042Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 3,
+      "attempts": 1,
+      "last_answer": "titanic",
+      "is_correct": true,
+      "points": 1,
+      "letter": "T",
+      "timestamp": "2026-08-06T10:02:22.029Z"
+    },
+    {
+      "id": "a10ac7e3-9927-41d8-8d03-488936acde7f",
+      "created_at": "2026-08-06T10:02:28.225Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 4,
+      "attempts": 3,
+      "last_answer": "tol",
+      "is_correct": false,
+      "points": 0,
+      "letter": "T",
+      "timestamp": "2026-08-06T10:02:31.306Z",
+      "updated_at": "2026-08-06T10:02:31.310Z"
+    },
+    {
+      "id": "ce97ed5f-30a3-45fb-97f0-1b87b8d1fb8f",
+      "created_at": "2026-08-06T10:02:34.717Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 5,
+      "attempts": 1,
+      "last_answer": "oceania",
+      "is_correct": true,
+      "points": 1,
+      "letter": "O",
+      "timestamp": "2026-08-06T10:02:34.707Z"
+    },
+    {
+      "id": "c144dcba-efb4-427d-8044-df11a05f2ed7",
+      "created_at": "2026-08-06T10:02:44.298Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 6,
+      "attempts": 3,
+      "last_answer": "ratatuilx",
+      "is_correct": false,
+      "points": 0,
+      "letter": "R",
+      "timestamp": "2026-08-06T10:02:48.545Z",
+      "updated_at": "2026-08-06T10:02:48.551Z"
+    },
+    {
+      "id": "b8442863-3140-4e05-bb96-6d671aeeb008",
+      "created_at": "2026-08-06T10:02:52.354Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 7,
+      "attempts": 1,
+      "last_answer": "it",
+      "is_correct": true,
+      "points": 1,
+      "letter": "I",
+      "timestamp": "2026-08-06T10:02:52.346Z"
+    },
+    {
+      "id": "b2e33440-75c3-4674-8892-a7a261b8c120",
+      "created_at": "2026-08-06T10:02:57.331Z",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "movie_index": 8,
+      "attempts": 1,
+      "last_answer": "avatar",
+      "is_correct": true,
+      "points": 1,
+      "letter": "A",
+      "timestamp": "2026-08-06T10:02:57.320Z"
+    },
+    {
+      "id": "e7a2c62e-6290-4722-aee7-5017babf5f27",
+      "created_at": "2026-08-06T10:38:24.263Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 1,
+      "attempts": 1,
+      "last_answer": "venom",
+      "is_correct": true,
+      "points": 1,
+      "letter": "V",
+      "timestamp": "2026-08-06T10:38:24.256Z"
+    },
+    {
+      "id": "0d4ba49f-be5d-413b-983f-6d71a5652974",
+      "created_at": "2026-08-06T10:38:27.685Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 2,
+      "attempts": 1,
+      "last_answer": "inside out",
+      "is_correct": true,
+      "points": 1,
+      "letter": "I",
+      "timestamp": "2026-08-06T10:38:27.682Z"
+    },
+    {
+      "id": "b1f50fce-79ad-480e-b1ba-6c78700f7d0b",
+      "created_at": "2026-08-06T10:38:30.886Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 3,
+      "attempts": 1,
+      "last_answer": "titanic",
+      "is_correct": true,
+      "points": 1,
+      "letter": "T",
+      "timestamp": "2026-08-06T10:38:30.880Z"
+    },
+    {
+      "id": "5f3ee571-2b35-4cc8-818b-904330d57ba0",
+      "created_at": "2026-08-06T10:38:35.853Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 4,
+      "attempts": 1,
+      "last_answer": "toy story",
+      "is_correct": true,
+      "points": 1,
+      "letter": "T",
+      "timestamp": "2026-08-06T10:38:35.847Z"
+    },
+    {
+      "id": "474d5de5-4ee5-45c7-bdc1-ff4840303b5b",
+      "created_at": "2026-08-06T10:38:42.429Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 5,
+      "attempts": 1,
+      "last_answer": "oceania",
+      "is_correct": true,
+      "points": 1,
+      "letter": "O",
+      "timestamp": "2026-08-06T10:38:42.424Z"
+    },
+    {
+      "id": "da6650fa-1eee-4ec8-bf21-3dc760ee9eaa",
+      "created_at": "2026-08-06T10:38:45.949Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 6,
+      "attempts": 3,
+      "last_answer": "ratatuill1",
+      "is_correct": false,
+      "points": 0,
+      "letter": "R",
+      "timestamp": "2026-08-06T10:38:48.547Z",
+      "updated_at": "2026-08-06T10:38:48.552Z"
+    },
+    {
+      "id": "c2dc04e1-cc3c-4ff4-9ae7-a3003e181837",
+      "created_at": "2026-08-06T10:38:50.758Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 7,
+      "attempts": 1,
+      "last_answer": "it",
+      "is_correct": true,
+      "points": 1,
+      "letter": "I",
+      "timestamp": "2026-08-06T10:38:50.752Z"
+    },
+    {
+      "id": "fd2000f4-9057-4cd3-895a-7545c9c519bc",
+      "created_at": "2026-08-06T10:38:53.359Z",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "movie_index": 8,
+      "attempts": 1,
+      "last_answer": "avatar",
+      "is_correct": true,
+      "points": 1,
+      "letter": "A",
+      "timestamp": "2026-08-06T10:38:53.352Z"
+    }
+  ],
+  "posters": [
+    {
+      "id": "poster_01",
+      "file_name": "Poster1.jpg",
+      "titolo": "Indiana Jones",
+      "active": true
+    },
+    {
+      "id": "poster_02",
+      "file_name": "Poster2.jpg",
+      "titolo": "Back to the Future",
+      "active": true
+    },
+    {
+      "id": "poster_03",
+      "file_name": "Poster3.jpg",
+      "titolo": "Star Wars",
+      "active": true
+    },
+    {
+      "id": "poster_04",
+      "file_name": "Poster4.jpg",
+      "titolo": "Jurassic Park",
+      "active": true
+    },
+    {
+      "id": "poster_05",
+      "file_name": "Poster5.jpg",
+      "titolo": "Titanic",
+      "active": true
+    },
+    {
+      "id": "poster_06",
+      "file_name": "Poster6.jpg",
+      "titolo": "Pulp Fiction",
+      "active": true
+    },
+    {
+      "id": "poster_07",
+      "file_name": "Poster7.jpg",
+      "titolo": "The Matrix",
+      "active": true
+    },
+    {
+      "id": "poster_08",
+      "file_name": "Poster8.jpg",
+      "titolo": "Forrest Gump",
+      "active": true
+    },
+    {
+      "id": "poster_09",
+      "file_name": "Poster9.jpg",
+      "titolo": "E.T.",
+      "active": true
+    },
+    {
+      "id": "poster_10",
+      "file_name": "Poster10.jpg",
+      "titolo": "The Godfather",
+      "active": true
+    }
+  ],
+  "team_posters": [
+    {
+      "id": "3f132765-e0e0-4c90-a26c-32bd180298ca",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "poster_id": "poster_09",
+      "assigned_at": "2026-08-06T10:34:18.367Z"
+    },
+    {
+      "id": "c129522e-d82c-415b-a762-1435af03b158",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "poster_id": "poster_10",
+      "assigned_at": "2026-08-06T10:38:56.335Z"
+    }
+  ],
+  "marketplace_transactions": [],
+  "marketplace_items": [
+    {
+      "id": "bonus_punti",
+      "nome": "BONUS PUNTI",
+      "categoria": "BONUS",
+      "descrizione": "Un grande vantaggio per scalare la classifica. Usa questo bonus nel momento decisivo.",
+      "costo_token": 40,
+      "active": true
+    },
+    {
+      "id": "bonus_scudo",
+      "nome": "BONUS SCUDO",
+      "categoria": "BONUS",
+      "descrizione": "Uno scudo invisibile protegge il vostro viaggio dagli attacchi degli avversari.",
+      "costo_token": 35,
+      "active": true
+    },
+    {
+      "id": "ruota_fortuna",
+      "nome": "RUOTA DELLA FORTUNA",
+      "categoria": "BONUS",
+      "descrizione": "La fortuna decide il vostro destino. Siete pronti a rischiare?",
+      "costo_token": 25,
+      "active": true
+    },
+    {
+      "id": "passaparola",
+      "nome": "PASSAPAROLA",
+      "categoria": "BONUS",
+      "descrizione": "Permette di chiamare l'organizzatore una volta per ricevere un indizio extra SÌ/NO su qualsiasi enigma bloccato.",
+      "costo_token": 20,
+      "active": true
+    },
+    {
+      "id": "bonus_classifica",
+      "nome": "BONUS CLASSIFICA",
+      "categoria": "BONUS",
+      "descrizione": "Visualizza temporaneamente la classifica generale.",
+      "costo_token": 30,
+      "active": true
+    },
+    {
+      "id": "partenza_anticipata",
+      "nome": "PARTENZA ANTICIPATA",
+      "categoria": "BONUS",
+      "descrizione": "-2 minuti sulla partenza. Comunica alla Regia per utilizzarlo.",
+      "costo_token": 35,
+      "active": true
+    },
+    {
+      "id": "freeze_2min",
+      "nome": "FREEZE 2 MINUTI",
+      "categoria": "MALUS",
+      "descrizione": "Il tempo si ferma per i vostri rivali.",
+      "costo_token": 20,
+      "active": true
+    },
+    {
+      "id": "enigma_extra",
+      "nome": "ENIGMA EXTRA",
+      "categoria": "MALUS",
+      "descrizione": "La squadra bersaglio deve completare un enigma aggiuntivo prima di continuare.",
+      "costo_token": 25,
+      "active": true
+    },
+    {
+      "id": "ruota_sfortunata",
+      "nome": "RUOTA SFORTUNATA",
+      "categoria": "MALUS",
+      "descrizione": "La squadra bersaglio deve girare una ruota con possibili penalità casuali.",
+      "costo_token": 20,
+      "active": true
+    },
+    {
+      "id": "trappola",
+      "nome": "TRAPPOLA",
+      "categoria": "MALUS",
+      "descrizione": "Ruba fino a 30 Punti Squadra a una squadra avversaria.",
+      "costo_token": 40,
+      "active": true
+    },
+    {
+      "id": "penalita_punti",
+      "nome": "PENALITÀ PUNTI (-20 PT)",
+      "categoria": "MALUS",
+      "descrizione": "−20 PT",
+      "costo_token": 30,
+      "active": true
+    },
+    {
+      "id": "tassa_passaggio",
+      "nome": "TASSA DI PASSAGGIO",
+      "categoria": "MALUS",
+      "descrizione": "Scambia integralmente i Punti Squadra correnti con quelli di una squadra avversaria.",
+      "costo_token": 70,
+      "active": true
+    }
+  ],
+  "game_settings": [
+    {
+      "id": "settings_01",
+      "marketplace_visible": true,
+      "marketplace_active": true,
+      "activated_at": "2026-08-17T13:32:39.905Z",
+      "activated_by": "11111111-1111-1111-1111-111111111111",
+      "cornhole_special_bye_team_id": null,
+      "boxe_special_bye_team_id": null
+    }
+  ],
+  "challenge_answers": [
+    {
+      "id": "ans_1",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 1,
+      "question_text": "Lo usi per prelevare contanti senza fare la fila allo sportello",
+      "correct_answer": "BANCOMAT",
+      "extracted_letter": "B"
+    },
+    {
+      "id": "ans_2",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 2,
+      "question_text": "Il codice segreto a 4 cifre che non devi mai dire a nessuno",
+      "correct_answer": "PIN",
+      "extracted_letter": "P"
+    },
+    {
+      "id": "ans_3",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 3,
+      "question_text": "La moneta che hai in tasca in tutta Europa",
+      "correct_answer": "EURO",
+      "extracted_letter": "E"
+    },
+    {
+      "id": "ans_4",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 4,
+      "question_text": "La scadenza mensile del mutuo, incubo di ogni famiglia",
+      "correct_answer": "RATA",
+      "extracted_letter": "R"
+    }
+  ],
+  "team_challenge_progress": [
+    {
+      "id": "e617900b-f5fa-4f87-8370-f17af6f682e2",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "status": "COMPLETED",
+      "attempts": 4,
+      "created_at": "2026-08-06T14:34:12.260Z",
+      "completed_at": "2026-08-06T14:34:32.461Z",
+      "time_completed": 20
+    },
+    {
+      "id": "a657114d-19bd-4515-9a8f-de5e5ff5877f",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "status": "COMPLETED",
+      "attempts": 1,
+      "created_at": "2026-08-06T14:52:49.812Z",
+      "completed_at": "2026-08-06T14:52:49.812Z"
+    },
+    {
+      "id": "738e65b4-6042-4181-a668-53a6b02302b5",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "status": "COMPLETED",
+      "attempts": 4,
+      "created_at": "2026-08-06T15:00:45.356Z",
+      "completed_at": "2026-08-06T15:00:53.238Z",
+      "time_completed": 8
+    },
+    {
+      "id": "80898b18-5e9b-46d8-8543-898cdd62f476",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "status": "COMPLETED",
+      "attempts": 1,
+      "created_at": "2026-08-06T15:01:07.029Z",
+      "completed_at": "2026-08-06T15:01:07.029Z"
+    },
+    {
+      "id": "1726d9bb-359f-498e-bdd3-dafbfa9c3241",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
+      "status": "COMPLETED",
+      "attempts": 1,
+      "created_at": "2026-08-06T15:01:21.823Z",
+      "completed_at": "2026-08-06T15:01:21.823Z"
+    }
+  ],
+  "team_challenge_answers": [
+    {
+      "id": "34033f4c-bc2d-43ab-a4e4-9ea5e6276767",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 1,
+      "answer": "BANCOMAT",
+      "correct": true,
+      "extracted_letter": "B",
+      "created_at": "2026-08-06T14:34:12.260Z"
+    },
+    {
+      "id": "3500b238-ceef-485a-8694-d93f8e424551",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 2,
+      "answer": "PIN",
+      "correct": true,
+      "extracted_letter": "P",
+      "created_at": "2026-08-06T14:34:23.881Z"
+    },
+    {
+      "id": "38d71946-bca9-4419-a624-eaa09ece70b7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 3,
+      "answer": "EURO",
+      "correct": true,
+      "extracted_letter": "E",
+      "created_at": "2026-08-06T14:34:29.222Z"
+    },
+    {
+      "id": "223522de-e681-4c30-92c7-6eb0fad7b594",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 4,
+      "answer": "RATA",
+      "correct": true,
+      "extracted_letter": "R",
+      "created_at": "2026-08-06T14:34:32.461Z"
+    },
+    {
+      "id": "a9f798bf-277f-4609-a321-a8d4197a2b02",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 1,
+      "answer": "BANCOMAT",
+      "correct": true,
+      "extracted_letter": "B",
+      "created_at": "2026-08-06T15:00:45.356Z"
+    },
+    {
+      "id": "78342ec5-682f-4717-bce7-a9fc85d768f8",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 2,
+      "answer": "PIN",
+      "correct": true,
+      "extracted_letter": "P",
+      "created_at": "2026-08-06T15:00:48.179Z"
+    },
+    {
+      "id": "72221305-bce4-4aac-a552-942c4b8febd0",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 3,
+      "answer": "EURO",
+      "correct": true,
+      "extracted_letter": "E",
+      "created_at": "2026-08-06T15:00:50.490Z"
+    },
+    {
+      "id": "02d382e2-f70b-403d-be04-e78ff95aca1a",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6",
+      "question_number": 4,
+      "answer": "RATA",
+      "correct": true,
+      "extracted_letter": "R",
+      "created_at": "2026-08-06T15:00:53.238Z"
+    }
+  ],
+  "team_social_submissions": [
+    {
+      "id": "2c5a4c22-cf33-416f-8a2f-7fdd84680c41",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "image_1_url": "676dfae3-e0c8-4d50-8555-b5a61472522a/social-1-1786027229991.png",
+      "image_2_url": "676dfae3-e0c8-4d50-8555-b5a61472522a/social-2-1786027230060.png",
+      "uploaded_at": "2026-08-06T14:40:30.071Z",
+      "status": "approved",
+      "admin_score": 11
+    },
+    {
+      "id": "42bb39b7-d474-4200-9abb-2857812a1cf0",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
+      "image_1_url": "155e40fe-29ea-47dc-8f23-37f3fa560049/social-1-1786028466962.png",
+      "image_2_url": "155e40fe-29ea-47dc-8f23-37f3fa560049/social-2-1786028466978.png",
+      "uploaded_at": "2026-08-06T15:01:07.029Z",
+      "status": "approved",
+      "admin_score": 16
+    }
+  ],
+  "game_final_code": [
+    {
+      "id": "cf86442e-d0a1-4ffa-a1c5-b71dc05af1a3",
+      "full_code": "4829167305",
+      "next_stage_destination": "Parco Giochi Madonna dei Fiori (lato piazzale grigio)",
+      "created_at": "2026-08-06T14:43:18.659Z"
+    }
+  ],
+  "team_code_parts": [
+    {
+      "id": "335cd830-dfa3-43dc-abda-8e4f4cc13a1a",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "code_part": "48291",
+      "part_type": "FIRST_5",
+      "assigned_at": "2026-08-06T14:47:11.603Z"
+    },
+    {
+      "id": "1252de7a-2048-443f-8947-321f2e3b55b9",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "code_part": "67305",
+      "part_type": "LAST_5",
+      "assigned_at": "2026-08-06T15:01:09.476Z"
+    }
+  ],
+  "team_code_matches": [
+    {
+      "buyer_team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "seller_team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "required_part": "LAST_5",
+      "token_cost": 4,
+      "created_at": "2026-08-06T14:47:11.604Z"
+    },
+    {
+      "buyer_team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "seller_team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "required_part": "FIRST_5",
+      "token_cost": 5,
+      "created_at": "2026-08-06T15:01:09.477Z"
+    }
+  ],
+  "code_purchase_transactions": [
+    {
+      "id": "bbfa24c8-3d97-4d0a-8713-a38ddaa769ef",
+      "buyer_team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "seller_team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "token_cost": 4,
+      "digits_received": "67305",
+      "timestamp": "2026-08-06T14:52:25.145Z"
+    },
+    {
+      "id": "b3cee3c3-5f04-45f8-8ba0-0eb4643cc292",
+      "buyer_team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "seller_team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "token_cost": 5,
+      "digits_received": "48291",
+      "timestamp": "2026-08-06T15:01:14.456Z"
+    }
+  ],
+  "pin_attempts": [
+    {
+      "id": "f51047b6-e946-46fb-8007-e0ec155b6c73",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "inserted_code": "4829167305",
+      "timestamp": "2026-08-06T14:52:49.812Z",
+      "success": true
+    },
+    {
+      "id": "d6d732cd-bc9e-49ac-8116-4c9c98679134",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "inserted_code": "4829167305",
+      "timestamp": "2026-08-06T15:01:21.823Z",
+      "success": true
+    }
+  ],
+  "enigma_attempts": [
+    {
+      "id": "9ee7db3d-d22f-456f-8d8a-1c4c4a12b40e",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "attempt_number": 1,
+      "answer": [
+        "Do",
+        "Re#",
+        "Sol"
+      ],
+      "is_correct": false,
+      "submitted_at": "2026-08-10T09:25:43.776Z"
+    },
+    {
+      "id": "eef5b049-e71e-4869-9466-8655b5af77f0",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "attempt_number": 2,
+      "answer": [
+        "La",
+        "Do",
+        "Re"
+      ],
+      "is_correct": true,
+      "submitted_at": "2026-08-10T09:25:52.590Z"
+    },
+    {
+      "id": "e1dd455a-f3c2-44b0-a674-480f09bb51e0",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "attempt_number": 1,
+      "answer": [
+        "nord",
+        "sud",
+        "ovest",
+        "sud-est"
+      ],
+      "is_correct": false,
+      "submitted_at": "2026-08-10T12:58:38.025Z"
+    },
+    {
+      "id": "1d33e1de-1759-4ec5-9a0d-343b78bbeef7",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "attempt_number": 2,
+      "answer": [
+        "nord-ovest",
+        "sud",
+        "ovest",
+        "est"
+      ],
+      "is_correct": true,
+      "submitted_at": "2026-08-10T12:59:05.175Z"
+    },
+    {
+      "id": "ae1f6c6d-fe96-4b9f-926c-e6b7e5236394",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "attempt_number": 1,
+      "answer": {
+        "lat": "44.12",
+        "lng": "7.34"
+      },
+      "is_correct": false,
+      "submitted_at": "2026-08-10T13:10:21.497Z"
+    },
+    {
+      "id": "46502b6e-1634-49ab-b291-0140ed516d50",
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "attempt_number": 2,
+      "answer": {
+        "lat": "44.71",
+        "lng": "7.84"
+      },
+      "is_correct": true,
+      "submitted_at": "2026-08-10T13:10:32.362Z"
+    },
+    {
+      "id": "6e0dfe24-bb1e-4d99-937e-1896a1d3ad4f",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "attempt_number": 1,
+      "answer": [
+        "La",
+        "Do",
+        "Re"
+      ],
+      "is_correct": true,
+      "submitted_at": "2026-08-10T14:16:10.969Z"
+    },
+    {
+      "id": "9dde77bd-17ce-4e63-97cf-04843bf11608",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "attempt_number": 1,
+      "answer": [
+        "nord-ovest",
+        "sud",
+        "ovest",
+        "est"
+      ],
+      "is_correct": true,
+      "submitted_at": "2026-08-10T14:16:19.003Z"
+    },
+    {
+      "id": "1c0a5282-70b0-4658-b58f-b02c4674e913",
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "attempt_number": 1,
+      "answer": {
+        "lat": "44.71",
+        "lng": "7.84"
+      },
+      "is_correct": true,
+      "submitted_at": "2026-08-10T14:16:29.066Z"
+    }
+  ],
+  "enigma_solutions": [
+    {
+      "id": "sol_enigma1",
+      "challenge_id": "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+      "solution_type": "notes",
+      "solution": [
+        "La",
+        "Do",
+        "Re"
+      ],
+      "punteggio": 5
+    },
+    {
+      "id": "sol_enigma2",
+      "challenge_id": "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+      "solution_type": "directions",
+      "solution": [
+        "nord-ovest",
+        "sud",
+        "ovest",
+        "est"
+      ],
+      "punteggio": 5
+    },
+    {
+      "id": "sol_enigma3",
+      "challenge_id": "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+      "solution_type": "coordinates",
+      "solution": {
+        "lat": "44.71",
+        "lng": "7.84"
+      },
+      "punteggio": 5
+    }
+  ],
+  "cornhole_matches": [
+    {
+      "id": "match_0_0_fq9t1gumt",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
+      "round": 0,
+      "match_index": 0,
+      "team1_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "team2_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "winner_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "status": "completed",
+      "completed_at": "2026-08-10T13:49:11.429Z"
+    }
+  ],
+  "boxe_matches": [
+    {
+      "id": "match_boxe_0_0_0ntt9den4",
+      "stage_id": "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c",
+      "challenge_id": "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
+      "round": 0,
+      "match_index": 0,
+      "team1_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "team2_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "winner_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "status": "completed",
+      "completed_at": "2026-08-10T14:00:09.600Z",
+      "is_special_bye": false
+    }
+  ],
+  "jackpot_plays": [
+    {
+      "team_id": "676dfae3-e0c8-4d50-8555-b5a61472522a",
+      "challenge_id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "puntata": 10,
+      "simboli": "🔔,🍋,🍒",
+      "risultato": "persa",
+      "variazione": -10,
+      "punteggio_precedente": 349,
+      "punteggio_attuale": 339,
+      "timestamp": "2026-08-10T14:14:53.685Z"
+    },
+    {
+      "team_id": "155e40fe-29ea-47dc-8f23-37f3fa560049",
+      "challenge_id": "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
+      "puntata": 20,
+      "simboli": "🍋,🔔,🔔",
+      "risultato": "persa",
+      "variazione": -20,
+      "punteggio_precedente": 349,
+      "punteggio_attuale": 329,
+      "timestamp": "2026-08-10T14:16:41.818Z"
+    }
+  ],
+  "time_penalties": [],
+  "cattiveria_ledger": [],
+  "game_report": {
+    "state": "PRIVATE_LIVE",
+    "published_at": null,
+    "published_by": null,
+    "snapshot": null
+  }
+}
