@@ -41,6 +41,13 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-accent: var(--secondary);
+  --color-sidebar-accent-foreground: var(--secondary-foreground);
   --font-display: "Bebas Neue", system-ui, sans-serif;
   --font-sans: "Manrope", system-ui, sans-serif;
 }
@@ -70,6 +77,9 @@
   --border: oklch(0.34 0.035 258);
   --input: oklch(0.3 0.035 258);
   --ring: oklch(0.72 0.19 45);
+  --sidebar: oklch(0.19 0.035 258);
+  --sidebar-foreground: oklch(0.97 0.01 95);
+  --sidebar-border: oklch(0.34 0.035 258);
 
   --gradient-hero: linear-gradient(
     150deg,

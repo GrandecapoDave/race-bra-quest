@@ -111,16 +111,22 @@ function AppShellInner({
   children: ReactNode;
   isAdmin?: boolean | undefined;
 }) {
-  const { toggleSidebar, state } = useSidebar();
+  const { toggleSidebar, setOpenMobile, isMobile, state } = useSidebar();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const online = useOnline();
+
+  const closeMobileMenu = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   // These classes are applied directly to the <Link> via activeProps / className.
   // They MUST NOT override padding/size since sidebarMenuButtonVariants handles
   // those via `group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2`.
   const activeLinkClass =
-    "bg-orange-500/12 text-white font-semibold rounded-lg shadow-sm";
+    "bg-orange-500/15 text-orange-400 font-bold rounded-lg shadow-sm";
   const inactiveLinkClass =
     "text-slate-400 hover:text-white hover:bg-white/6 transition-all duration-200 rounded-lg";
 
@@ -518,15 +524,16 @@ function AppShellInner({
 
   return (
     <div className="flex min-h-screen w-full">
-      {/* Sidebar — transparent so it blends with the page background */}
+      {/* Sidebar */}
       <Sidebar
         collapsible="icon"
-        className="border-r border-white/[0.06] bg-transparent"
+        className="border-r border-white/[0.08] bg-[#0c1017] text-white shadow-2xl"
       >
         {/* ── Brand header ── */}
-        <SidebarHeader className="px-3 py-5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-4">
+        <SidebarHeader className="px-3 pt-6 pb-4 safe-top group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-4">
           <Link
-            to="/dashboard"
+            to={isAdmin ? "/admin" : "/dashboard"}
+            onClick={closeMobileMenu}
             className="flex items-center gap-3 px-1 py-0.5 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
           >
             {/* Orange icon badge — always visible */}
@@ -543,7 +550,7 @@ function AppShellInner({
         <SidebarContent className="px-2 py-1">
           {/* ── Primary nav group ── */}
           <SidebarGroup className="p-0">
-            <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/25 group-data-[collapsible=icon]:hidden select-none">
+            <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/35 group-data-[collapsible=icon]:hidden select-none">
               {isAdmin ? "Regia" : "Gara"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -553,6 +560,7 @@ function AppShellInner({
                     <SidebarMenuButton asChild tooltip={item.label}>
                       <Link
                         to={item.to}
+                        onClick={closeMobileMenu}
                         activeProps={{ className: activeLinkClass }}
                         className={inactiveLinkClass}
                       >
@@ -582,7 +590,7 @@ function AppShellInner({
           {!isAdmin && (
             <SidebarGroup className="mt-4 p-0">
               <div className="mx-2 mb-3 h-px bg-white/[0.07]" />
-              <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/25 group-data-[collapsible=icon]:hidden select-none">
+              <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/35 group-data-[collapsible=icon]:hidden select-none">
                 Riepilogo
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -592,6 +600,7 @@ function AppShellInner({
                       <SidebarMenuButton asChild tooltip={item.label}>
                         <Link
                           to={item.to}
+                          onClick={closeMobileMenu}
                           activeProps={{ className: activeLinkClass }}
                           className={inactiveLinkClass}
                         >
@@ -613,17 +622,20 @@ function AppShellInner({
         </SidebarContent>
 
         {/* ── Footer — Logout ── */}
-        <SidebarFooter className="px-2 pb-3 pt-2">
+        <SidebarFooter className="px-2 pb-8 pt-2 safe-bottom">
           <div className="mx-2 mb-2 h-px bg-white/[0.07]" />
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                onClick={signOut}
+                onClick={() => {
+                  closeMobileMenu();
+                  signOut();
+                }}
                 tooltip="Esci"
-                className="text-slate-500 hover:text-red-400 hover:bg-red-500/8 transition-all duration-200 rounded-lg"
+                className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 rounded-lg py-2.5"
               >
                 <LogOut className="size-[17px] shrink-0" strokeWidth={1.8} />
-                <span className="text-[13px] tracking-wide group-data-[collapsible=icon]:hidden">
+                <span className="text-[13px] font-semibold tracking-wide group-data-[collapsible=icon]:hidden">
                   Esci
                 </span>
               </SidebarMenuButton>
