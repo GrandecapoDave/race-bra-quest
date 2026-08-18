@@ -134,6 +134,73 @@ function AppShellInner({
   const [showUnluckyPrize, setShowUnluckyPrize] = useState(false);
   const [unluckyOutcome, setUnluckyOutcome] = useState<any>(null);
 
+  // Manual Refresh state & handlers (especially useful when installed as mobile PWA/standalone)
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+      await queryClient.refetchQueries();
+      toast.success("Dati aggiornati con successo", { duration: 2000 });
+    } catch {
+      window.location.reload();
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
+    }
+  };
+
+  const handleHardRefresh = () => {
+    toast.info("Ricaricamento completo...");
+    setTimeout(() => {
+      window.location.reload();
+    }, 200);
+  };
+
+  // Mobile pull-to-refresh listener for standalone Home Screen mode
+  useEffect(() => {
+    let startY = 0;
+    let isPulling = false;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (window.scrollY <= 5 && e.touches.length === 1 && touch) {
+        startY = touch.clientY;
+        isPulling = true;
+      } else {
+        isPulling = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!isPulling || !touch) return;
+      const currentY = touch.clientY;
+      const diffY = currentY - startY;
+      if (diffY > 110 && window.scrollY <= 5) {
+        isPulling = false;
+        handleManualRefresh();
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isPulling = false;
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
+
   // Query database state to determine if Marketplace is unlocked and active
   const team = useQuery({ ...myTeamQuery, enabled: !isAdmin });
 
@@ -572,19 +639,40 @@ function AppShellInner({
             <div className="flex items-center gap-2">
               <SidebarTrigger />
               <Link
-                to="/dashboard"
+                to={isAdmin ? "/admin" : "/dashboard"}
                 className="text-xl leading-none md:hidden font-display tracking-wide uppercase"
               >
                 PECHINO EXPRESS <span className="text-primary">BRA</span>
               </Link>
             </div>
-            <button
-              onClick={signOut}
-              className="rounded-full border border-white/10 p-2 text-slate-500 transition-all duration-200 hover:text-red-400 hover:border-red-500/30 active:scale-95 cursor-pointer"
-              aria-label="Esci"
-            >
-              <LogOut className="size-4" strokeWidth={1.8} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleManualRefresh}
+                onDoubleClick={handleHardRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-all duration-200 hover:text-primary hover:border-primary/40 hover:bg-primary/10 active:scale-95 cursor-pointer disabled:opacity-50"
+                aria-label="Aggiorna dati e schermata"
+                title="Tocca per aggiornare i dati • Doppio tocco per ricaricare la pagina"
+              >
+                <RefreshCw
+                  className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`}
+                  strokeWidth={2}
+                />
+                <span className="text-[11px] font-bold uppercase tracking-wider hidden xs:inline">
+                  {isRefreshing ? "Aggiorno..." : "Aggiorna"}
+                </span>
+              </button>
+
+              <button
+                onClick={signOut}
+                className="rounded-full border border-white/10 p-2 text-slate-500 transition-all duration-200 hover:text-red-400 hover:border-red-500/30 active:scale-95 cursor-pointer"
+                aria-label="Esci"
+                title="Esci"
+              >
+                <LogOut className="size-4" strokeWidth={1.8} />
+              </button>
+            </div>
           </div>
           {!online && (
             <div className="flex items-center justify-center gap-2 bg-destructive/20 py-1.5 text-xs font-bold text-destructive">
