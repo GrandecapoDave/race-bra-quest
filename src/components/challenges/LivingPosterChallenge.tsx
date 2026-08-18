@@ -119,18 +119,15 @@ export function LivingPosterChallenge({
       
       if (upErr) throw new Error(upErr.message);
 
-      // Insert submission row — auto_approved so team never blocks
       const { error: insErr } = await (supabase as any).from("submissions").insert({
         team_id: team.id,
         challenge_id: challenge.id,
-        poster_id: poster.id,
-        poster_file_name: poster.file_name,
-        file_upload: path,
-        risposta: "living_poster",
+        url: path,
+        tipo: "living_poster",
         latitude: coords.lat,
         longitude: coords.lng,
-        stato_approvazione: "auto_approved", // team proceeds immediately; admin assigns score later
-        voto: null,
+        stato_approvazione: "approved", // team proceeds immediately
+        note: `Locandina: ${poster.titolo}`,
       });
 
       if (insErr) throw new Error(insErr.message);

@@ -56,11 +56,11 @@ export function PhotoChallenge({
       const { error } = await (supabase as any).from("submissions").insert({
         team_id: team.id,
         challenge_id: challenge.id,
-        file_upload: path,
-        risposta: "photo",
+        url: path,
+        tipo: "photo",
         latitude: coords.lat,
         longitude: coords.lng,
-        stato_approvazione: "auto_approved", // auto-approved: team proceeds immediately
+        stato_approvazione: "approved", // approved: team proceeds immediately
       });
       if (error) throw new Error(error.message);
       toast.success("Foto caricata! La prova è completata.");

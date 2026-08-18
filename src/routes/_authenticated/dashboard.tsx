@@ -188,9 +188,8 @@ function Dashboard() {
     );
   }
 
-  const ranked = rankLeaderboard(board.data ?? []);
-  const position = ranked.findIndex((r) => r.team_id === team.data?.id) + 1;
-  const myScore = ranked.find((r) => r.team_id === team.data?.id);
+  const myScore = board.data?.find((r) => r.team_id === team.data?.id);
+  const position = myScore?.rank ?? (rankLeaderboard(board.data ?? []).findIndex((r) => r.team_id === team.data?.id) + 1);
 
   const allChallenges = challenges.data ?? [];
   const allChallengeIds = new Set(allChallenges.map((c) => c.id));

@@ -112,6 +112,7 @@ export type LeaderboardRow = {
   active?: boolean;
   freeze_started_at?: string | null;
   freeze_expires_at?: string | null;
+  rank?: number;
 };
 
 export type RaceSession = {
@@ -136,8 +137,8 @@ export const stagesQuery = queryOptions({
     const raw = unwrap<any[]>(
       await (supabase as any)
         .from("stages")
-        .select("id,title:nome_tappa,description:descrizione,order_index:ordine,latitude,longitude,stato,outcome")
-        .order("ordine"),
+        .select("id,title:titolo,description:descrizione,order_index:numero_tappa,latitude,longitude,stato,outcome")
+        .order("numero_tappa"),
     );
     return raw.map((s) => ({
       ...s,
@@ -153,8 +154,8 @@ export const challengesQuery = queryOptions({
     unwrap<any[]>(
       await (supabase as any)
         .from("challenges")
-        .select("id,stage_id,title:titolo,description:descrizione,type:tipo_sfida,order_index:ordine,points:punteggio_massimo")
-        .order("ordine"),
+        .select("id,stage_id,title:titolo,description:descrizione,type:tipo_sfida,order_index:ordine_sfida,points:punteggio_massimo")
+        .order("ordine_sfida"),
     ) as Challenge[],
 });
 
@@ -164,7 +165,7 @@ export const allTeamsQuery = queryOptions({
   queryFn: async (): Promise<Array<{ id: string; name: string; avatar_url: string | null; color: string | null }>> => {
     const { data, error } = await (supabase as any)
       .from("teams")
-      .select("id,name:nome_squadra,avatar_url,color");
+      .select("id,name:nome_squadra,avatar_url,color:colore");
     if (error) {
       console.warn("[race] allTeamsQuery error:", error);
       return [];
@@ -184,7 +185,7 @@ export const myTeamQuery = queryOptions({
     if (!idData) return null;
     const { data, error } = await (supabase as any)
       .from("teams")
-      .select("id,name:nome_squadra,motto,avatar_url,color,created_at,token_balance")
+      .select("id,name:nome_squadra,motto,avatar_url,color:colore,created_at,token_balance")
       .eq("id", idData as string)
       .maybeSingle();
     if (error) {
@@ -208,15 +209,14 @@ export const myTeamQuery = queryOptions({
 export const leaderboardQuery = queryOptions({
   queryKey: ["leaderboard"],
   staleTime: 0,
-  queryFn: async () =>
-    unwrap<LeaderboardRow[]>(
-      await (supabase as any)
-        .from("leaderboard")
-        .select(
-          "team_id,name,color,avatar_url,motto,challenges_points,modifier_points,cattiveria_points,total_points,completed_challenges,total_duration_seconds,last_completion,active,freeze_started_at,freeze_expires_at",
-        )
-        .order("total_points", { ascending: false }),
-    ),
+  queryFn: async () => {
+    const { data, error } = await (supabase as any).rpc("get_secure_leaderboard");
+    if (error) {
+      console.warn("[race] leaderboardQuery error:", error);
+      return [];
+    }
+    return data as LeaderboardRow[];
+  },
   refetchInterval: 20000,
 });
 
@@ -229,7 +229,7 @@ export const progressQuery = (teamId: string | undefined) =>
       unwrap<any[]>(
         await (supabase as any)
           .from("team_progress")
-          .select("id,team_id,challenge_id,status:stato,started_at,completed_at:completata_at")
+          .select("id,team_id,challenge_id,status:stato,started_at:created_at,completed_at:completata_il")
           .eq("team_id", teamId!),
       ) as Progress[],
   });
@@ -242,7 +242,7 @@ export const scoreEventsQuery = (teamId: string | undefined) =>
       unwrap<any[]>(
         await (supabase as any)
           .from("scores")
-          .select("id,points:punti,reason:motivazione,created_at")
+          .select("id,points:punti,reason:motivo,created_at")
           .eq("team_id", teamId!)
           .order("created_at", { ascending: false })
           .limit(40),
@@ -295,9 +295,9 @@ export const mediaQuery = (teamId: string | undefined) =>
       unwrap<any[]>(
         await (supabase as any)
           .from("submissions")
-          .select("id,url:file_upload,type:risposta,latitude,longitude,created_at:timestamp,challenge_id")
+          .select("id,url,type:tipo,latitude,longitude,created_at,challenge_id")
           .eq("team_id", teamId!)
-          .order("timestamp", { ascending: false }),
+          .order("created_at", { ascending: false }),
       ).map((m) => ({
         ...m,
         url: m.url || "",

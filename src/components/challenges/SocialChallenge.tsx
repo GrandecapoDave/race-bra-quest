@@ -32,11 +32,8 @@ export function SocialChallenge({
     queryKey: ["social-submission", team?.id, challenge.id],
     enabled: Boolean(team?.id),
     staleTime: 0,
-    refetchInterval: 3000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_social_submission", {
-        p_team_id: team?.id,
-      });
+      const { data, error } = await supabase.rpc("get_social_submission");
       if (error) throw new Error(error.message);
       return data as {
         id: string;
