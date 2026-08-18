@@ -202,6 +202,14 @@ CREATE TABLE IF NOT EXISTS public.team_posters (
   assigned_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.posters ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read Posters" ON public.posters;
+CREATE POLICY "Public Read Posters" ON public.posters FOR SELECT USING (true);
+
+ALTER TABLE public.team_posters ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read Team Posters" ON public.team_posters;
+CREATE POLICY "Public Read Team Posters" ON public.team_posters FOR SELECT USING (true);
+
 -- 15. USER ROLES
 CREATE TABLE IF NOT EXISTS public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

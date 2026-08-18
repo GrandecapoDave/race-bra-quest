@@ -1202,7 +1202,10 @@ export function PosterComparisonCard({
     await onEvaluate(submission.id, selectedVoto);
   };
 
-  const originalPosterUrl = poster ? `/POSTER/${poster.file_name}` : null;
+  const posterFileName = poster?.file_name;
+  const originalPosterUrl = posterFileName 
+    ? (posterFileName.startsWith("/") ? posterFileName : `/POSTER/${posterFileName}`)
+    : null;
 
   return (
     <div className="surface p-5 space-y-6 border border-zinc-800/80 bg-zinc-950/20 rounded-2xl relative overflow-hidden">
@@ -1215,7 +1218,9 @@ export function PosterComparisonCard({
             <span>{team.nome_squadra}</span>
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Assegnato: <span className="text-foreground font-bold">{poster?.titolo || "Nessuno"}</span> · Nome file: <span className="font-mono text-zinc-500">{poster?.file_name}</span>
+            Assegnato: <span className="text-foreground font-bold">{poster?.titolo || "Locandina non ancora estratta"}</span> {posterFileName && (
+              <>· File: <span className="font-mono text-zinc-400">{posterFileName}</span></>
+            )}
           </p>
         </div>
 
@@ -1234,91 +1239,111 @@ export function PosterComparisonCard({
         </div>
       </div>
 
-      {submission ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
-                <Film className="size-3 text-red-500" /> Locandina Originale
-              </p>
-              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[260px] p-2">
-                {originalPosterUrl ? (
-                  <img
-                    src={originalPosterUrl}
-                    alt="Locandina Originale"
-                    className="h-full w-auto object-contain max-h-[240px] rounded-lg shadow-lg"
-                  />
-                ) : (
-                  <span className="text-xs text-zinc-600">Nessuna immagine</span>
-                )}
-              </div>
+      {/* COMPARISON & EVALUATION SECTION */}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {/* ORIGINAL POSTER */}
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
+              <Film className="size-3 text-red-500" /> Locandina Originale Assegnata
+            </p>
+            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[260px] p-2 text-center">
+              {originalPosterUrl ? (
+                <img
+                  src={originalPosterUrl}
+                  alt={poster?.titolo || "Locandina Originale"}
+                  onError={(e) => {
+                    // Fallback to lowercase path
+                    const target = e.currentTarget;
+                    if (target.src.includes("/POSTER/")) {
+                      target.src = target.src.replace("/POSTER/", "/poster/");
+                    }
+                  }}
+                  className="h-full w-auto object-contain max-h-[280px] rounded-lg shadow-lg"
+                />
+              ) : (
+                <div className="space-y-1 p-4">
+                  <Film className="size-8 text-zinc-700 mx-auto" />
+                  <p className="text-xs text-zinc-500 font-semibold">Nessuna locandina ancora assegnata alla squadra</p>
+                  <p className="text-[10px] text-zinc-600">Verrà assegnata appena il team aprirà la sfida</p>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
-                <Camera className="size-3 text-red-500" /> Ricostruzione della Squadra
-              </p>
-              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[260px] p-2">
-                {teamPhotoUrl ? (
+          {/* TEAM RECONSTRUCTION */}
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
+              <Camera className="size-3 text-red-500" /> Ricostruzione della Squadra
+            </p>
+            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[260px] p-2 text-center">
+              {submission ? (
+                teamPhotoUrl ? (
                   <img
                     src={teamPhotoUrl}
                     alt="Ricostruzione Squadra"
-                    className="h-full w-auto object-contain max-h-[240px] rounded-lg shadow-lg"
+                    className="h-full w-auto object-contain max-h-[280px] rounded-lg shadow-lg"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="size-5 animate-spin text-zinc-500" />
-                    <span className="text-xs text-zinc-600">Caricamento foto...</span>
+                    <Loader2 className="size-6 animate-spin text-primary" />
+                    <span className="text-xs text-zinc-500">Caricamento foto squadra...</span>
                   </div>
-                )}
-              </div>
+                )
+              ) : (
+                <div className="space-y-1 p-4">
+                  <Camera className="size-8 text-zinc-700 mx-auto" />
+                  <p className="text-xs text-zinc-500 font-semibold">In attesa della foto della squadra</p>
+                  <p className="text-[10px] text-zinc-600">La squadra non ha ancora completato lo scatto</p>
+                </div>
+              )}
             </div>
           </div>
+        </div>
 
-          <div className="text-xs text-muted-foreground text-center font-mono">
-            Consegna effettuata il: {new Date(submission.timestamp).toLocaleString("it-IT")}
-          </div>
-
-          <form onSubmit={handleSubmit} className="bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-zinc-400 uppercase">
-                <span>Voto (Punteggio):</span>
-                <span className="text-primary font-black text-sm">{selectedVoto} / 15 PT</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="15"
-                step="1"
-                value={selectedVoto}
-                onChange={(e) => setSelectedVoto(parseInt(e.target.value))}
-                className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600 focus:outline-none"
-              />
-              <div className="flex justify-between text-[10px] text-zinc-600 font-bold px-1">
-                <span>0</span>
-                <span>3</span>
-                <span>6</span>
-                <span>9</span>
-                <span>12</span>
-                <span>15</span>
-              </div>
+        {submission && (
+          <>
+            <div className="text-xs text-muted-foreground text-center font-mono">
+              Consegna effettuata il: {new Date(submission.timestamp).toLocaleString("it-IT")}
             </div>
 
-            <button
-              type="submit"
-              disabled={isEvaluating}
-              className="primary-gradient px-6 py-3 rounded-xl font-extrabold text-primary-foreground shadow-lg flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-40"
-            >
-              {isEvaluating ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              {submission.voto !== null ? "Aggiorna Voto" : "Conferma Voto"}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div className="bg-zinc-900/10 p-5 rounded-xl border border-zinc-900 text-center text-sm text-muted-foreground">
-          La squadra non ha ancora effettuato il caricamento per questa sfida.
-        </div>
-      )}
+            <form onSubmit={handleSubmit} className="bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between items-center text-xs font-bold text-zinc-400 uppercase">
+                  <span>Voto (Punteggio):</span>
+                  <span className="text-primary font-black text-sm">{selectedVoto} / 15 PT</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="15"
+                  step="1"
+                  value={selectedVoto}
+                  onChange={(e) => setSelectedVoto(parseInt(e.target.value))}
+                  className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600 focus:outline-none"
+                />
+                <div className="flex justify-between text-[10px] text-zinc-600 font-bold px-1">
+                  <span>0</span>
+                  <span>3</span>
+                  <span>6</span>
+                  <span>9</span>
+                  <span>12</span>
+                  <span>15</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isEvaluating}
+                className="primary-gradient px-6 py-3 rounded-xl font-extrabold text-primary-foreground shadow-lg flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-40"
+              >
+                {isEvaluating ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                {submission.voto !== null ? "Aggiorna Voto" : "Conferma Voto"}
+              </button>
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }
