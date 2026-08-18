@@ -470,9 +470,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.complete_challenge(
-  p_challenge UUID
-)
+CREATE OR REPLACE FUNCTION public.complete_challenge(p_challenge UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -488,101 +486,65 @@ DECLARE
   v_points INTEGER := 0;
   v_bonus INTEGER := 0;
   v_stage_completed BOOLEAN := false;
-  v_total_stage_challenges INTEGER;
-  v_completed_stage_challenges INTEGER;
+  v_total INTEGER;
+  v_completed INTEGER;
 BEGIN
   v_team_id := public.current_team_id();
-  IF v_team_id IS NULL THEN
-    RAISE EXCEPTION 'Non autenticato';
-  END IF;
+  IF v_team_id IS NULL THEN RAISE EXCEPTION 'Non autenticato'; END IF;
 
   SELECT * INTO v_team FROM public.teams WHERE id = v_team_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Squadra non trovata';
-  END IF;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Squadra non trovata'; END IF;
 
   SELECT * INTO v_challenge FROM public.challenges WHERE id = p_challenge;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Sfida non trovata';
-  END IF;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Sfida non trovata'; END IF;
 
-  SELECT * INTO v_prog FROM public.team_progress 
-  WHERE team_id = v_team_id AND challenge_id = p_challenge;
+  SELECT * INTO v_prog FROM public.team_progress WHERE team_id = v_team_id AND challenge_id = p_challenge;
 
   IF FOUND THEN
     IF v_prog.stato = 'completed' THEN
       v_already := true;
     ELSE
-      UPDATE public.team_progress 
-      SET stato = 'completed', completata_il = now()
+      UPDATE public.team_progress SET stato = 'completed', completata_il = now()
       WHERE team_id = v_team_id AND challenge_id = p_challenge;
     END IF;
   ELSE
-    INSERT INTO public.team_progress (team_id, stage_id, challenge_id, stato, completata_il)
-    VALUES (v_team_id, v_challenge.stage_id, p_challenge, 'completed', now());
+    -- team_progress NON ha stage_id
+    INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
+    VALUES (v_team_id, p_challenge, 'completed', now());
   END IF;
 
   v_is_photo := (v_challenge.tipo_sfida = 'photo' OR v_challenge.tipo_sfida = 'living_poster' OR v_challenge.tipo_sfida = 'social');
 
   IF NOT v_is_photo THEN
     v_points := COALESCE(v_challenge.punteggio_massimo, 0);
-    IF v_challenge.tipo_sfida = 'emoji_movies' THEN
-      v_points := 7;
-    END IF;
+    IF v_challenge.tipo_sfida = 'emoji_movies' THEN v_points := 7; END IF;
   END IF;
 
   IF NOT v_already THEN
-    INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
+    -- scores HA stage_id, lo popoliamo da v_challenge
+    INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)
     VALUES (
-      v_team_id, 
-      p_challenge, 
-      v_points, 
-      CASE WHEN v_is_photo THEN 'pending_approval' ELSE 'challenge_points' END, 
-      CASE WHEN v_is_photo THEN 'Foto consegnata — in attesa di valutazione: ' || v_challenge.titolo ELSE 'Completamento prova: ' || v_challenge.titolo END
-    );
-
-    INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
-    VALUES (
-      'challenge_completed', 
-      v_team_id, 
-      jsonb_build_object(
-        'message', 
-        CASE 
-          WHEN v_is_photo THEN 'Squadra "' || v_team.nome_squadra || '" ha consegnato la prova "' || v_challenge.titolo || '" — in attesa di valutazione dalla Regia.'
-          ELSE 'Squadra "' || v_team.nome_squadra || '" ha completato la prova "' || v_challenge.titolo || '".'
-        END,
-        'points', v_points
-      )
+      v_team_id, p_challenge, v_challenge.stage_id, v_points,
+      CASE WHEN v_is_photo THEN 'pending_approval' ELSE 'challenge_points' END,
+      CASE WHEN v_is_photo THEN 'Foto consegnata — in attesa di valutazione: ' || v_challenge.titolo
+           ELSE 'Completamento prova: ' || v_challenge.titolo END
     );
 
     IF p_challenge = '0147e750-f0a3-4b72-8e76-a003fe2ef143' THEN
-      UPDATE public.game_settings 
-      SET marketplace_visible = true 
-      WHERE id = 'settings_01';
-
-      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
-      VALUES ('marketplace_discovered', NULL, jsonb_build_object('message', 'Il Marketplace è stato SCOPERTO! La voce è ora visibile a tutti i partecipanti.'));
+      UPDATE public.game_settings SET marketplace_visible = true WHERE id = 'settings_01';
     END IF;
   END IF;
 
-  SELECT COUNT(*)::INTEGER INTO v_total_stage_challenges 
-  FROM public.challenges 
-  WHERE stage_id = v_challenge.stage_id;
+  -- Conteggio completamento tappa tramite JOIN (team_progress non ha stage_id)
+  SELECT COUNT(*)::INTEGER INTO v_total FROM public.challenges WHERE stage_id = v_challenge.stage_id;
+  SELECT COUNT(*)::INTEGER INTO v_completed
+  FROM public.team_progress tp
+  JOIN public.challenges c ON c.id = tp.challenge_id
+  WHERE tp.team_id = v_team_id AND c.stage_id = v_challenge.stage_id AND tp.stato = 'completed';
 
-  SELECT COUNT(*)::INTEGER INTO v_completed_stage_challenges 
-  FROM public.team_progress 
-  WHERE team_id = v_team_id AND stage_id = v_challenge.stage_id AND stato = 'completed';
+  IF v_total > 0 AND v_completed >= v_total THEN v_stage_completed := true; END IF;
 
-  IF v_total_stage_challenges > 0 AND v_completed_stage_challenges >= v_total_stage_challenges THEN
-    v_stage_completed := true;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'already', v_already,
-    'points', v_points,
-    'bonus', v_bonus,
-    'stage_completed', v_stage_completed
-  );
+  RETURN jsonb_build_object('already', v_already, 'points', v_points, 'bonus', v_bonus, 'stage_completed', v_stage_completed);
 END;
 $$;
 CREATE OR REPLACE FUNCTION public.get_bank_state(p_team_id UUID)
