@@ -1733,7 +1733,8 @@ BEGIN
   SET 
     marketplace_active = p_active,
     activated_at = CASE WHEN p_active THEN now() ELSE NULL END,
-    activated_by = CASE WHEN p_active THEN p_admin_id ELSE NULL END;
+    activated_by = CASE WHEN p_active THEN p_admin_id ELSE NULL END
+  WHERE id = 'settings_01';
 END;
 $$;
 
@@ -2568,7 +2569,8 @@ BEGIN
   END IF;
 
   UPDATE public.game_settings 
-  SET cornhole_special_bye_team_id = p_team_id;
+  SET cornhole_special_bye_team_id = p_team_id
+  WHERE id = 'settings_01';
 END;
 $$;
 
@@ -2587,7 +2589,8 @@ BEGIN
   END IF;
 
   UPDATE public.game_settings 
-  SET boxe_special_bye_team_id = p_team_id;
+  SET boxe_special_bye_team_id = p_team_id
+  WHERE id = 'settings_01';
 END;
 $$;
 
