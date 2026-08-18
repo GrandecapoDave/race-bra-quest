@@ -1688,4 +1688,247 @@ INSERT INTO public.enigma_solutions (challenge_id, solution_type, solution, punt
 ('e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9', 'coordinates', '{"lat": "44.71", "lng": "7.84"}'::jsonb, 20)
 ON CONFLICT (challenge_id) DO UPDATE SET solution = EXCLUDED.solution, solution_type = EXCLUDED.solution_type, punteggio = EXCLUDED.punteggio;
 
+-- ----------------------------------------------------------------------------
+-- STEP 9: TABELLA SETTINGS & RPC AMMINISTRAZIONE EXTRA
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.settings (
+  id TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+INSERT INTO public.settings (id, value)
+VALUES 
+('game_status', 'Gara attiva'),
+('game_started_at', now()::text)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Read Settings" ON public.settings;
+DROP POLICY IF EXISTS "Admin Write Settings" ON public.settings;
+
+CREATE POLICY "Public Read Settings" ON public.settings FOR SELECT USING (true);
+CREATE POLICY "Admin Write Settings" ON public.settings FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE OR REPLACE FUNCTION public.toggle_marketplace(
+  p_active BOOLEAN,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  INSERT INTO public.game_settings (id, marketplace_active, activated_at, activated_by)
+  VALUES ('current', p_active, CASE WHEN p_active THEN now() ELSE NULL END, CASE WHEN p_active THEN p_admin_id ELSE NULL END)
+  ON CONFLICT (id) 
+  DO UPDATE SET 
+    marketplace_active = EXCLUDED.marketplace_active,
+    activated_at = EXCLUDED.activated_at,
+    activated_by = EXCLUDED.activated_by;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_force_complete_bank(
+  p_team_id UUID,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
+  VALUES (p_team_id, v_challenge_id, 'completed', now())
+  ON CONFLICT (team_id, challenge_id)
+  DO UPDATE SET stato = 'completed', completata_il = now();
+
+  INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
+  VALUES (p_team_id, v_challenge_id, 25, 'challenge_points', 'Sfida Banca forzata da Admin');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_reset_bank(
+  p_team_id UUID,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  DELETE FROM public.team_answers WHERE team_id = p_team_id;
+  DELETE FROM public.team_progress WHERE team_id = p_team_id AND challenge_id = v_challenge_id;
+  DELETE FROM public.scores WHERE team_id = p_team_id AND challenge_id = v_challenge_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_edit_bank_answer(
+  p_team_id UUID,
+  p_question_id INTEGER,
+  p_answer TEXT,
+  p_correct BOOLEAN,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_real_q_id UUID;
+  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT id INTO v_real_q_id FROM public.quiz_questions WHERE question = 'Banca Q' || p_question_id::text LIMIT 1;
+  IF NOT FOUND THEN
+    INSERT INTO public.quiz_questions (challenge_id, question, options, correct_answer_index, order_index, points)
+    VALUES (v_challenge_id, 'Banca Q' || p_question_id::text, '[]'::jsonb, 0, p_question_id, 5)
+    RETURNING id INTO v_real_q_id;
+  END IF;
+
+  INSERT INTO public.team_answers (team_id, question_id, selected_answer, correct)
+  VALUES (p_team_id, v_real_q_id, 0, p_correct)
+  ON CONFLICT (team_id, question_id)
+  DO UPDATE SET correct = p_correct;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_force_complete_secret_code(
+  p_team_id UUID,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7';
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
+  VALUES (p_team_id, v_challenge_id, 'completed', now())
+  ON CONFLICT (team_id, challenge_id)
+  DO UPDATE SET stato = 'completed', completata_il = now();
+
+  INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
+  VALUES (p_team_id, v_challenge_id, 15, 'challenge_points', 'Codice Segreto sbloccato da Admin');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_edit_secret_code_match(
+  p_team_id UUID,
+  p_partner_id UUID,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_edit_secret_code_settings(
+  p_full_code TEXT,
+  p_destination TEXT,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_secret_code_dashboard()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_completed_teams JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'team_id', tp.team_id,
+    'nome_squadra', t.nome_squadra,
+    'completed_at', tp.completata_il
+  )), '[]'::jsonb) INTO v_completed_teams
+  FROM public.team_progress tp
+  JOIN public.teams t ON t.id = tp.team_id
+  WHERE tp.challenge_id = 'c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7' AND tp.stato = 'completed';
+
+  RETURN jsonb_build_object(
+    'full_code', '4829167305',
+    'destination', 'Parco Giochi Madonna dei Fiori (lato piazzale grigio)',
+    'parts', '[]'::jsonb,
+    'matches', '[]'::jsonb,
+    'transactions', '[]'::jsonb,
+    'attempts', '[]'::jsonb,
+    'completed_teams', v_completed_teams
+  );
+END;
+$$;
+
 COMMIT;
