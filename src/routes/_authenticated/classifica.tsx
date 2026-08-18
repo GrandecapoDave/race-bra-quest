@@ -292,7 +292,7 @@ function ClassificaPage() {
                           isCurrentTeam ? "text-white" : "text-zinc-300"
                         }`}
                       >
-                        {row.name}
+                        {row.name || row.nome_squadra}
                         {isCurrentTeam && (
                           <span className="ml-1.5 text-[8px] bg-orange-500 text-black px-1 py-0.5 rounded font-black tracking-wide">
                             TU

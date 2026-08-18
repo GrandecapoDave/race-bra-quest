@@ -86,12 +86,13 @@ export function TeamSetupChallenge({
     mutationFn: async () => {
       const parsed = teamSchema.parse({ name, motto });
       const { data: userData } = await supabase.auth.getUser();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("teams")
         .insert({
-          name: parsed.name,
+          nome_squadra: parsed.name,
           motto: parsed.motto || null,
           color,
+          colore: color,
           avatar_url: avatar,
           owner_id: userData.user!.id,
         })
@@ -121,12 +122,13 @@ export function TeamSetupChallenge({
     const timeout = setTimeout(async () => {
       const parsed = teamSchema.safeParse({ name, motto });
       if (!parsed.success) return;
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("teams")
         .update({
-          name: parsed.data.name,
+          nome_squadra: parsed.data.name,
           motto: parsed.data.motto || null,
           color,
+          colore: color,
           avatar_url: avatar,
         })
         .eq("id", team.id);

@@ -234,7 +234,7 @@ function AdminResocontoPage() {
             >
               {t.avatar_url ?? "🏳️"}
             </span>
-            {t.name}
+            {t.nome_squadra || t.name}
           </button>
         ))}
       </div>
@@ -265,7 +265,7 @@ function AdminResocontoPage() {
                         {team.position === 1 ? "🥇 1° Posto" : team.position === 2 ? "🥈 2° Posto" : team.position === 3 ? "🥉 3° Posto" : `#${team.position} in Gara`}
                       </span>
                       <h2 className="text-2xl font-display font-black text-foreground uppercase tracking-wide">
-                        {team.name}
+                        {team.nome_squadra || team.name}
                       </h2>
                     </div>
                     <p className="text-xs text-muted-foreground font-semibold mt-1">

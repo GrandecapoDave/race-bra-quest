@@ -435,7 +435,8 @@ export type Database = {
           created_at: string
           id: string
           motto: string | null
-          name: string
+          nome_squadra: string
+          name?: string
           owner_id: string
         }
         Insert: {
@@ -444,7 +445,8 @@ export type Database = {
           created_at?: string
           id?: string
           motto?: string | null
-          name: string
+          nome_squadra: string
+          name?: string
           owner_id?: string
         }
         Update: {
@@ -453,6 +455,7 @@ export type Database = {
           created_at?: string
           id?: string
           motto?: string | null
+          nome_squadra?: string
           name?: string
           owner_id?: string
         }
