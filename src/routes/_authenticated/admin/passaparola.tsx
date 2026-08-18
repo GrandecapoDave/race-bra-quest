@@ -51,8 +51,9 @@ function AdminPassaparolaPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("*")
-        .order("timestamp", { ascending: false });
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,timestamp:data_acquisto,request_text:dettagli->>request_text,response_text:dettagli->>response_text,nota_interna:dettagli->>nota_interna")
+        .eq("marketplace_item_id", "passaparola")
+        .order("data_acquisto", { ascending: false });
       if (error) return [];
       return data ?? [];
     },

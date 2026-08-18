@@ -46,8 +46,8 @@ function PartenzeAnticipateAdmin() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("marketplace_transactions")
-        .select("*")
-        .eq("item_id", "partenza_anticipata");
+        .select("*,item_id:marketplace_item_id")
+        .eq("marketplace_item_id", "partenza_anticipata");
       if (error) return [];
       return data ?? [];
     },

@@ -37,9 +37,9 @@ function PenalitaAdmin() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("marketplace_transactions")
-        .select("*")
-        .eq("item_id", "penalita_punti")
-        .order("timestamp", { ascending: false });
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,costo:costo_token,timestamp:data_acquisto,outcome:dettagli")
+        .eq("marketplace_item_id", "penalita_punti")
+        .order("data_acquisto", { ascending: false });
       if (error) return [];
       return data ?? [];
     },

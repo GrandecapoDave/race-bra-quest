@@ -96,8 +96,8 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("*")
-        .order("timestamp", { ascending: false });
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,costo:costo_token,timestamp:data_acquisto,outcome:dettagli")
+        .order("data_acquisto", { ascending: false });
       if (error) {
         console.warn("Error transactionsQuery dashboard:", error);
         return [];

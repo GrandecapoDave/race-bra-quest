@@ -106,21 +106,18 @@ function AdminLayout() {
         .from("submissions")
         .select(`
           id,
-          risposta,
-          file_upload,
-          timestamp,
+          risposta:note,
+          file_upload:url,
+          timestamp:created_at,
           stato_approvazione,
           latitude,
           longitude,
           challenge_id,
           team_id,
-          voto,
-          poster_id,
-          poster_file_name,
           teams ( nome_squadra ),
-          challenges ( titolo, punteggio_massimo, tipo_sfida, stage_id, stages ( nome_tappa ) )
+          challenges ( titolo, punteggio_massimo, tipo_sfida, stage_id )
         `)
-        .order("timestamp", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) {
         console.warn("Error allSubmissions:", error);
         return [];
@@ -136,7 +133,7 @@ function AdminLayout() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("team_progress")
-        .select("id,team_id,challenge_id,stato,completata_at,started_at");
+        .select("id,team_id,challenge_id,stato,completata_at:completata_il,started_at:created_at");
       if (error) {
         console.warn("Error allProgress:", error);
         return [];
@@ -276,8 +273,8 @@ function AdminLayout() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("activity_log")
-        .select("*")
-        .order("timestamp", { ascending: false });
+        .select("*,timestamp:created_at")
+        .order("created_at", { ascending: false });
       if (error) {
         console.warn("Error activityLog:", error);
         return [];

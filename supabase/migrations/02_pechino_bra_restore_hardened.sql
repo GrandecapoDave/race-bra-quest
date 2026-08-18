@@ -1251,7 +1251,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Token insufficienti');
   END IF;
 
-  IF v_item.categoria = 'MALUS' THEN
+  IF LOWER(v_item.tipo) = 'malus' THEN
     IF p_target_team_id IS NULL THEN
       RETURN jsonb_build_object('success', false, 'error', 'Scegli la squadra avversaria da colpire');
     END IF;
@@ -1291,7 +1291,7 @@ BEGIN
 
   SELECT id INTO v_stage_id FROM public.stages WHERE active = true ORDER BY ordine LIMIT 1;
 
-  IF v_item.categoria = 'MALUS' AND p_target_team_id IS NOT NULL THEN
+  IF LOWER(v_item.tipo) = 'malus' AND p_target_team_id IS NOT NULL THEN
     SELECT * INTO v_shield_tx 
     FROM public.marketplace_transactions 
     WHERE team_id = p_target_team_id AND marketplace_item_id = 'bonus_scudo' AND stato = 'completed'
@@ -1378,7 +1378,7 @@ BEGIN
     VALUES ('ruota_fortuna_spin', v_team_id, jsonb_build_object('message', 'La squadra "' || v_team.nome_squadra || '" ha girato la Ruota della Fortuna ed ha ottenuto: ' || v_label));
   END IF;
 
-  IF v_item.categoria = 'MALUS' THEN
+  IF LOWER(v_item.tipo) = 'malus' THEN
     INSERT INTO public.cattiveria_ledger (team_id, stage_id, tipo, punti, motivo, riferimento_transazione, marketplace_item_id)
     VALUES (v_team_id, v_stage_id, 'MALUS_UTILIZZATO', 10, 'Malus ' || v_item.nome || ' attivato.', v_tx_id, p_item_id);
 
@@ -1659,8 +1659,8 @@ BEGIN
         COALESCE((SELECT SUM(cl.punti) FROM public.cattiveria_ledger cl WHERE cl.team_id = t.id), 0)
       )::NUMERIC AS l_tot_pts,
       COALESCE((SELECT COUNT(*) FROM public.team_progress tp WHERE tp.team_id = t.id AND tp.stato = 'completed'), 0)::BIGINT AS l_comp_ch,
-      COALESCE((SELECT SUM(minuti_penalita * 60) FROM public.time_penalties WHERE team_id = t.id), 0)::NUMERIC AS l_duration,
-      (SELECT MAX(completata_il) FROM public.team_progress WHERE team_id = t.id AND stato = 'completed') AS l_last_comp,
+      COALESCE((SELECT SUM(tpn.minuti_penalita * 60) FROM public.time_penalties tpn WHERE tpn.team_id = t.id), 0)::NUMERIC AS l_duration,
+      (SELECT MAX(tp.completata_il) FROM public.team_progress tp WHERE tp.team_id = t.id AND tp.stato = 'completed') AS l_last_comp,
       t.active AS l_active,
       t.freeze_started_at AS l_freeze_start,
       t.freeze_expires_at AS l_freeze_exp
@@ -1668,16 +1668,16 @@ BEGIN
   ),
   ranked_leaderboard AS (
     SELECT 
-      *,
+      rb.*,
       ROW_NUMBER() OVER (
-        ORDER BY l_active DESC, l_comp_ch DESC, l_tot_pts DESC, l_duration ASC, l_last_comp ASC NULLS LAST
+        ORDER BY rb.l_active DESC, rb.l_comp_ch DESC, rb.l_tot_pts DESC, rb.l_duration ASC, rb.l_last_comp ASC NULLS LAST
       )::INTEGER AS l_rank
-    FROM raw_leaderboard
+    FROM raw_leaderboard rb
   )
   SELECT 
-    l_team_id, l_name, l_color, l_avatar_url, l_motto, l_ch_pts, l_mod_pts, l_catt_pts, l_tot_pts, l_comp_ch, l_duration, l_last_comp, l_active, l_freeze_start, l_freeze_exp, l_rank
-  FROM ranked_leaderboard
-  WHERE v_has_bonus = true OR l_team_id = v_caller_team_id;
+    rl.l_team_id, rl.l_name, rl.l_color, rl.l_avatar_url, rl.l_motto, rl.l_ch_pts, rl.l_mod_pts, rl.l_catt_pts, rl.l_tot_pts, rl.l_comp_ch, rl.l_duration, rl.l_last_comp, rl.l_active, rl.l_freeze_start, rl.l_freeze_exp, rl.l_rank
+  FROM ranked_leaderboard rl
+  WHERE v_has_bonus = true OR rl.l_team_id = v_caller_team_id;
 END;
 $$;
 
@@ -3426,6 +3426,42 @@ CREATE POLICY "Public Read Activity Log" ON public.activity_log FOR SELECT USING
 ALTER TABLE public.cattiveria_ledger ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Read Cattiveria" ON public.cattiveria_ledger;
 CREATE POLICY "Public Read Cattiveria" ON public.cattiveria_ledger FOR SELECT USING (true);
+
+-- Tabella team_emoji_movies
+CREATE TABLE IF NOT EXISTS public.team_emoji_movies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  movie_index INTEGER NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 1,
+  last_answer TEXT,
+  is_correct BOOLEAN NOT NULL DEFAULT false,
+  points INTEGER NOT NULL DEFAULT 0,
+  letter CHAR(1),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT team_emoji_movies_team_movie_key UNIQUE (team_id, movie_index)
+);
+
+ALTER TABLE public.team_emoji_movies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Team Read Own Emoji Movies" ON public.team_emoji_movies;
+CREATE POLICY "Team Read Own Emoji Movies" ON public.team_emoji_movies FOR SELECT USING (team_id = public.current_team_id() OR public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "Team Insert Own Emoji Movies" ON public.team_emoji_movies;
+CREATE POLICY "Team Insert Own Emoji Movies" ON public.team_emoji_movies FOR INSERT WITH CHECK (team_id = public.current_team_id() OR public.has_role(auth.uid(), 'admin'));
+DROP POLICY IF EXISTS "Team Update Own Emoji Movies" ON public.team_emoji_movies;
+CREATE POLICY "Team Update Own Emoji Movies" ON public.team_emoji_movies FOR UPDATE USING (team_id = public.current_team_id() OR public.has_role(auth.uid(), 'admin'));
+
+-- Seed domande Quiz Bra (Tappa 1)
+INSERT INTO public.quiz_questions (id, challenge_id, question, options, correct_answer_index, order_index, points)
+VALUES 
+  ('a1111111-1111-1111-1111-111111111111', 'c4e6c385-69ba-4f17-a6d0-36b78776d527', 'Qual è il piatto tipico a base di carne cruda di Bra?', '["Salsiccia di Bra", "Prosciutto di Cuneo", "Vitello Tonnato", "Battuta di Fassona"]'::jsonb, 0, 1, 3),
+  ('a2222222-2222-2222-2222-222222222222', 'c4e6c385-69ba-4f17-a6d0-36b78776d527', 'In quale regione italiana si trova Bra?', '["Lombardia", "Piemonte", "Liguria", "Veneto"]'::jsonb, 1, 2, 3),
+  ('a3333333-3333-3333-3333-333333333333', 'c4e6c385-69ba-4f17-a6d0-36b78776d527', 'Quale importante movimento internazionale è nato a Bra?', '["Slow Food", "WWF", "Greenpeace", "Caritas"]'::jsonb, 0, 3, 3),
+  ('a4444444-4444-4444-4444-444444444444', 'c4e6c385-69ba-4f17-a6d0-36b78776d527', 'Quale celebre scrittore piemontese nacque nei pressi di Bra?', '["Cesare Pavese", "Beppe Fenoglio", "Giovanni Arpino", "Italo Calvino"]'::jsonb, 2, 4, 3),
+  ('a5555555-5555-5555-5555-555555555555', 'c4e6c385-69ba-4f17-a6d0-36b78776d527', 'Che tipo di formaggio DOP prende il nome da questa città?', '["Castelmagno", "Murazzano", "Raschera", "Bra DOP"]'::jsonb, 3, 5, 3)
+ON CONFLICT (id) DO UPDATE SET 
+  question = EXCLUDED.question,
+  options = EXCLUDED.options,
+  correct_answer_index = EXCLUDED.correct_answer_index,
+  points = EXCLUDED.points;
 
 NOTIFY pgrst, 'reload schema';
 
