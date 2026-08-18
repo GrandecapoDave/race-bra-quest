@@ -155,7 +155,7 @@ function AppShellInner({
     queryFn: async () => {
       const { data } = await supabase
         .from("marketplace_transactions")
-        .select("*")
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,timestamp:data_acquisto")
         .eq("target_team_id", team.data?.id)
         .in("stato", ["completed", "used"]);
       return data ?? [];
@@ -343,9 +343,9 @@ function AppShellInner({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("id, stato")
-        .eq("buyer_team_id", team.data?.id)
-        .eq("item_id", "bonus_classifica")
+        .select("id, stato, buyer_team_id:team_id, item_id:marketplace_item_id")
+        .eq("team_id", team.data?.id)
+        .eq("marketplace_item_id", "bonus_classifica")
         .maybeSingle();
       if (error) return null;
       return data;
@@ -364,8 +364,8 @@ function AppShellInner({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("id, item_id, stato")
-        .eq("item_id", "passaparola")
+        .select("id, item_id:marketplace_item_id, stato")
+        .eq("marketplace_item_id", "passaparola")
         .eq("stato", "pending");
       if (error) return [];
       return data ?? [];

@@ -58,9 +58,9 @@ function ClassificaPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("*")
-        .eq("buyer_team_id", team!.id)
-        .eq("item_id", "bonus_classifica")
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id")
+        .eq("team_id", team!.id)
+        .eq("marketplace_item_id", "bonus_classifica")
         .maybeSingle();
       if (error) return null;
       return data;
