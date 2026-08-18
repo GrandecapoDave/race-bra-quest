@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, Flag, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+const REMEMBER_ME_KEY = "pechino_remember_me";
+const SAVED_USERNAME_KEY = "pechino_saved_username";
+const SAVED_PASSWORD_KEY = "pechino_saved_password";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -33,6 +37,35 @@ function AuthPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Restore saved credentials if "Ricorda accesso" was previously active
+  useEffect(() => {
+    try {
+      const isRemembered = localStorage.getItem(REMEMBER_ME_KEY) === "true";
+      if (isRemembered) {
+        setRememberMe(true);
+        const savedUser = localStorage.getItem(SAVED_USERNAME_KEY);
+        const savedPass = localStorage.getItem(SAVED_PASSWORD_KEY);
+        if (savedUser) setUsername(savedUser);
+        if (savedPass) setPassword(savedPass);
+      }
+    } catch {
+      // Ignore localStorage access errors in private/restricted environments
+    }
+  }, []);
+
+  const handleRememberToggle = (checked: boolean) => {
+    setRememberMe(checked);
+    if (!checked) {
+      try {
+        localStorage.removeItem(REMEMBER_ME_KEY);
+        localStorage.removeItem(SAVED_USERNAME_KEY);
+        localStorage.removeItem(SAVED_PASSWORD_KEY);
+      } catch {
+        // Ignore
+      }
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse({ username, password });
@@ -46,11 +79,27 @@ function AuthPage() {
       const formattedUsername = parsed.data.username.trim().toLowerCase();
       const email = `${formattedUsername}@pechino.it`;
 
-      const { error } = await supabase.auth.signInWithPassword(
-        { email, password: parsed.data.password },
-        { persist: rememberMe }
-      );
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: parsed.data.password,
+      });
       if (error) throw error;
+
+      // Persist or clear remembered credentials
+      try {
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_ME_KEY, "true");
+          localStorage.setItem(SAVED_USERNAME_KEY, parsed.data.username.trim());
+          localStorage.setItem(SAVED_PASSWORD_KEY, parsed.data.password);
+        } else {
+          localStorage.removeItem(REMEMBER_ME_KEY);
+          localStorage.removeItem(SAVED_USERNAME_KEY);
+          localStorage.removeItem(SAVED_PASSWORD_KEY);
+        }
+      } catch {
+        // Ignore
+      }
+
       if (formattedUsername === "justdave") {
         navigate({ to: "/admin" });
       } else {
@@ -117,7 +166,7 @@ function AuthPage() {
                 id="remember-me"
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                onChange={(e) => handleRememberToggle(e.target.checked)}
                 className="peer sr-only"
               />
               <div
