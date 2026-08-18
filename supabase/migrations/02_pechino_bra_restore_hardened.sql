@@ -97,7 +97,6 @@ CREATE TABLE IF NOT EXISTS public.marketplace_items (
   tipo TEXT NOT NULL CHECK (tipo IN ('bonus', 'malus')),
   descrizione TEXT,
   costo_token INTEGER NOT NULL CHECK (costo_token >= 0),
-  effet TEXT, -- Per compatibilità con schema production esistente
   effetto TEXT,
   icona TEXT,
   disponibile BOOLEAN NOT NULL DEFAULT true,
@@ -210,6 +209,17 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
   role TEXT NOT NULL CHECK (role IN ('admin', 'team')),
   team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 16. GAME SETTINGS
+CREATE TABLE IF NOT EXISTS public.game_settings (
+  id TEXT PRIMARY KEY DEFAULT 'current',
+  marketplace_visible BOOLEAN NOT NULL DEFAULT false,
+  marketplace_active BOOLEAN NOT NULL DEFAULT false,
+  activated_at TIMESTAMPTZ DEFAULT NULL,
+  activated_by UUID DEFAULT NULL,
+  cornhole_special_bye_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  boxe_special_bye_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL
 );
 
 -- ----------------------------------------------------------------------------
@@ -1241,6 +1251,15 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_team_id UUID;
+BEGIN
+  v_team_id := public.current_team_id();
+  IF v_team_id IS NULL THEN
+    RAISE EXCEPTION 'Non autenticato';
+  END IF;
+
+  UPDATE public.marketplace_transactions
+  SET stato = 'used', data_utilizzo = now()
+  WHERE id = p_transaction_id AND team_id = v_team_id AND stato = 'viewing';
 END;
 $$;
 
@@ -1595,5 +1614,78 @@ CREATE POLICY "Team INSERT Submissions" ON public.submissions
 
 CREATE POLICY "Team INSERT Progress" ON public.team_progress
   FOR INSERT WITH CHECK (team_id = public.current_team_id());
+
+-- ----------------------------------------------------------------------------
+-- STEP 8: INSERIMENTO DATI DI SEED COMPLETI (MANDATORY SEED)
+-- ----------------------------------------------------------------------------
+
+-- 1. STAGES SEED
+INSERT INTO public.stages (id, numero_tappa, titolo, descrizione, latitude, longitude, stato, outcome) VALUES 
+('4a57212e-7e83-430c-b5fe-6cf38db7be2e', 1, 'Il Passaporto di Bra', 'Piazza Caduti per la Libertà, 14', 44.6982, 7.8507, 'open', NULL),
+('dfa9e6db-4e1b-41be-94be-21cf2980fa2a', 2, 'Il Rebus Visivo', 'Via Mendicità Istruita, 12', 44.6976, 7.8544, 'open', NULL),
+('3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c', 3, 'La Banca', 'Stazione Ferroviaria di Bra', 44.6946, 7.8542, 'open', NULL),
+('4b4b4c4d-5e5f-6061-7172-838485868788', 4, 'Enigmi', 'Risolvi gli enigmi e inserisci le soluzioni per avanzare.', NULL, NULL, 'open', NULL),
+('5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c', 5, 'Tappa Finale', 'Traguardo finale della gara! Raggiungete la destinazione.', 44.71631488741777, 7.842901351857487, 'open', NULL)
+ON CONFLICT (id) DO UPDATE SET titolo = EXCLUDED.titolo, descrizione = EXCLUDED.descrizione, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude;
+
+-- 2. CHALLENGES SEED
+INSERT INTO public.challenges (id, stage_id, titolo, descrizione, tipo_sfida, punteggio_massimo, ordine_sfida, configurazione) VALUES 
+('81b2f378-dc50-4bb8-a0e8-8f20f6d2fb47', '4a57212e-7e83-430c-b5fe-6cf38db7be2e', 'Creazione squadra', 'Scegliete nome, motto, avatar e colore della vostra squadra.', 'team_setup', 5, 1, '{}'::jsonb),
+('c4e6c385-69ba-4f17-a6d0-36b78776d527', '4a57212e-7e83-430c-b5fe-6cf38db7be2e', 'Quiz Bra', 'Rispondete alle domande sulla città di Bra.', 'quiz', 15, 2, '{}'::jsonb),
+('0147e750-f0a3-4b72-8e76-a003fe2ef143', '4a57212e-7e83-430c-b5fe-6cf38db7be2e', 'Foto ufficiale', 'Scattate la foto ufficiale della squadra.', 'photo', 10, 3, '{}'::jsonb),
+('999f4e1f-7443-42e7-9d7a-115f2122888f', 'dfa9e6db-4e1b-41be-94be-21cf2980fa2a', 'Il Rebus Visivo', 'Raggiungete il luogo rappresentato dal simbolo.', 'photo', 25, 1, '{}'::jsonb),
+('777f4e1f-7443-42e7-9d7a-115f2122888f', 'dfa9e6db-4e1b-41be-94be-21cf2980fa2a', 'Indovina il film dalle emoji', 'benvenuti nella sala più insolita della caccia!', 'emoji_movies', 15, 2, '{}'::jsonb),
+('555f4e1f-7443-42e7-9d7a-115f2122888f', 'dfa9e6db-4e1b-41be-94be-21cf2980fa2a', 'La locandina vivente', 'La vostra squadra ha appena ricevuto la locandina di un film iconico.', 'living_poster', 15, 3, '{}'::jsonb),
+('b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6', '3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c', 'La Banca', 'Risolvete gli enigmi come veri enigmisti.', 'banca', 25, 1, '{}'::jsonb),
+('c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7', '3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c', 'Missione Social', 'Capacità di comunicare e creare relazioni.', 'social', 20, 2, '{}'::jsonb),
+('d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8', '3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c', 'Il Codice Segreto', 'Sbloccate la destinazione finale con il PIN a 10 cifre.', 'codice', 15, 3, '{}'::jsonb),
+('e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7', '4b4b4c4d-5e5f-6061-7172-838485868788', 'Rebus Musicale', 'Scoprite le 3 note e inseritele nell''ordine corretto.', 'enigma_musicale', 20, 1, '{}'::jsonb),
+('e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8', '4b4b4c4d-5e5f-6061-7172-838485868788', 'Lucchetto Direzionale', 'Sequenza di 4 direzioni.', 'lucchetto_direzionale', 20, 2, '{}'::jsonb),
+('e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9', '4b4b4c4d-5e5f-6061-7172-838485868788', 'Le Coordinate Finali', 'Coordinate finali.', 'enigma_coordinate', 20, 3, '{}'::jsonb),
+('c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0', '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c', 'Sfida Cornhole', 'Torneo fisico di Cornhole 1vs1.', 'cornhole', 20, 1, '{}'::jsonb),
+('d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0', '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c', 'Boxe Gonfiabile', 'Torneo a eliminazione diretta di Boxe Gonfiabile.', 'boxe', 20, 2, '{}'::jsonb),
+('f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0', '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c', 'Jackpot della Regia', 'Sfida Bonus Slot Machine.', 'jackpot', 20, 3, '{}'::jsonb)
+ON CONFLICT (id) DO UPDATE SET titolo = EXCLUDED.titolo, descrizione = EXCLUDED.descrizione, tipo_sfida = EXCLUDED.tipo_sfida, punteggio_massimo = EXCLUDED.punteggio_massimo;
+
+-- 3. MARKETPLACE ITEMS SEED
+INSERT INTO public.marketplace_items (id, nome, tipo, descrizione, costo_token, effetto, icona, disponibile, regole) VALUES 
+('bonus_punti', 'BONUS PUNTI (+20 PT)', 'bonus', 'Aggiunge +20 PT alla classifica della squadra.', 40, '', 'Sparkles', true, '{}'::jsonb),
+('bonus_scudo', 'BONUS SCUDO', 'bonus', 'Protegge la squadra da un malus attivo.', 35, '', 'Shield', true, '{}'::jsonb),
+('ruota_fortuna', 'RUOTA DELLA FORTUNA', 'bonus', 'Gira la ruota per vincere premi o subire perdite casuali.', 25, '', 'Compass', true, '{}'::jsonb),
+('passaparola', 'PASSAPAROLA', 'bonus', 'Ricevi un aiuto dalla regia.', 20, '', 'HelpCircle', true, '{}'::jsonb),
+('bonus_classifica', 'BONUS CLASSIFICA', 'bonus', 'Permette di sbirciare la classifica.', 30, '', 'ListOrdered', true, '{}'::jsonb),
+('partenza_anticipata', 'PARTENZA ANTICIPATA', 'bonus', 'Riduce di 2 minuti il tempo di partenza.', 35, '', 'Zap', true, '{}'::jsonb),
+('freeze_2min', 'FREEZE 2 MINUTI', 'malus', 'Blocca una squadra avversaria per 2 minuti.', 20, '', 'Flame', true, '{}'::jsonb),
+('enigma_extra', 'ENIGMA EXTRA', 'malus', 'Obbliga gli avversari a risolvere un enigma aggiuntivo.', 25, '', 'AlertTriangle', true, '{}'::jsonb),
+('ruota_sfortunata', 'RUOTA SFORTUNATA', 'malus', 'Obbliga gli avversari a fare uno spin sfortunato.', 20, '', 'Skull', true, '{}'::jsonb),
+('trappola', 'TRAPPOLA PUNTI', 'malus', 'Ruba 30 punti alla squadra bersaglio.', 40, '', 'Target', true, '{}'::jsonb),
+('penalita_punti', 'PENALITÀ PUNTI (-20 PT)', 'malus', 'Sottrae 20 punti ad una squadra avversaria.', 30, '', 'MinusCircle', true, '{}'::jsonb),
+('tassa_passaggio', 'TASSA DI PASSAGGIO', 'malus', 'Scambia i punti con quelli di un''altra squadra.', 70, '', 'TrendingUp', true, '{}'::jsonb)
+ON CONFLICT (id) DO UPDATE SET costo_token = EXCLUDED.costo_token, nome = EXCLUDED.nome, descrizione = EXCLUDED.descrizione;
+
+-- 4. DEFAULT POSTERS FOR LIVING POSTER CHALLENGE
+INSERT INTO public.posters (id, file_name, titolo, active) VALUES
+('padrino', 'il_padrino.jpg', 'Il Padrino', true),
+('pulp_fiction', 'pulp_fiction.jpg', 'Pulp Fiction', true),
+('forrest_gump', 'forrest_gump.jpg', 'Forrest Gump', true),
+('matrix', 'matrix.jpg', 'Matrix', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 5. DEFAULT GAME REPORT ROW
+INSERT INTO public.game_report (id, state, published_at, published_by, snapshot) 
+VALUES ('current', 'PRIVATE_LIVE', NULL, NULL, NULL) 
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. DEFAULT GAME SETTINGS ROW
+INSERT INTO public.game_settings (id, marketplace_visible, marketplace_active)
+VALUES ('current', false, false)
+ON CONFLICT (id) DO NOTHING;
+
+-- 7. DEFAULT ENIGMI SOLUTIONS FOR STAGE 4
+INSERT INTO public.enigma_solutions (challenge_id, solution_type, solution, punteggio) VALUES
+('e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7', 'notes', '["La", "Do", "Re"]'::jsonb, 20),
+('e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8', 'directions', '["nord-ovest", "sud", "ovest", "est"]'::jsonb, 20),
+('e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9', 'coordinates', '{"lat": "44.71", "lng": "7.84"}'::jsonb, 20)
+ON CONFLICT (challenge_id) DO UPDATE SET solution = EXCLUDED.solution, solution_type = EXCLUDED.solution_type, punteggio = EXCLUDED.punteggio;
 
 COMMIT;
