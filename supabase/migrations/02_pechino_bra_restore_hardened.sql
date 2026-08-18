@@ -254,6 +254,17 @@ CREATE TABLE IF NOT EXISTS public.team_answers (
   UNIQUE (team_id, question_id)
 );
 
+-- team_bank_answers
+CREATE TABLE IF NOT EXISTS public.team_bank_answers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  question_number INTEGER NOT NULL,
+  answer TEXT NOT NULL,
+  extracted_letter CHAR(1) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT team_bank_answers_team_q_key UNIQUE (team_id, question_number)
+);
+
 -- team_members
 CREATE TABLE IF NOT EXISTS public.team_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -561,21 +572,18 @@ DECLARE
   v_progress RECORD;
 BEGIN
   v_caller_team_id := public.current_team_id();
-  -- Gli admin possono leggere lo stato di qualsiasi team, altrimenti si forza il proprio team
   IF v_caller_team_id IS NOT NULL THEN
     p_team_id := v_caller_team_id;
   END IF;
 
-  -- Risposte date
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
-    'question_number', question_id,
-    'answer', selected_answer,
-    'extracted_letter', SUBSTRING(selected_answer FROM 1 FOR 1)
-  )), '[]'::jsonb) INTO v_answers
-  FROM public.team_answers
+    'question_number', question_number,
+    'answer', answer,
+    'extracted_letter', extracted_letter
+  ) ORDER BY question_number), '[]'::jsonb) INTO v_answers
+  FROM public.team_bank_answers
   WHERE team_id = p_team_id;
 
-  -- Domande del quiz della banca
   v_questions := '[
     {"question_number": 1, "question_text": "Ha le corna ma non è un toro (6 lettere)", "length": 6},
     {"question_number": 2, "question_text": "Ci si mette sopra chi vuole riposare (7 lettere)", "length": 7},
@@ -609,17 +617,13 @@ DECLARE
   v_correct_answer TEXT;
   v_correct BOOLEAN := false;
   v_letter CHAR(1);
+  v_challenge_completed BOOLEAN := false;
 BEGIN
   v_team_id := public.current_team_id();
   IF v_team_id IS NULL THEN
     RAISE EXCEPTION 'Non autenticato';
   END IF;
 
-  -- Soluzioni predefinite degli enigmi della banca:
-  -- 1: LUMACA (L)
-  -- 2: DIVANO (D)
-  -- 3: PALLA (P)
-  -- 4: NASO (N)
   IF p_question_number = 1 THEN v_correct_answer := 'LUMACA';
   ELSIF p_question_number = 2 THEN v_correct_answer := 'DIVANO';
   ELSIF p_question_number = 3 THEN v_correct_answer := 'PALLA';
@@ -630,10 +634,22 @@ BEGIN
   v_correct := (UPPER(TRIM(p_answer)) = v_correct_answer);
   v_letter := SUBSTRING(v_correct_answer FROM 1 FOR 1);
 
+  IF v_correct THEN
+    INSERT INTO public.team_bank_answers (team_id, question_number, answer, extracted_letter)
+    VALUES (v_team_id, p_question_number, UPPER(TRIM(p_answer)), v_letter)
+    ON CONFLICT (team_id, question_number) DO UPDATE
+    SET answer = EXCLUDED.answer, extracted_letter = EXCLUDED.extracted_letter;
+
+    IF (SELECT COUNT(*) FROM public.team_bank_answers WHERE team_id = v_team_id) = 4 THEN
+      v_challenge_completed := true;
+      PERFORM public.complete_challenge('b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6');
+    END IF;
+  END IF;
+
   RETURN jsonb_build_object(
     'correct', v_correct,
     'letter', v_letter,
-    'challenge_completed', false
+    'challenge_completed', v_challenge_completed
   );
 END;
 $$;
@@ -697,11 +713,6 @@ BEGIN
     RAISE EXCEPTION 'Non autenticato';
   END IF;
 
-  SELECT * INTO v_team FROM public.teams WHERE id = v_team_id FOR UPDATE;
-  IF v_team.token_balance < v_cost THEN
-    RAISE EXCEPTION 'Token insufficienti (Costo: 15)';
-  END IF;
-
   UPDATE public.teams SET token_balance = token_balance - v_cost WHERE id = v_team_id;
 
   INSERT INTO public.marketplace_transactions (team_id, marketplace_item_id, costo_token, stato)
@@ -718,8 +729,9 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_team_id UUID;
-  v_correct_pin TEXT := '1234567890'; -- Esempio
+  v_correct_pin TEXT := '1234567890';
   v_correct BOOLEAN := false;
+  v_challenge_id UUID := 'd3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8';
 BEGIN
   v_team_id := public.current_team_id();
   IF v_team_id IS NULL THEN
@@ -730,15 +742,61 @@ BEGIN
 
   IF v_correct THEN
     INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
-    VALUES (v_team_id, 'c1c2c3c4-c5c6-c7c8-c9c0-c1c2c3c4c5c6', 'completed', now())
+    VALUES (v_team_id, v_challenge_id, 'completed', now())
     ON CONFLICT (team_id, challenge_id) 
     DO UPDATE SET stato = 'completed', completata_il = now();
 
     INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
-    VALUES (v_team_id, 'c1c2c3c4-c5c6-c7c8-c9c0-c1c2c3c4c5c6', 30, 'challenge_points', 'Sfida PIN superata');
+    VALUES (v_team_id, v_challenge_id, 30, 'challenge_points', 'Sfida PIN superata');
   END IF;
 
-  RETURN jsonb_build_object('success', v_correct, 'message', CASE WHEN v_correct THEN 'Sbloccato!' ELSE 'Codice errato' END);
+  RETURN jsonb_build_object(
+    'success', v_correct,
+    'message', CASE WHEN v_correct THEN 'Sbloccato!' ELSE 'Codice errato' END
+  );
+END;
+$$;
+
+-- submit_social_challenge
+CREATE OR REPLACE FUNCTION public.submit_social_challenge(
+  p_image_1_path TEXT,
+  p_image_2_path TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_team_id UUID;
+  v_challenge_id UUID := 'c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7';
+BEGIN
+  v_team_id := public.current_team_id();
+  IF v_team_id IS NULL THEN
+    RAISE EXCEPTION 'Non autenticato';
+  END IF;
+
+  INSERT INTO public.team_social_submissions (
+    team_id, challenge_id, social_url, image_1_url, image_2_url, status, stato_approvazione, uploaded_at
+  )
+  VALUES (
+    v_team_id, v_challenge_id, p_image_1_path, p_image_1_path, p_image_2_path, 'submitted', 'pending', now()
+  )
+  ON CONFLICT (team_id, challenge_id) DO UPDATE
+  SET 
+    image_1_url = EXCLUDED.image_1_url,
+    image_2_url = EXCLUDED.image_2_url,
+    social_url = EXCLUDED.social_url,
+    status = 'submitted',
+    stato_approvazione = 'pending',
+    uploaded_at = now();
+
+  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
+  VALUES (v_team_id, v_challenge_id, 'completed', now())
+  ON CONFLICT (team_id, challenge_id) DO UPDATE
+  SET stato = 'completed', completata_il = now();
+
+  RETURN jsonb_build_object('success', true);
 END;
 $$;
 

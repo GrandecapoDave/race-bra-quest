@@ -67,22 +67,17 @@ function ChallengePage() {
     }
   });
 
-  const isBanca = challenge?.type === "banca";
-  const isSocial = challenge?.type === "social";
-  const isCodice = challenge?.type === "codice";
   const isEnigma = challenge?.type === "enigma_musicale" || challenge?.type === "enigma_testo" || challenge?.type === "lucchetto_direzionale" || challenge?.type === "enigma_coordinate";
-  const isChallengeLockedByMarketplace = (isBanca || isSocial || isCodice) && !gameSettings.data?.marketplace_active;
 
   useEffect(() => {
     if (team.data && challenge && state === "available" && !started && !start.isPending) {
       if (challenge.type === "emoji_movies") return;
       if (isRebusVisivo) return;
-      if (isChallengeLockedByMarketplace) return;
       if (isEnigma) return; // Enigma challenges self-manage their start via submit_enigma_answer
       start.mutate(challenge.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team.data?.id, challenge?.id, state, started, isRebusVisivo, isChallengeLockedByMarketplace, isEnigma]);
+  }, [team.data?.id, challenge?.id, state, started, isRebusVisivo, isEnigma]);
 
   function onComplete() {
     if (!challenge) return;
@@ -194,31 +189,7 @@ function ChallengePage() {
     );
   }
 
-  // Se la sfida è La Banca o Missione Social ed è bloccata, mostra la schermata specifica
-  if (isChallengeLockedByMarketplace) {
-    return (
-      <AppShell isAdmin={isAdmin.data}>
-        <div className="max-w-md mx-auto py-10 space-y-6 animate-pop-in">
-          <Link
-            to="/stage/$stageId"
-            params={{ stageId: challenge.stage_id }}
-            className="text-xs font-bold tracking-widest text-primary uppercase"
-          >
-            ← Torna alla tappa
-          </Link>
-          <div className="surface p-6 sm:p-8 space-y-4 bg-zinc-950 border border-zinc-800/40 rounded-2xl relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.7)]" />
-            <h2 className="text-xl font-bold uppercase tracking-wider text-yellow-500 flex items-center gap-2">
-              🔒 Sfida bloccata
-            </h2>
-            <p className="text-sm sm:text-base font-serif italic text-zinc-300 leading-relaxed">
-              Questa prova sarà disponibile quando il Regista aprirà ufficialmente il Marketplace.
-            </p>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
+
 
   // Briefing/start screen for the movie emoji challenge
   if (challenge.type === "emoji_movies" && !started && state !== "completed") {
