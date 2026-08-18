@@ -3298,5 +3298,135 @@ $$;
 
 NOTIFY pgrst, 'reload schema';
 
-COMMIT;
+-- ============================================================
+-- FUNZIONI MANCANTI (audit aggiunto in seguito)
+-- ============================================================
 
+CREATE OR REPLACE FUNCTION public.get_enigma_state(p_challenge_id UUID, p_team_id UUID DEFAULT NULL)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  v_team_id UUID;
+  v_attempts JSONB;
+  v_is_completed BOOLEAN;
+  v_prog RECORD;
+BEGIN
+  v_team_id := COALESCE(p_team_id, public.current_team_id());
+  IF v_team_id IS NULL THEN RAISE EXCEPTION 'Non autenticato'; END IF;
+
+  SELECT * INTO v_prog FROM public.team_progress WHERE team_id = v_team_id AND challenge_id = p_challenge_id;
+  v_is_completed := (FOUND AND v_prog.stato = 'completed');
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('id', ea.id, 'attempt_number', ea.attempt_number, 'answer', ea.answer, 'is_correct', ea.is_correct, 'submitted_at', ea.submitted_at) ORDER BY ea.attempt_number), '[]'::jsonb)
+  INTO v_attempts FROM public.enigma_attempts ea WHERE ea.team_id = v_team_id AND ea.challenge_id = p_challenge_id;
+
+  RETURN jsonb_build_object('attempts', v_attempts, 'attempt_count', jsonb_array_length(v_attempts), 'is_completed', v_is_completed, 'completed_at', CASE WHEN v_is_completed THEN v_prog.completata_il ELSE NULL END);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_jackpot_state()
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  v_team_id UUID;
+  v_play RECORD;
+  v_current_score INTEGER;
+BEGIN
+  v_team_id := public.current_team_id();
+  IF v_team_id IS NULL THEN RAISE EXCEPTION 'Non autenticato'; END IF;
+
+  SELECT * INTO v_play FROM public.jackpot_plays WHERE team_id = v_team_id ORDER BY timestamp DESC LIMIT 1;
+  SELECT COALESCE(SUM(punti), 0)::INTEGER INTO v_current_score FROM public.scores WHERE team_id = v_team_id;
+
+  IF FOUND THEN
+    RETURN jsonb_build_object('played', true, 'play', jsonb_build_object('id', v_play.id, 'puntata_punti', v_play.puntata_punti, 'esito_moltiplicatore', v_play.esito_moltiplicatore, 'delta_punti', v_play.delta_punti, 'timestamp', v_play.timestamp), 'current_score', v_current_score);
+  ELSE
+    RETURN jsonb_build_object('played', false, 'play', NULL, 'current_score', v_current_score);
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.submit_passaparola_request(p_transaction_id UUID, p_request_text TEXT)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  v_team_id UUID;
+  v_team_name TEXT;
+  v_tx RECORD;
+BEGIN
+  v_team_id := public.current_team_id();
+  IF v_team_id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Non autenticato'); END IF;
+
+  SELECT * INTO v_tx FROM public.marketplace_transactions WHERE id = p_transaction_id AND team_id = v_team_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'Transazione non trovata'); END IF;
+  IF v_tx.marketplace_item_id != 'passaparola' OR v_tx.stato != 'completed' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Richiesta non valida o già inoltrata');
+  END IF;
+
+  UPDATE public.marketplace_transactions
+  SET stato = 'pending', dettagli = jsonb_build_object('request_text', p_request_text, 'requested_at', now())
+  WHERE id = p_transaction_id;
+
+  SELECT nome_squadra INTO v_team_name FROM public.teams WHERE id = v_team_id;
+  INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+  VALUES ('passaparola_request', v_team_id, jsonb_build_object('message', 'La squadra "' || v_team_name || '" ha inoltrato una richiesta Passaparola: "' || p_request_text || '"'));
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.submit_quiz_answer(p_question UUID, p_selected INTEGER)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE
+  v_team_id UUID;
+  v_question RECORD;
+  v_correct BOOLEAN;
+  v_points INTEGER := 0;
+BEGIN
+  v_team_id := public.current_team_id();
+  IF v_team_id IS NULL THEN RAISE EXCEPTION 'Non autenticato'; END IF;
+
+  SELECT * INTO v_question FROM public.quiz_questions WHERE id = p_question;
+  IF NOT FOUND THEN RETURN jsonb_build_object('correct', false, 'points', 0, 'error', 'Domanda non trovata'); END IF;
+
+  v_correct := (p_selected = v_question.correct_answer_index);
+  v_points := CASE WHEN v_correct THEN v_question.points ELSE 0 END;
+
+  INSERT INTO public.team_answers (team_id, question_id, selected_answer, correct)
+  VALUES (v_team_id, p_question, p_selected, v_correct)
+  ON CONFLICT (team_id, question_id) DO UPDATE SET selected_answer = EXCLUDED.selected_answer, correct = EXCLUDED.correct;
+
+  IF v_correct AND v_points > 0 THEN
+    INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
+    VALUES (v_team_id, v_question.challenge_id, v_points, 'challenge_points', 'Risposta corretta al quiz');
+  END IF;
+
+  RETURN jsonb_build_object('correct', v_correct, 'points', v_points);
+END;
+$$;
+
+-- RLS per tabelle senza policy
+ALTER TABLE public.enigma_attempts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Team Read Enigma Attempts" ON public.enigma_attempts;
+CREATE POLICY "Team Read Enigma Attempts" ON public.enigma_attempts FOR SELECT USING (team_id = public.current_team_id() OR public.has_role(auth.uid(), 'admin'));
+
+ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read Quiz Questions" ON public.quiz_questions;
+CREATE POLICY "Public Read Quiz Questions" ON public.quiz_questions FOR SELECT USING (true);
+
+ALTER TABLE public.team_answers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Team Read Own Answers" ON public.team_answers;
+CREATE POLICY "Team Read Own Answers" ON public.team_answers FOR SELECT USING (team_id = public.current_team_id() OR public.has_role(auth.uid(), 'admin'));
+
+ALTER TABLE public.jackpot_plays ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Team Read Own Jackpot Plays" ON public.jackpot_plays;
+CREATE POLICY "Team Read Own Jackpot Plays" ON public.jackpot_plays FOR SELECT USING (team_id = public.current_team_id() OR public.has_role(auth.uid(), 'admin'));
+
+ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read Activity Log" ON public.activity_log;
+CREATE POLICY "Public Read Activity Log" ON public.activity_log FOR SELECT USING (true);
+
+ALTER TABLE public.cattiveria_ledger ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read Cattiveria" ON public.cattiveria_ledger;
+CREATE POLICY "Public Read Cattiveria" ON public.cattiveria_ledger FOR SELECT USING (true);
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
