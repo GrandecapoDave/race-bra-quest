@@ -739,16 +739,24 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_team_id UUID;
-  v_correct_pin TEXT := '1234567890';
+  v_correct_pin TEXT;
   v_correct BOOLEAN := false;
   v_challenge_id UUID := 'd3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8';
+  v_stage_id UUID;
 BEGIN
   v_team_id := public.current_team_id();
   IF v_team_id IS NULL THEN
     RAISE EXCEPTION 'Non autenticato';
   END IF;
 
-  v_correct := (p_inserted_code = v_correct_pin);
+  SELECT full_code INTO v_correct_pin FROM public.game_final_code WHERE id = 'current' LIMIT 1;
+  IF v_correct_pin IS NULL THEN
+    v_correct_pin := '4829167305';
+  END IF;
+
+  SELECT stage_id INTO v_stage_id FROM public.challenges WHERE id = v_challenge_id;
+
+  v_correct := (TRIM(p_inserted_code) = TRIM(v_correct_pin));
 
   IF v_correct THEN
     INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
@@ -756,13 +764,14 @@ BEGIN
     ON CONFLICT (team_id, challenge_id) 
     DO UPDATE SET stato = 'completed', completata_il = now();
 
-    INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
-    VALUES (v_team_id, v_challenge_id, 30, 'challenge_points', 'Sfida PIN superata');
+    INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)
+    VALUES (v_team_id, v_challenge_id, v_stage_id, 30, 'challenge_points', 'Sfida PIN superata')
+    ON CONFLICT DO NOTHING;
   END IF;
 
   RETURN jsonb_build_object(
     'success', v_correct,
-    'message', CASE WHEN v_correct THEN 'Sbloccato!' ELSE 'Codice errato' END
+    'message', CASE WHEN v_correct THEN 'Sbloccato!' ELSE 'Codice errato. Controlla attentamente le cifre.' END
   );
 END;
 $$;
