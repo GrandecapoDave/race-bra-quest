@@ -298,7 +298,7 @@ CREATE TABLE IF NOT EXISTS public.team_social_submissions (
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
   challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
   social_url TEXT NOT NULL,
-  stato_approvazione TEXT NOT NULL DEFAULT 'pending' CHECK (stato_approvazione IN ('pending', 'approved', 'rejected')),
+  stato_approvazione TEXT NOT NULL DEFAULT 'pending' CHECK (stato_approvazione IN ('pending', 'approved', 'rejected', 'confirmed', 'auto_approved')),
   note TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE (team_id, challenge_id)
