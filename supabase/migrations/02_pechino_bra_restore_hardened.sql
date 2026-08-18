@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS public.submissions (
   url TEXT NOT NULL,
   latitude NUMERIC(10, 7) DEFAULT NULL,
   longitude NUMERIC(10, 7) DEFAULT NULL,
-  stato_approvazione TEXT NOT NULL DEFAULT 'pending' CHECK (stato_approvazione IN ('pending', 'approved', 'rejected')),
+  stato_approvazione TEXT NOT NULL DEFAULT 'pending' CHECK (stato_approvazione IN ('pending', 'approved', 'rejected', 'confirmed', 'auto_approved')),
   note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
