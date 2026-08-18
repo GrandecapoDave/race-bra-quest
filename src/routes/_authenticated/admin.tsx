@@ -114,8 +114,8 @@ function AdminLayout() {
           longitude,
           challenge_id,
           team_id,
-          teams ( nome_squadra ),
-          challenges ( titolo, punteggio_massimo, tipo_sfida, stage_id )
+          teams ( id, nome_squadra, avatar_url, colore ),
+          challenges ( id, titolo, punteggio_massimo, tipo_sfida, stage_id, stages ( id, titolo, numero_tappa ) )
         `)
         .order("created_at", { ascending: false });
       if (error) {
@@ -936,7 +936,7 @@ export function ApprovalCard({
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-border/30 pb-3">
         <div>
           <span className="text-[9px] font-extrabold tracking-widest text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">
-            {sub.challenges?.stages?.nome_tappa ?? "Tappa"} · {sub.challenges?.titolo ?? "Prova"}
+            {sub.challenges?.stages?.titolo ? `Tappa ${sub.challenges?.stages?.numero_tappa}: ${sub.challenges?.stages?.titolo}` : sub.challenges?.stages?.nome_tappa ?? "Tappa"} · {sub.challenges?.titolo ?? "Prova"}
           </span>
           <h3 className="font-extrabold text-lg mt-1 text-foreground">
             Squadra: {sub.teams?.nome_squadra ?? "Sconosciuta"}
