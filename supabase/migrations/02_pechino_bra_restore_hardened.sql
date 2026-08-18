@@ -1,15 +1,29 @@
 -- ============================================================================
--- PECHINO EXPRESS BRA — PRODUCTION DATABASE RESTORE & HARDENING MIGRATION
+-- PECHINO EXPRESS BRA — ALL-IN-ONE IDEMPOTENT PRODUCTION SETUP & RESTORE
 -- File: supabase/migrations/02_pechino_bra_restore_hardened.sql
+-- Target: PostgreSQL 15+ (Supabase)
+-- Safe to run on empty DB or existing DB (No data loss)
 -- ============================================================================
 
 BEGIN;
 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- ----------------------------------------------------------------------------
--- STEP 1: TABELLE & COLONNE (SCHEMA ALIGNMENT WITH NO DATA LOSS)
+-- STEP 1: CREAZIONE TABELLE DI BASE (SE MANCANTI) & COLONNE
 -- ----------------------------------------------------------------------------
 
--- Aggiunta colonne opzionali/mancanti a teams per allineamento frontend
+-- 1. SQUADRE (TEAMS)
+CREATE TABLE IF NOT EXISTS public.teams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome_squadra TEXT NOT NULL UNIQUE,
+  colore TEXT NOT NULL DEFAULT '#ea580c',
+  token_balance INTEGER NOT NULL DEFAULT 50 CHECK (token_balance >= 0),
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Aggiunta colonne a teams (se mancanti)
 ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '🏳️';
 ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS motto TEXT DEFAULT 'In corsa per la vittoria!';
 ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS color TEXT;
@@ -21,7 +35,188 @@ ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS freeze_duration_seconds INTEGE
 -- Sincronizzazione colonne colore/color
 UPDATE public.teams SET color = colore WHERE color IS NULL;
 
--- Creazione Tabella quiz_questions
+-- 2. TAPPE (STAGES)
+CREATE TABLE IF NOT EXISTS public.stages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  numero_tappa INTEGER NOT NULL UNIQUE,
+  titolo TEXT NOT NULL,
+  descrizione TEXT,
+  latitude NUMERIC(10, 7) DEFAULT NULL,
+  longitude NUMERIC(10, 7) DEFAULT NULL,
+  stato TEXT NOT NULL DEFAULT 'open' CHECK (stato IN ('locked', 'open', 'in_progress', 'completed', 'closed')),
+  outcome JSONB DEFAULT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Ensure stages columns exist
+ALTER TABLE public.stages ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7) DEFAULT NULL;
+ALTER TABLE public.stages ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7) DEFAULT NULL;
+ALTER TABLE public.stages ADD COLUMN IF NOT EXISTS outcome JSONB DEFAULT NULL;
+
+-- 3. SFIDE (CHALLENGES)
+CREATE TABLE IF NOT EXISTS public.challenges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  stage_id UUID NOT NULL REFERENCES public.stages(id) ON DELETE CASCADE,
+  titolo TEXT NOT NULL,
+  descrizione TEXT,
+  tipo_sfida TEXT NOT NULL,
+  punteggio_massimo INTEGER NOT NULL DEFAULT 100,
+  ordine_sfida INTEGER NOT NULL,
+  configurazione JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 4. PROGRESSO SQUADRE (TEAM PROGRESS)
+CREATE TABLE IF NOT EXISTS public.team_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
+  stato TEXT NOT NULL DEFAULT 'locked' CHECK (stato IN ('locked', 'in_progress', 'completed')),
+  completata_il TIMESTAMPTZ DEFAULT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (team_id, challenge_id)
+);
+
+-- 5. PUNTEGGI & MODIFICATORI (SCORES)
+CREATE TABLE IF NOT EXISTS public.scores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  challenge_id UUID REFERENCES public.challenges(id) ON DELETE SET NULL,
+  stage_id UUID REFERENCES public.stages(id) ON DELETE SET NULL,
+  punti INTEGER NOT NULL,
+  tipo_modificatore TEXT DEFAULT 'challenge_points',
+  motivo TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 6. MARKETPLACE ITEMS
+CREATE TABLE IF NOT EXISTS public.marketplace_items (
+  id TEXT PRIMARY KEY,
+  nome TEXT NOT NULL,
+  tipo TEXT NOT NULL CHECK (tipo IN ('bonus', 'malus')),
+  descrizione TEXT,
+  costo_token INTEGER NOT NULL CHECK (costo_token >= 0),
+  effet TEXT, -- Per compatibilità con schema production esistente
+  effetto TEXT,
+  icona TEXT,
+  disponibile BOOLEAN NOT NULL DEFAULT true,
+  regole JSONB DEFAULT '{}'::jsonb
+);
+
+ALTER TABLE public.marketplace_items ADD COLUMN IF NOT EXISTS effetto TEXT;
+
+-- 7. MARKETPLACE TRANSACTIONS
+CREATE TABLE IF NOT EXISTS public.marketplace_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  marketplace_item_id TEXT NOT NULL REFERENCES public.marketplace_items(id),
+  target_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  stage_id UUID REFERENCES public.stages(id) ON DELETE SET NULL,
+  challenge_id UUID REFERENCES public.challenges(id) ON DELETE SET NULL,
+  costo_token INTEGER NOT NULL,
+  stato TEXT NOT NULL DEFAULT 'completed' CHECK (stato IN ('completed', 'used', 'viewing', 'expired', 'pending')),
+  data_acquisto TIMESTAMPTZ NOT NULL DEFAULT now(),
+  data_utilizzo TIMESTAMPTZ DEFAULT NULL,
+  dettagli JSONB DEFAULT '{}'::jsonb
+);
+
+-- 8. PUNTI CATTIVERIA LEDGER
+CREATE TABLE IF NOT EXISTS public.cattiveria_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  stage_id UUID REFERENCES public.stages(id) ON DELETE SET NULL,
+  tipo TEXT NOT NULL CHECK (tipo IN ('MALUS_UTILIZZATO', 'SCUDO_ATTIVATO', 'MALUS_SUBITO_DIFESO', 'FINE_TAPPA_CATTIVERIA')),
+  marketplace_item_id TEXT REFERENCES public.marketplace_items(id),
+  riferimento_transazione UUID REFERENCES public.marketplace_transactions(id) ON DELETE SET NULL,
+  punti INTEGER NOT NULL,
+  motivo TEXT NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 9. JACKPOT DELLA REGIA
+CREATE TABLE IF NOT EXISTS public.jackpot_plays (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  puntata_punti INTEGER NOT NULL,
+  esito_moltiplicatore NUMERIC NOT NULL,
+  delta_punti INTEGER NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 10. SUBMISSIONS (FOTOGRAFIE & PROVE)
+CREATE TABLE IF NOT EXISTS public.submissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  url TEXT NOT NULL,
+  latitude NUMERIC(10, 7) DEFAULT NULL,
+  longitude NUMERIC(10, 7) DEFAULT NULL,
+  stato_approvazione TEXT NOT NULL DEFAULT 'pending' CHECK (stato_approvazione IN ('pending', 'approved', 'rejected')),
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 11. TIME PENALTIES
+CREATE TABLE IF NOT EXISTS public.time_penalties (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  stage_id UUID REFERENCES public.stages(id) ON DELETE SET NULL,
+  minuti_penalita NUMERIC NOT NULL DEFAULT 0,
+  motivo TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 12. AUDIT LOG (ACTIVITY LOG)
+CREATE TABLE IF NOT EXISTS public.activity_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo_evento TEXT NOT NULL,
+  team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  target_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  dettagli JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 13. GAME REPORT (RESOCONTO GARA & SNAPSHOT)
+CREATE TABLE IF NOT EXISTS public.game_report (
+  id TEXT PRIMARY KEY DEFAULT 'current',
+  state TEXT NOT NULL DEFAULT 'PRIVATE_LIVE' CHECK (state IN ('PRIVATE_LIVE', 'PUBLISHED_FINAL')),
+  published_at TIMESTAMPTZ DEFAULT NULL,
+  published_by UUID DEFAULT NULL,
+  snapshot JSONB DEFAULT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 14. POSTERS & TEAM_POSTERS
+CREATE TABLE IF NOT EXISTS public.posters (
+  id TEXT PRIMARY KEY,
+  file_name TEXT NOT NULL,
+  titolo TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS public.team_posters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  poster_id TEXT NOT NULL REFERENCES public.posters(id) ON DELETE CASCADE,
+  assigned_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 15. USER ROLES
+CREATE TABLE IF NOT EXISTS public.user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'team')),
+  team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ----------------------------------------------------------------------------
+-- STEP 2: CREAZIONE TABELLE MANCANTI (ENIGMI, SOCIAL, QUIZ, SESSIONS, TORNEI)
+-- ----------------------------------------------------------------------------
+
+-- quiz_questions
 CREATE TABLE IF NOT EXISTS public.quiz_questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
@@ -38,7 +233,7 @@ CREATE OR REPLACE VIEW public.quiz_questions_public AS
 SELECT id, challenge_id, question, options, order_index, points, created_at
 FROM public.quiz_questions;
 
--- Tabella team_answers
+-- team_answers
 CREATE TABLE IF NOT EXISTS public.team_answers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
@@ -49,7 +244,7 @@ CREATE TABLE IF NOT EXISTS public.team_answers (
   UNIQUE (team_id, question_id)
 );
 
--- Tabella team_members
+-- team_members
 CREATE TABLE IF NOT EXISTS public.team_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
@@ -57,7 +252,7 @@ CREATE TABLE IF NOT EXISTS public.team_members (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Tabella race_sessions
+-- race_sessions
 CREATE TABLE IF NOT EXISTS public.race_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
@@ -67,7 +262,7 @@ CREATE TABLE IF NOT EXISTS public.race_sessions (
   duration_seconds INTEGER DEFAULT NULL
 );
 
--- Tabella team_social_submissions
+-- team_social_submissions
 CREATE TABLE IF NOT EXISTS public.team_social_submissions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
@@ -79,7 +274,7 @@ CREATE TABLE IF NOT EXISTS public.team_social_submissions (
   UNIQUE (team_id, challenge_id)
 );
 
--- Tabella enigma_solutions
+-- enigma_solutions
 CREATE TABLE IF NOT EXISTS public.enigma_solutions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE UNIQUE,
@@ -89,7 +284,7 @@ CREATE TABLE IF NOT EXISTS public.enigma_solutions (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Tabella enigma_attempts
+-- enigma_attempts
 CREATE TABLE IF NOT EXISTS public.enigma_attempts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
@@ -127,8 +322,16 @@ CREATE TABLE IF NOT EXISTS public.boxe_matches (
   completed_at TIMESTAMPTZ DEFAULT NULL
 );
 
+-- INDICI
+CREATE INDEX IF NOT EXISTS idx_scores_team_id ON public.scores(team_id);
+CREATE INDEX IF NOT EXISTS idx_scores_stage_id ON public.scores(stage_id);
+CREATE INDEX IF NOT EXISTS idx_team_progress_team ON public.team_progress(team_id, stato);
+CREATE INDEX IF NOT EXISTS idx_cattiveria_team_stage ON public.cattiveria_ledger(team_id, stage_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_team ON public.marketplace_transactions(team_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_challenge ON public.submissions(challenge_id, team_id);
+
 -- ----------------------------------------------------------------------------
--- STEP 2: FUNZIONI RPC DI BASE (AUTHENTICATION & IDENTIFICATION)
+-- STEP 3: FUNZIONI RPC DI BASE (AUTHENTICATION & IDENTIFICATION)
 -- ----------------------------------------------------------------------------
 
 -- current_team_id()
@@ -178,7 +381,7 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- STEP 3: RPC APPLICATIVE DI GIOCO (GAME LOGIC & SEGREGATION)
+-- STEP 4: RPC APPLICATIVE DI GIOCO (GAME LOGIC & SEGREGATION)
 -- ----------------------------------------------------------------------------
 
 -- start_challenge
@@ -319,8 +522,6 @@ DECLARE
   v_correct_answer TEXT;
   v_correct BOOLEAN := false;
   v_letter CHAR(1);
-  v_challenge_completed BOOLEAN := false;
-  v_total_solved BIGINT;
 BEGIN
   v_team_id := public.current_team_id();
   IF v_team_id IS NULL THEN
@@ -1040,15 +1241,6 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_team_id UUID;
-BEGIN
-  v_team_id := public.current_team_id();
-  IF v_team_id IS NULL THEN
-    RAISE EXCEPTION 'Non autenticato';
-  END IF;
-
-  UPDATE public.marketplace_transactions
-  SET stato = 'used', data_utilizzo = now()
-  WHERE id = p_transaction_id AND team_id = v_team_id AND stato = 'viewing';
 END;
 $$;
 
@@ -1228,7 +1420,7 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- STEP 4: RPC DI AMMINISTRAZIONE (ADMIN OPERATIONS)
+-- STEP 6: RPC DI AMMINISTRAZIONE (ADMIN OPERATIONS)
 -- ----------------------------------------------------------------------------
 
 -- admin_add_points
@@ -1371,7 +1563,7 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- STEP 5: ROW LEVEL SECURITY POLICIES (TEAM SEGREGATION & PRIVACY)
+-- STEP 7: ROW LEVEL SECURITY POLICIES (TEAM SEGREGATION & PRIVACY)
 -- ----------------------------------------------------------------------------
 
 -- Rimuoviamo le vecchie policy permissive di SELECT per le tabelle sensibili
