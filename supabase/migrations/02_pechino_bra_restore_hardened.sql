@@ -585,10 +585,10 @@ BEGIN
   WHERE team_id = p_team_id;
 
   v_questions := '[
-    {"question_number": 1, "question_text": "Ha le corna ma non è un toro (6 lettere)", "length": 6},
-    {"question_number": 2, "question_text": "Ci si mette sopra chi vuole riposare (7 lettere)", "length": 7},
-    {"question_number": 3, "question_text": "Si lancia per fare canestro (5 lettere)", "length": 5},
-    {"question_number": 4, "question_text": "In mezzo alla faccia (4 lettere)", "length": 4}
+    {"question_number": 1, "question_text": "Lo usi per prelevare contanti senza fare la fila allo sportello", "length": 8},
+    {"question_number": 2, "question_text": "Il codice segreto a 4 cifre che non devi mai dire a nessuno", "length": 3},
+    {"question_number": 3, "question_text": "La moneta che hai in tasca in tutta Europa", "length": 4},
+    {"question_number": 4, "question_text": "La scadenza mensile del mutuo, incubo di ogni famiglia", "length": 4}
   ]'::jsonb;
 
   SELECT * INTO v_progress FROM public.team_progress
@@ -615,20 +615,30 @@ AS $$
 DECLARE
   v_team_id UUID;
   v_correct_answer TEXT;
+  v_extracted_letter CHAR(1);
   v_correct BOOLEAN := false;
-  v_letter CHAR(1);
   v_challenge_completed BOOLEAN := false;
+  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';
 BEGIN
   v_team_id := public.current_team_id();
   IF v_team_id IS NULL THEN
     RAISE EXCEPTION 'Non autenticato';
   END IF;
 
-  IF p_question_number = 1 THEN v_correct_answer := 'LUMACA';
-  ELSIF p_question_number = 2 THEN v_correct_answer := 'DIVANO';
-  ELSIF p_question_number = 3 THEN v_correct_answer := 'PALLA';
-  ELSIF p_question_number = 4 THEN v_correct_answer := 'NASO';
-  ELSE RAISE EXCEPTION 'Numero domanda non valido';
+  IF p_question_number = 1 THEN 
+    v_correct_answer := 'BANCOMAT';
+    v_extracted_letter := 'B';
+  ELSIF p_question_number = 2 THEN 
+    v_correct_answer := 'PIN';
+    v_extracted_letter := 'P';
+  ELSIF p_question_number = 3 THEN 
+    v_correct_answer := 'EURO';
+    v_extracted_letter := 'E';
+  ELSIF p_question_number = 4 THEN 
+    v_correct_answer := 'RATA';
+    v_extracted_letter := 'R';
+  ELSE 
+    RAISE EXCEPTION 'Numero domanda non valido';
   END IF;
 
   v_correct := (UPPER(TRIM(p_answer)) = v_correct_answer);
