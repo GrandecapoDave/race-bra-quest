@@ -334,61 +334,63 @@ function Dashboard() {
 
         {/* TEAM HEADER CARD */}
         <section
-          className="surface animate-pop-in relative overflow-hidden p-5 sm:p-6 bg-card/45 backdrop-blur-md transition-all duration-300"
+          className="surface animate-pop-in relative overflow-hidden p-4 sm:p-6 bg-card/45 backdrop-blur-md transition-all duration-300 w-full min-w-0 box-border"
           style={{
             borderColor: team.data?.color ? `${team.data.color}44` : undefined,
             borderLeft: team.data?.color ? `4px solid ${team.data.color}` : undefined,
           }}
         >
           {/* BADGES CONTAINER */}
-          <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
-            {activeEnigma && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                <span>🧩 ENIGMA EXTRA</span>
-              </div>
-            )}
-            {solvedEnigma && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[10px] font-black uppercase tracking-wider shadow-sm">
-                <span>🧩 ENIGMA RISOLTO</span>
-              </div>
-            )}
-            {activeRuota && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                <span>🎡 RUOTA SFORTUNATA</span>
-              </div>
-            )}
-            {solvedRuota && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[10px] font-black uppercase tracking-wider shadow-sm">
-                <span>🎡 RUOTA COMPLETATA</span>
-              </div>
-            )}
-            {isTeamFrozen && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                <span>❄️ CONGELATO</span>
-              </div>
-            )}
-            {activeShield && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                <Shield className="size-3.5 text-blue-400 stroke-[3]" />
-                <span>SCUDO ATTIVO</span>
-              </div>
-            )}
-            {activePartenza && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                <Zap className="size-3.5 stroke-[3]" />
-                <span>−2:00 DISPONIBILE</span>
-              </div>
-            )}
-            {usedPartenza && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[10px] font-black uppercase tracking-wider shadow-sm">
-                <Zap className="size-3.5 opacity-50" />
-                <span>−2:00 USATO</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
+          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || activeShield || activePartenza || usedPartenza) && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-3 sm:absolute sm:top-4 sm:right-4 sm:mb-0 sm:flex-col sm:items-end z-10">
+              {activeEnigma && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <span>🧩 ENIGMA EXTRA</span>
+                </div>
+              )}
+              {solvedEnigma && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
+                  <span>🧩 ENIGMA RISOLTO</span>
+                </div>
+              )}
+              {activeRuota && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <span>🎡 RUOTA SFORTUNATA</span>
+                </div>
+              )}
+              {solvedRuota && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
+                  <span>🎡 RUOTA COMPLETATA</span>
+                </div>
+              )}
+              {isTeamFrozen && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <span>❄️ CONGELATO</span>
+                </div>
+              )}
+              {activeShield && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <Shield className="size-3 text-blue-400 stroke-[3]" />
+                  <span>SCUDO ATTIVO</span>
+                </div>
+              )}
+              {activePartenza && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <Zap className="size-3 stroke-[3]" />
+                  <span>−2:00 DISP.</span>
+                </div>
+              )}
+              {usedPartenza && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
+                  <Zap className="size-3 opacity-50" />
+                  <span>−2:00 USATO</span>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <div
-              className="grid size-16 shrink-0 place-items-center rounded-2xl text-4xl shadow-md"
+              className="grid size-14 sm:size-16 shrink-0 place-items-center rounded-2xl text-3xl sm:text-4xl shadow-md"
               style={{ 
                 backgroundColor: (team.data?.color ?? "#f97316") + "22",
                 border: `1px solid ${(team.data?.color ?? "#f97316")}44`
@@ -396,11 +398,11 @@ function Dashboard() {
             >
               {team.data?.avatar_url ?? "🏳️"}
             </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-3xl sm:text-4xl font-display font-extrabold uppercase tracking-wide leading-none">
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide leading-tight">
                 {team.data?.name ?? "Nessuna squadra"}
               </h1>
-              <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold mt-1">
+              <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold mt-0.5">
                 {team.data?.motto ?? "Crea una squadra per iniziare la gara"}
               </p>
             </div>

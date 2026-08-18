@@ -75,13 +75,15 @@ function StagePage() {
       <p className="mt-4 text-xs font-bold tracking-widest text-accent uppercase">
         Tappa {stage?.order_index}
       </p>
-      <h1 className="mt-1 text-5xl leading-none">{stage?.title ?? "Tappa"}</h1>
+      <h1 className="mt-1 text-3xl sm:text-5xl font-display leading-tight sm:leading-none break-words">
+        {stage?.title ?? "Tappa"}
+      </h1>
       <ProgressBar
         value={stageChallenges.length ? (done.length / stageChallenges.length) * 100 : 0}
         className="mt-4"
       />
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 space-y-3 w-full min-w-0">
         {stageChallenges.map((c, i) => {
           const state = challengeState(c, stageChallenges, prog);
           const isJackpot = c.type === "jackpot";
@@ -95,14 +97,14 @@ function StagePage() {
               : "bg-muted text-muted-foreground";
 
           const content = (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <span
-                className={`grid size-11 shrink-0 place-items-center rounded-xl font-display text-2xl ${circleColorClass}`}
+                className={`grid size-10 sm:size-11 shrink-0 place-items-center rounded-xl font-display text-xl sm:text-2xl ${circleColorClass}`}
               >
                 {state === "completed" ? (
-                  <Check className="size-5" />
+                  <Check className="size-4 sm:size-5" />
                 ) : state === "locked" ? (
-                  <Lock className="size-4" />
+                  <Lock className="size-3.5 sm:size-4" />
                 ) : isJackpot ? (
                   "🎰"
                 ) : (
@@ -110,27 +112,27 @@ function StagePage() {
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-lg font-extrabold">{c.title}</p>
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <p className="text-base sm:text-lg font-extrabold truncate max-w-full">{c.title}</p>
                   {isJackpot && (
                     <span className="bg-purple-950/40 border border-purple-500/30 text-purple-400 text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
                       Facoltativa
                     </span>
                   )}
                 </div>
-                <p className="truncate text-sm text-muted-foreground">{c.description}</p>
+                <p className="truncate text-xs sm:text-sm text-muted-foreground">{c.description}</p>
                 {isJackpot ? (
                   <p className="text-[10px] font-black text-purple-400 uppercase tracking-wider mt-0.5">Scommessa Bonus</p>
                 ) : (
                   <p className="text-xs font-bold text-gold">{c.points} punti</p>
                 )}
               </div>
-              {state === "available" && <Play className="size-5 text-primary" />}
+              {state === "available" && <Play className="size-4 sm:size-5 text-primary shrink-0" />}
             </div>
           );
 
           return state === "locked" ? (
-            <div key={c.id} className="surface p-4 opacity-50">
+            <div key={c.id} className="surface p-3.5 sm:p-4 opacity-50 w-full min-w-0 box-border overflow-hidden">
               {content}
             </div>
           ) : (
@@ -138,7 +140,7 @@ function StagePage() {
               key={c.id}
               to="/challenge/$challengeId"
               params={{ challengeId: c.id }}
-              className="surface block p-4 transition-transform hover:scale-[1.01]"
+              className="surface block p-3.5 sm:p-4 transition-transform hover:scale-[1.01] w-full min-w-0 box-border overflow-hidden"
             >
               {content}
             </Link>

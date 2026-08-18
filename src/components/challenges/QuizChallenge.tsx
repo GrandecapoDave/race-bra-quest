@@ -79,7 +79,7 @@ export function QuizChallenge({
                     key={opt}
                     disabled={Boolean(prior) || pending === q.id}
                     onClick={() => submit(q.id, oi)}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
+                    className={`flex items-center justify-between gap-2.5 rounded-xl border px-3.5 sm:px-4 py-3 text-left text-sm transition-colors w-full min-w-0 box-border ${
                       isCorrectChoice
                         ? "border-success bg-success/15 text-success"
                         : isWrongChoice
@@ -87,9 +87,9 @@ export function QuizChallenge({
                           : "border-border bg-secondary/60 hover:border-primary disabled:opacity-60"
                     }`}
                   >
-                    {opt}
-                    {isCorrectChoice && <Check className="size-4" />}
-                    {isWrongChoice && <X className="size-4" />}
+                    <span className="flex-1 min-w-0 break-words leading-snug">{opt}</span>
+                    {isCorrectChoice && <Check className="size-4 shrink-0 text-success" />}
+                    {isWrongChoice && <X className="size-4 shrink-0 text-destructive" />}
                   </button>
                 );
               })}

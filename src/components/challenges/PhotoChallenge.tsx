@@ -75,13 +75,13 @@ export function PhotoChallenge({
 
   return (
     <div className="space-y-4">
-      <label className="surface flex cursor-pointer flex-col items-center gap-2 border-dashed p-8 text-center">
+      <label className="surface flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-border/80 p-5 sm:p-8 text-center transition-colors hover:border-primary w-full min-w-0 box-border">
         {uploading ? (
           <Loader2 className="size-8 animate-spin text-primary" />
         ) : (
           <Camera className="size-8 text-primary" />
         )}
-        <span className="font-bold">Scatta o carica la foto ufficiale</span>
+        <span className="font-bold text-sm sm:text-base">Scatta o carica la foto ufficiale</span>
         <span className="text-xs text-muted-foreground">
           Salviamo automaticamente posizione GPS e orario
         </span>
@@ -99,7 +99,7 @@ export function PhotoChallenge({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
         {photos.map((p) => (
           <PhotoCard key={p.id} path={p.url} lat={p.latitude} lng={p.longitude} at={p.created_at} />
         ))}

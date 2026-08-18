@@ -240,11 +240,13 @@ function ChallengePage() {
       >
         ← Torna alla tappa
       </Link>
-      <h1 className="mt-2 text-4xl leading-none">{challenge.title}</h1>
+      <h1 className="mt-2 text-2xl sm:text-4xl font-display leading-tight sm:leading-none break-words">
+        {challenge.title}
+      </h1>
       <p className="mt-2 text-sm text-muted-foreground">{challenge.description}</p>
       <p className="mt-1 text-xs font-bold text-gold">{challenge.points} punti in palio</p>
 
-      <div className="mt-6">
+      <div className="mt-6 w-full min-w-0">
         {state === "locked" ? (
           <p className="surface flex items-center gap-2 p-5 text-sm text-muted-foreground">
             <Lock className="size-4" /> Completa prima le prove precedenti.

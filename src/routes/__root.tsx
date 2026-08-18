@@ -84,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" },
       { title: "Pechino Express Bra — La gara urbana" },
       {
         name: "description",
@@ -121,11 +121,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="it" className="dark">
+    <html lang="it" className="dark w-full max-w-full overflow-x-hidden">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="w-full max-w-full min-h-screen overflow-x-hidden m-0 p-0 relative bg-background text-foreground antialiased">
         {children}
         <Scripts />
       </body>

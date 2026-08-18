@@ -633,14 +633,14 @@ function AppShellInner({
       </Sidebar>
 
       {/* ── Main content ── */}
-      <SidebarInset className="min-w-0 flex-1 pb-24 md:pb-0">
-        <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-background/80 backdrop-blur-md safe-top">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-3">
-            <div className="flex items-center gap-2">
+      <SidebarInset className="min-w-0 w-full max-w-full flex-1 pb-24 md:pb-0 overflow-x-hidden box-border">
+        <header className="sticky top-0 z-30 w-full border-b border-white/[0.06] bg-background/80 backdrop-blur-md safe-top">
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-3 sm:px-4 py-3 box-border">
+            <div className="flex items-center gap-2 min-w-0">
               <SidebarTrigger />
               <Link
                 to={isAdmin ? "/admin" : "/dashboard"}
-                className="text-xl leading-none md:hidden font-display tracking-wide uppercase"
+                className="truncate text-lg sm:text-xl leading-none md:hidden font-display tracking-wide uppercase"
               >
                 PECHINO EXPRESS <span className="text-primary">BRA</span>
               </Link>
@@ -682,7 +682,7 @@ function AppShellInner({
           )}
         </header>
 
-        <main className="mx-auto max-w-3xl px-4 py-5 pb-12">
+        <main className="mx-auto w-full max-w-3xl min-w-0 px-3 sm:px-4 py-4 sm:py-5 pb-28 md:pb-12 box-border overflow-x-hidden">
           {isFrozen ? (
             <div className="flex flex-col items-center justify-center bg-zinc-950/40 border border-cyan-500/20 backdrop-blur-md rounded-3xl p-8 py-16 text-center space-y-6 my-10 animate-in fade-in zoom-in-95 duration-300 max-w-lg mx-auto shadow-2xl shadow-cyan-950/20">
               <div className="size-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center animate-pulse shadow-lg shadow-cyan-500/5">
@@ -911,8 +911,8 @@ function AppShellInner({
       </SidebarInset>
 
       {/* ── Mobile bottom nav ── */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/[0.07] bg-background/90 backdrop-blur-xl md:hidden shadow-lg shadow-black/40 safe-bottom">
-        <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-1.5 min-h-16">
+      <nav className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-white/[0.07] bg-background/95 backdrop-blur-xl md:hidden shadow-lg shadow-black/40 safe-bottom">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-around px-1 py-1.5 min-h-16 box-border">
           {mobileNavItems.map((item) => (
             <NavItem
               key={item.to}
@@ -928,11 +928,11 @@ function AppShellInner({
           ))}
           <button
             onClick={toggleSidebar}
-            className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:text-primary active:scale-95"
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-semibold text-slate-400 transition-colors hover:text-primary active:scale-95 cursor-pointer min-w-0"
             aria-label="Apri menu"
           >
             <Menu className="size-5" strokeWidth={1.8} />
-            <span>Menu</span>
+            <span className="tracking-tight truncate max-w-full text-center px-0.5">Menu</span>
           </button>
         </div>
       </nav>
@@ -952,12 +952,12 @@ function NavItem({
   return (
     <Link
       to={to}
-      activeProps={{ className: "text-orange-400 scale-105" }}
-      inactiveProps={{ className: "text-slate-500" }}
-      className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-semibold transition-all hover:text-primary"
+      activeProps={{ className: "text-orange-400 scale-105 font-bold" }}
+      inactiveProps={{ className: "text-slate-400 font-medium" }}
+      className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] transition-all hover:text-primary min-w-0"
     >
       {icon}
-      <span className="tracking-wide">{label}</span>
+      <span className="tracking-tight truncate max-w-full text-center px-0.5">{label}</span>
     </Link>
   );
 }
