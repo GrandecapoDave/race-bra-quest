@@ -1931,4 +1931,152 @@ BEGIN
 END;
 $$;
 
+-- ----------------------------------------------------------------------------
+-- STEP 10: TRIGGER DI SINCRONIZZAZIONE TEAMS (BEFORE + AFTER)
+-- ----------------------------------------------------------------------------
+
+ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS password_plain TEXT;
+
+CREATE OR REPLACE FUNCTION public.sync_team_to_auth_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp, extensions
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_email TEXT;
+  v_encrypted_pass TEXT;
+BEGIN
+  IF NEW.username IS NULL OR NEW.password_plain IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  v_email := LOWER(TRIM(NEW.username)) || '@pechino.it';
+  v_encrypted_pass := extensions.crypt(NEW.password_plain, extensions.gen_salt('bf', 10));
+
+  SELECT id INTO v_user_id 
+  FROM auth.users 
+  WHERE email = v_email;
+
+  IF v_user_id IS NULL THEN
+    v_user_id := gen_random_uuid();
+
+    INSERT INTO auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token,
+      email_change,
+      email_change_token_new,
+      recovery_token
+    )
+    VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_id,
+      'authenticated',
+      'authenticated',
+      v_email,
+      v_encrypted_pass,
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{}'::jsonb,
+      now(),
+      now(),
+      '',
+      '',
+      '',
+      ''
+    );
+  ELSE
+    UPDATE auth.users 
+    SET encrypted_password = v_encrypted_pass, updated_at = now()
+    WHERE id = v_user_id;
+  END IF;
+
+  NEW.owner_id := v_user_id;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sync_team_to_auth_user ON public.teams;
+CREATE TRIGGER trg_sync_team_to_auth_user
+BEFORE INSERT OR UPDATE OF username, password_plain ON public.teams
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_team_to_auth_user();
+
+CREATE OR REPLACE FUNCTION public.after_sync_team_to_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NEW.owner_id IS NOT NULL THEN
+    INSERT INTO public.user_roles (user_id, role, team_id)
+    VALUES (NEW.owner_id, 'team', NEW.id)
+    ON CONFLICT DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_after_sync_team_to_user ON public.teams;
+CREATE TRIGGER trg_after_sync_team_to_user
+AFTER INSERT OR UPDATE OF owner_id ON public.teams
+FOR EACH ROW
+EXECUTE FUNCTION public.after_sync_team_to_user();
+
+CREATE OR REPLACE FUNCTION public.delete_team_auth_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF OLD.owner_id IS NOT NULL THEN
+    DELETE FROM public.user_roles WHERE user_id = OLD.owner_id;
+    DELETE FROM auth.users WHERE id = OLD.owner_id;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_delete_team_auth_user ON public.teams;
+CREATE TRIGGER trg_delete_team_auth_user
+AFTER DELETE ON public.teams
+FOR EACH ROW
+EXECUTE FUNCTION public.delete_team_auth_user();
+
+-- ----------------------------------------------------------------------------
+-- STEP 11: INSERIMENTO RIGHE IN GAME_SETTINGS & RLS POLICIES
+-- ----------------------------------------------------------------------------
+
+ALTER TABLE public.game_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Read Game Settings" ON public.game_settings;
+DROP POLICY IF EXISTS "Admin Write Game Settings" ON public.game_settings;
+
+CREATE POLICY "Public Read Game Settings" ON public.game_settings FOR SELECT USING (true);
+CREATE POLICY "Admin Write Game Settings" ON public.game_settings FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+INSERT INTO public.game_settings (id, marketplace_visible, marketplace_active) VALUES 
+('current', false, false),
+('settings_01', false, false)
+ON CONFLICT (id) DO UPDATE SET 
+  marketplace_visible = EXCLUDED.marketplace_visible,
+  marketplace_active = EXCLUDED.marketplace_active;
+
+NOTIFY pgrst, 'reload schema';
+
 COMMIT;
