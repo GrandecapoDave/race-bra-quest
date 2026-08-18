@@ -2077,6 +2077,18 @@ ON CONFLICT (id) DO UPDATE SET
   marketplace_visible = EXCLUDED.marketplace_visible,
   marketplace_active = EXCLUDED.marketplace_active;
 
+-- RLS policies su teams
+ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin All Teams" ON public.teams;
+DROP POLICY IF EXISTS "Team Update Self Team" ON public.teams;
+
+CREATE POLICY "Admin All Teams" ON public.teams
+  FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Team Update Self Team" ON public.teams
+  FOR UPDATE USING (id = public.current_team_id()) WITH CHECK (id = public.current_team_id());
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
