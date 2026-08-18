@@ -2086,6 +2086,390 @@ CREATE POLICY "Admin All Teams" ON public.teams
 CREATE POLICY "Team Update Self Team" ON public.teams
   FOR UPDATE USING (id = public.current_team_id()) WITH CHECK (id = public.current_team_id());
 
+-- ----------------------------------------------------------------------------
+-- STEP 12: TABELLE & RPC EXTRA PER SOTTOROTTE AMMINISTRAZIONE
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.team_code_parts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
+  code_part TEXT NOT NULL,
+  part_type TEXT NOT NULL CHECK (part_type IN ('FIRST_5', 'LAST_5')),
+  assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (team_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.game_final_code (
+  id TEXT PRIMARY KEY DEFAULT 'current',
+  full_code TEXT NOT NULL DEFAULT '4829167305',
+  next_stage_destination TEXT NOT NULL DEFAULT 'Parco Giochi Madonna dei Fiori (lato piazzale grigio)'
+);
+
+INSERT INTO public.game_final_code (id) VALUES ('current') ON CONFLICT (id) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION public.admin_get_enigma_dashboard(p_admin_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_stage4_id UUID := '4b4b4c4d-5e5f-6061-7172-838485868788';
+  v_rows JSONB;
+  v_solutions JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  WITH stage4_challenges AS (
+    SELECT id, titolo, ordine_sfida 
+    FROM public.challenges 
+    WHERE stage_id = v_stage4_id
+    ORDER BY ordine_sfida ASC
+  ),
+  team_enigma_progress AS (
+    SELECT 
+      t.id AS team_id,
+      t.nome_squadra,
+      t.active,
+      sc.id AS challenge_id,
+      sc.titolo,
+      sc.ordine_sfida,
+      COALESCE(tp.stato, 'not_started') AS stato,
+      tp.created_at AS started_at,
+      tp.completata_il AS completed_at,
+      (SELECT COUNT(*)::INTEGER FROM public.enigma_attempts ea WHERE ea.team_id = t.id AND ea.challenge_id = sc.id) AS attempt_count
+    FROM public.teams t
+    CROSS JOIN stage4_challenges sc
+    LEFT JOIN public.team_progress tp ON tp.team_id = t.id AND tp.challenge_id = sc.id
+  ),
+  aggregated_teams AS (
+    SELECT 
+      team_id,
+      nome_squadra,
+      active,
+      bool_or(stato != 'not_started') AS started,
+      count(*) FILTER (WHERE stato = 'completed') = (SELECT count(*) FROM stage4_challenges) AS completed_all,
+      count(*) FILTER (WHERE stato = 'completed')::INTEGER AS enigmi_completati,
+      (SELECT count(*)::INTEGER FROM stage4_challenges) AS enigmi_totali,
+      jsonb_agg(jsonb_build_object(
+        'challenge_id', challenge_id,
+        'titolo', titolo,
+        'ordine', ordine_sfida,
+        'stato', stato,
+        'started_at', started_at,
+        'completed_at', completed_at,
+        'attempt_count', attempt_count
+      ) ORDER BY ordine_sfida) AS enigma_progress
+    FROM team_enigma_progress
+    GROUP BY team_id, nome_squadra, active
+  )
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'team_id', team_id,
+    'nome_squadra', nome_squadra,
+    'active', active,
+    'started', started,
+    'completed_all', completed_all,
+    'enigmi_completati', enigmi_completati,
+    'enigmi_totali', enigmi_totali,
+    'enigma_progress', enigma_progress
+  )), '[]'::jsonb) INTO v_rows
+  FROM aggregated_teams;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'challenge_id', challenge_id,
+    'solution_type', solution_type,
+    'hint', CASE 
+      WHEN solution_type = 'text' THEN SUBSTRING(solution->>0 FROM 1 FOR 3) || '...'
+      WHEN solution_type = 'directions' THEN '[lucchetto]'
+      WHEN solution_type = 'coordinates' THEN 'Lat: 44.71, Lng: 7.84'
+      ELSE '[note]'
+    END
+  )), '[]'::jsonb) INTO v_solutions
+  FROM public.enigma_solutions;
+
+  RETURN jsonb_build_object(
+    'rows', v_rows,
+    'enigma_solutions', v_solutions
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_update_enigma_solution(
+  p_challenge_id UUID,
+  p_solution JSONB,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  INSERT INTO public.enigma_solutions (challenge_id, solution, solution_type)
+  VALUES (p_challenge_id, p_solution, 'text')
+  ON CONFLICT (challenge_id) 
+  DO UPDATE SET solution = EXCLUDED.solution;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_jackpot_plays(p_admin_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_plays JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', jp.id,
+    'team_id', jp.team_id,
+    'nome_squadra', t.nome_squadra,
+    'puntata_punti', jp.puntata_punti,
+    'esito_moltiplicatore', jp.esito_moltiplicatore,
+    'delta_punti', jp.delta_punti,
+    'timestamp', jp.timestamp
+  )), '[]'::jsonb) INTO v_plays
+  FROM public.jackpot_plays jp
+  JOIN public.teams t ON t.id = jp.team_id;
+
+  RETURN v_plays;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_report_status()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_report RECORD;
+BEGIN
+  SELECT * INTO v_report FROM public.game_report WHERE id = 'current';
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('state', 'PRIVATE_LIVE', 'is_published', false, 'published_at', NULL);
+  END IF;
+
+  RETURN jsonb_build_object(
+    'state', v_report.state,
+    'is_published', (v_report.state = 'PUBLISHED_FINAL'),
+    'published_at', v_report.published_at
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_game_report(p_user_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_report RECORD;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  SELECT * INTO v_report FROM public.game_report WHERE id = 'current';
+
+  IF NOT v_is_admin AND COALESCE(v_report.state, 'PRIVATE_LIVE') != 'PUBLISHED_FINAL' THEN
+    RAISE EXCEPTION 'Il Resoconto Gara non è ancora stato pubblicato dalla Regia.';
+  END IF;
+
+  IF v_report.snapshot IS NOT NULL THEN
+    RETURN v_report.snapshot;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'state', COALESCE(v_report.state, 'PRIVATE_LIVE'),
+    'published_at', v_report.published_at
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.respond_passaparola_request(
+  p_transaction_id UUID,
+  p_response TEXT,
+  p_nota_interna TEXT,
+  p_admin_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_tx RECORD;
+  v_team_name TEXT;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT * INTO v_tx FROM public.marketplace_transactions WHERE id = p_transaction_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Transazione non trovata';
+  END IF;
+
+  IF v_tx.stato != 'pending' THEN
+    RAISE EXCEPTION 'La richiesta non è in attesa di risposta';
+  END IF;
+
+  UPDATE public.marketplace_transactions 
+  SET 
+    stato = 'used', 
+    data_utilizzo = now(), 
+    dettagli = dettagli || jsonb_build_object('response_text', p_response, 'nota_interna', p_nota_interna, 'response_timestamp', now())
+  WHERE id = p_transaction_id;
+
+  SELECT nome_squadra INTO v_team_name FROM public.teams WHERE id = v_tx.team_id;
+
+  INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+  VALUES ('passaparola_responded', v_tx.team_id, jsonb_build_object('message', 'La Regia ha risposto alla richiesta Passaparola di "' || COALESCE(v_team_name, 'Sconosciuta') || '": "' || p_response || '"'));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.publish_game_report(p_admin_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_report RECORD;
+  v_snapshot JSONB;
+  v_published_at TIMESTAMPTZ := now();
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT * INTO v_report FROM public.game_report WHERE id = 'current';
+  IF FOUND AND v_report.state = 'PUBLISHED_FINAL' THEN
+    RETURN jsonb_build_object('success', true, 'alreadyPublished', true, 'published_at', v_report.published_at);
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(l)), '[]'::jsonb) INTO v_snapshot
+  FROM (
+    SELECT * FROM public.get_secure_leaderboard()
+  ) l;
+
+  INSERT INTO public.game_report (id, state, published_at, published_by, snapshot)
+  VALUES ('current', 'PUBLISHED_FINAL', v_published_at, p_admin_id, v_snapshot)
+  ON CONFLICT (id)
+  DO UPDATE SET 
+    state = 'PUBLISHED_FINAL',
+    published_at = v_published_at,
+    published_by = p_admin_id,
+    snapshot = v_snapshot;
+
+  RETURN jsonb_build_object('success', true, 'alreadyPublished', false, 'published_at', v_published_at);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.initialize_secret_code_challenge()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_team RECORD;
+  v_index INTEGER := 0;
+  v_full_code TEXT := '4829167305';
+  v_first5 TEXT;
+  v_last5 TEXT;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT full_code INTO v_full_code FROM public.game_final_code WHERE id = 'current';
+  v_first5 := SUBSTRING(v_full_code FROM 1 FOR 5);
+  v_last5 := SUBSTRING(v_full_code FROM 6 FOR 5);
+
+  FOR v_team IN SELECT id FROM public.teams WHERE active = true LOOP
+    INSERT INTO public.team_code_parts (team_id, code_part, part_type)
+    VALUES (v_team.id, CASE WHEN v_index % 2 = 0 THEN v_first5 ELSE v_last5 END, CASE WHEN v_index % 2 = 0 THEN 'FIRST_5' ELSE 'LAST_5' END)
+    ON CONFLICT (team_id) DO NOTHING;
+    
+    v_index := v_index + 1;
+  END LOOP;
+
+  RETURN jsonb_build_object('success', true, 'message', 'Sfida codice segreto inizializzata per tutte le squadre attive.');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_adjust_team_tokens(
+  p_team_id UUID,
+  p_amount INTEGER,
+  p_reason TEXT,
+  p_admin_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_current_tokens INTEGER;
+  v_new_balance INTEGER;
+  v_team_name TEXT;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT token_balance, nome_squadra INTO v_current_tokens, v_team_name 
+  FROM public.teams 
+  WHERE id = p_team_id 
+  FOR UPDATE;
+  
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Squadra non trovata';
+  END IF;
+
+  v_new_balance := GREATEST(0, v_current_tokens + p_amount);
+
+  UPDATE public.teams 
+  SET token_balance = v_new_balance 
+  WHERE id = p_team_id;
+
+  INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+  VALUES ('admin_tokens_adjusted', p_team_id, jsonb_build_object(
+    'message', 'La Regia ha ' || CASE WHEN p_amount >= 0 THEN 'aggiunto ' ELSE 'rimosso ' END || ABS(p_amount)::text || ' token alla squadra "' || v_team_name || '".' || CASE WHEN p_reason != '' THEN ' Motivazione: ' || p_reason ELSE '' END,
+    'new_balance', v_new_balance
+  ));
+
+  RETURN jsonb_build_object('success', true, 'new_balance', v_new_balance);
+END;
+$$;
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
