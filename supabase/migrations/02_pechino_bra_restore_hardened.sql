@@ -1851,7 +1851,10 @@ END;
 $$;
 
 -- play_jackpot
-CREATE OR REPLACE FUNCTION public.play_jackpot(p_puntata INTEGER)
+CREATE OR REPLACE FUNCTION public.play_jackpot(
+  p_team_id UUID DEFAULT NULL,
+  p_puntata INTEGER DEFAULT 10
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -1859,68 +1862,92 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_team_id UUID;
-  v_team_points INTEGER;
+  v_challenge_id UUID := 'f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0';
+  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';
+  v_already_played BOOLEAN;
+  v_current_score INTEGER := 0;
+  v_pool TEXT[] := ARRAY['🍒', '🍋', '🔔', '💎'];
   v_s1 INTEGER;
   v_s2 INTEGER;
   v_s3 INTEGER;
-  v_win BOOLEAN := false;
-  v_delta INTEGER;
-  v_already_played BOOLEAN;
+  v_sym1 TEXT;
+  v_sym2 TEXT;
+  v_sym3 TEXT;
+  v_simboli TEXT;
+  v_is_win BOOLEAN;
+  v_risultato TEXT;
+  v_variazione INTEGER;
+  v_nuovo_punteggio INTEGER;
+  v_play_id UUID;
+  v_play RECORD;
 BEGIN
-  v_team_id := public.current_team_id();
+  v_team_id := COALESCE(p_team_id, public.current_team_id());
   IF v_team_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Non autenticato');
+    RAISE EXCEPTION 'Squadra non identificata.';
   END IF;
 
-  IF p_puntata < 5 OR p_puntata > 20 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Puntata consentita tra 5 e 20 punti');
-  END IF;
-
-  -- Lock concorrente sul team
   PERFORM 1 FROM public.teams WHERE id = v_team_id FOR UPDATE;
 
-  -- Verifica se ha già giocato
   SELECT EXISTS(
-    SELECT 1 FROM public.jackpot_plays WHERE team_id = v_team_id
+    SELECT 1 FROM public.jackpot_plays
+    WHERE team_id = v_team_id AND challenge_id = v_challenge_id
   ) INTO v_already_played;
 
   IF v_already_played THEN
-    RETURN jsonb_build_object('success', false, 'error', 'La tua squadra ha già tentato il Jackpot della Regia');
+    RAISE EXCEPTION 'La tua squadra ha già tentato il Jackpot della Regia.';
   END IF;
 
-  -- Calcola i punti totali del team
-  SELECT COALESCE(SUM(punti), 0) INTO v_team_points FROM public.scores WHERE team_id = v_team_id;
-  IF v_team_points < p_puntata THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Punteggio insufficiente');
+  SELECT COALESCE(SUM(punti), 0)::INTEGER INTO v_current_score
+  FROM public.scores
+  WHERE team_id = v_team_id;
+
+  IF p_puntata < 5 OR p_puntata > 20 THEN
+    RAISE EXCEPTION 'La puntata deve essere compresa tra 5 e 20 punti.';
   END IF;
 
-  -- Genera tre simboli casuali (1-5)
-  v_s1 := floor(random() * 5) + 1;
-  v_s2 := floor(random() * 5) + 1;
-  v_s3 := floor(random() * 5) + 1;
-
-  v_win := (v_s1 = v_s2 AND v_s2 = v_s3);
-
-  IF v_win THEN
-    v_delta := p_puntata; -- Vince raddoppio puntata (+p_puntata netti)
-  ELSE
-    v_delta := -p_puntata; -- Perde la puntata
+  IF p_puntata > v_current_score THEN
+    RAISE EXCEPTION 'Non puoi scommettere più punti di quelli che possiedi (% PT attuali).', v_current_score;
   END IF;
 
-  -- Registra giocata
-  INSERT INTO public.jackpot_plays (team_id, puntata_punti, esito_moltiplicatore, delta_punti)
-  VALUES (v_team_id, p_puntata, CASE WHEN v_win THEN 2.0 ELSE 0.0 END, v_delta);
+  v_s1 := 1 + floor(random() * 4)::INTEGER;
+  v_s2 := 1 + floor(random() * 4)::INTEGER;
+  v_s3 := 1 + floor(random() * 4)::INTEGER;
 
-  -- Salva punteggio
-  INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)
-  VALUES (v_team_id, v_delta, 'jackpot', 'Slot Jackpot della Regia');
+  v_sym1 := v_pool[v_s1];
+  v_sym2 := v_pool[v_s2];
+  v_sym3 := v_pool[v_s3];
+  v_simboli := v_sym1 || ',' || v_sym2 || ',' || v_sym3;
 
-  RETURN jsonb_build_object(
-    'success', true,
-    'win', v_win,
-    'symbols', jsonb_build_array(v_s1, v_s2, v_s3),
-    'delta', v_delta
+  v_is_win := (v_s1 = v_s2 AND v_s2 = v_s3);
+  v_risultato := CASE WHEN v_is_win THEN 'vinta' ELSE 'persa' END;
+  v_variazione := CASE WHEN v_is_win THEN p_puntata ELSE -p_puntata END;
+  v_nuovo_punteggio := v_current_score + v_variazione;
+
+  v_play_id := gen_random_uuid();
+
+  INSERT INTO public.jackpot_plays (
+    id, team_id, challenge_id, puntata, puntata_punti, simboli, risultato, variazione, delta_punti, punteggio_precedente, punteggio_attuale, timestamp
+  ) VALUES (
+    v_play_id, v_team_id, v_challenge_id, p_puntata, p_puntata, v_simboli, v_risultato, v_variazione, v_variazione, v_current_score, v_nuovo_punteggio, now()
   );
+
+  INSERT INTO public.scores (
+    team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo
+  ) VALUES (
+    v_team_id, v_challenge_id, v_stage_id, v_variazione, 'challenge_points', 'Jackpot della Regia: ' || UPPER(v_risultato) || ' (' || v_sym1 || ' ' || v_sym2 || ' ' || v_sym3 || ')'
+  );
+
+  INSERT INTO public.team_progress (
+    team_id, challenge_id, stato, completata_il
+  ) VALUES (
+    v_team_id, v_challenge_id, 'completed', now()
+  )
+  ON CONFLICT (team_id, challenge_id) DO UPDATE
+  SET stato = 'completed', completata_il = now();
+
+  SELECT * INTO v_play FROM public.jackpot_plays WHERE id = v_play_id;
+
+  RETURN row_to_json(v_play);
 END;
 $$;
 
@@ -2816,34 +2843,26 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.get_jackpot_plays(p_admin_id UUID)
+CREATE OR REPLACE FUNCTION public.get_jackpot_plays(
+  p_admin_id UUID DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_is_admin BOOLEAN;
-  v_plays JSONB;
+  v_challenge_id UUID := 'f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0';
+  v_res JSONB;
 BEGIN
-  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
-  IF NOT v_is_admin THEN
-    RAISE EXCEPTION 'Non autorizzato';
-  END IF;
+  SELECT COALESCE(jsonb_agg(row_to_json(p)), '[]'::jsonb) INTO v_res
+  FROM (
+    SELECT * FROM public.jackpot_plays
+    WHERE challenge_id = v_challenge_id
+    ORDER BY timestamp DESC
+  ) p;
 
-  SELECT COALESCE(jsonb_agg(jsonb_build_object(
-    'id', jp.id,
-    'team_id', jp.team_id,
-    'nome_squadra', t.nome_squadra,
-    'puntata_punti', jp.puntata_punti,
-    'esito_moltiplicatore', jp.esito_moltiplicatore,
-    'delta_punti', jp.delta_punti,
-    'timestamp', jp.timestamp
-  )), '[]'::jsonb) INTO v_plays
-  FROM public.jackpot_plays jp
-  JOIN public.teams t ON t.id = jp.team_id;
-
-  RETURN v_plays;
+  RETURN v_res;
 END;
 $$;
 
@@ -3947,23 +3966,48 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.get_jackpot_state()
+CREATE OR REPLACE FUNCTION public.get_jackpot_state(
+  p_team_id UUID DEFAULT NULL
+)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   v_team_id UUID;
+  v_challenge_id UUID := 'f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0';
   v_play RECORD;
-  v_current_score INTEGER;
+  v_current_score INTEGER := 0;
 BEGIN
-  v_team_id := public.current_team_id();
-  IF v_team_id IS NULL THEN RAISE EXCEPTION 'Non autenticato'; END IF;
+  v_team_id := COALESCE(p_team_id, public.current_team_id());
 
-  SELECT * INTO v_play FROM public.jackpot_plays WHERE team_id = v_team_id ORDER BY timestamp DESC LIMIT 1;
-  SELECT COALESCE(SUM(punti), 0)::INTEGER INTO v_current_score FROM public.scores WHERE team_id = v_team_id;
+  IF v_team_id IS NOT NULL THEN
+    SELECT COALESCE(SUM(punti), 0)::INTEGER INTO v_current_score
+    FROM public.scores
+    WHERE team_id = v_team_id;
 
-  IF FOUND THEN
-    RETURN jsonb_build_object('played', true, 'play', jsonb_build_object('id', v_play.id, 'puntata_punti', v_play.puntata_punti, 'esito_moltiplicatore', v_play.esito_moltiplicatore, 'delta_punti', v_play.delta_punti, 'timestamp', v_play.timestamp), 'current_score', v_current_score);
+    SELECT * INTO v_play
+    FROM public.jackpot_plays
+    WHERE team_id = v_team_id AND challenge_id = v_challenge_id
+    ORDER BY timestamp DESC
+    LIMIT 1;
+
+    IF v_play.id IS NOT NULL THEN
+      RETURN jsonb_build_object(
+        'played', true,
+        'play', row_to_json(v_play),
+        'current_score', v_current_score
+      );
+    ELSE
+      RETURN jsonb_build_object(
+        'played', false,
+        'play', NULL,
+        'current_score', v_current_score
+      );
+    END IF;
   ELSE
-    RETURN jsonb_build_object('played', false, 'play', NULL, 'current_score', v_current_score);
+    RETURN jsonb_build_object(
+      'played', false,
+      'play', NULL,
+      'current_score', 0
+    );
   END IF;
 END;
 $$;

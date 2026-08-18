@@ -20,7 +20,7 @@ export default function JackpotChallenge({ challengeId, teamId, onComplete }: Ja
     queryKey: ["jackpot_state", teamId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_jackpot_state", {
-        p_team_id: teamId
+        p_team_id: teamId || null
       });
       if (error) throw error;
       return data as { played: boolean; play: any | null; current_score: number };
@@ -51,7 +51,7 @@ export default function JackpotChallenge({ challengeId, teamId, onComplete }: Ja
   const playMutation = useMutation({
     mutationFn: async (selectedPuntata: number) => {
       const { data, error } = await supabase.rpc("play_jackpot", {
-        p_team_id: teamId,
+        p_team_id: teamId || null,
         p_puntata: selectedPuntata
       });
       if (error) throw error;
