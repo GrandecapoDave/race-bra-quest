@@ -1909,11 +1909,17 @@ ON CONFLICT (id) DO UPDATE SET costo_token = EXCLUDED.costo_token, nome = EXCLUD
 
 -- 4. DEFAULT POSTERS FOR LIVING POSTER CHALLENGE
 INSERT INTO public.posters (id, file_name, titolo, active) VALUES
-('padrino', 'il_padrino.jpg', 'Il Padrino', true),
-('pulp_fiction', 'pulp_fiction.jpg', 'Pulp Fiction', true),
-('forrest_gump', 'forrest_gump.jpg', 'Forrest Gump', true),
-('matrix', 'matrix.jpg', 'Matrix', true)
-ON CONFLICT (id) DO NOTHING;
+('poster_01', 'Poster1.jpg', 'Indiana Jones', true),
+('poster_02', 'Poster2.jpg', 'Back to the Future', true),
+('poster_03', 'Poster3.jpg', 'Star Wars', true),
+('poster_04', 'Poster4.jpg', 'Jurassic Park', true),
+('poster_05', 'Poster5.jpg', 'Titanic', true),
+('poster_06', 'Poster6.jpg', 'Pulp Fiction', true),
+('poster_07', 'Poster7.jpg', 'The Matrix', true),
+('poster_08', 'Poster8.jpg', 'Forrest Gump', true),
+('poster_09', 'Poster9.jpg', 'E.T.', true),
+('poster_10', 'Poster10.jpg', 'The Godfather', true)
+ON CONFLICT (id) DO UPDATE SET file_name = EXCLUDED.file_name, titolo = EXCLUDED.titolo, active = EXCLUDED.active;
 
 -- 5. DEFAULT GAME REPORT ROW
 INSERT INTO public.game_report (id, state, published_at, published_by, snapshot) 

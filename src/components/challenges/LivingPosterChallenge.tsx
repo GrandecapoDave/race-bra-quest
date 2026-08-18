@@ -50,7 +50,7 @@ export function LivingPosterChallenge({
     }
   });
 
-  const poster = posterQuery.data?.poster;
+  const poster = posterQuery.data?.poster ?? posterQuery.data;
   const submission = subQuery.data;
 
   // Resolve team submission image URL
