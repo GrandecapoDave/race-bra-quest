@@ -98,10 +98,9 @@ export function TeamSetupChallenge({
         })
         .select("id")
         .single();
-      if (error) throw new Error(error.message);
       await supabase
         .from("team_members")
-        .insert({ team_id: data.id, user_id: userData.user!.id, name: parsed.name + " · capitano" });
+        .insert({ team_id: data.id, name: parsed.name + " · capitano" });
       await supabase.rpc("start_challenge", { p_challenge: challenge.id });
       return data.id;
     },

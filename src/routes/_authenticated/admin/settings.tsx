@@ -33,11 +33,11 @@ function AdminSettingsPage() {
     }
     const order = ((challenges.data ?? []) as any[]).filter((c: any) => c.stage_id === chStage).length + 1;
     const { error } = await (supabase as any).from("challenges").insert({
-      stage_id: chStage,
-      titolo: chTitle.trim(),
-      tipo_sfida: chType,
-      punteggio_massimo: Math.max(0, Math.min(500, chPoints)),
-      ordine: order,
+       stage_id: chStage,
+       titolo: chTitle.trim(),
+       tipo_sfida: chType,
+       punteggio_massimo: Math.max(0, Math.min(500, chPoints)),
+       ordine_sfida: order,
     });
     if (error) {
       toast.error("Errore creazione prova: " + error.message);

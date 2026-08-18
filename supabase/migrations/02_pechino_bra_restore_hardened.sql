@@ -259,6 +259,7 @@ CREATE TABLE IF NOT EXISTS public.team_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  user_id UUID,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

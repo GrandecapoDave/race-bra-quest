@@ -157,7 +157,7 @@ function AdminTeamsPage() {
       const { error } = await (supabase as any).from("scores").insert({
         team_id: selectedTeamId,
         punti: pointsNum,
-        motivazione: adjReason.trim(),
+        motivo: adjReason.trim(),
       });
       if (error) throw error;
       toast.success("Punteggio regolato con successo");
