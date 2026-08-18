@@ -88,7 +88,6 @@ export function EmojiMoviesChallenge({
             is_correct: isCorrect,
             points,
             letter,
-            timestamp: new Date().toISOString()
           })
           .eq("id", existing.id);
         if (error) throw new Error(error.message);
@@ -103,7 +102,6 @@ export function EmojiMoviesChallenge({
             is_correct: isCorrect,
             points,
             letter,
-            timestamp: new Date().toISOString()
           });
         if (error) throw new Error(error.message);
       }
@@ -116,9 +114,9 @@ export function EmojiMoviesChallenge({
             team_id: team.id,
             challenge_id: challenge.id,
             punti: 1,
-            motivazione: `Indovinato film dalle emoji: ${movie.title} (${index}/8)`
+            motivo: `Indovinato film dalle emoji: ${movie.title} (${index}/8)`
           });
-        if (scoreErr) throw new Error(scoreErr.message);
+        if (scoreErr) console.warn("Score insert warning:", scoreErr.message);
       }
 
       return { isCorrect, nextAttempts, title: movie.title };
