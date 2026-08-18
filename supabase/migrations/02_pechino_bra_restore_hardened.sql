@@ -1729,13 +1729,11 @@ BEGIN
     RAISE EXCEPTION 'Non autorizzato';
   END IF;
 
-  INSERT INTO public.game_settings (id, marketplace_active, activated_at, activated_by)
-  VALUES ('current', p_active, CASE WHEN p_active THEN now() ELSE NULL END, CASE WHEN p_active THEN p_admin_id ELSE NULL END)
-  ON CONFLICT (id) 
-  DO UPDATE SET 
-    marketplace_active = EXCLUDED.marketplace_active,
-    activated_at = EXCLUDED.activated_at,
-    activated_by = EXCLUDED.activated_by;
+  UPDATE public.game_settings 
+  SET 
+    marketplace_active = p_active,
+    activated_at = CASE WHEN p_active THEN now() ELSE NULL END,
+    activated_by = CASE WHEN p_active THEN p_admin_id ELSE NULL END;
 END;
 $$;
 
@@ -2071,7 +2069,6 @@ CREATE POLICY "Public Read Game Settings" ON public.game_settings FOR SELECT USI
 CREATE POLICY "Admin Write Game Settings" ON public.game_settings FOR ALL USING (public.has_role(auth.uid(), 'admin'));
 
 INSERT INTO public.game_settings (id, marketplace_visible, marketplace_active) VALUES 
-('current', false, false),
 ('settings_01', false, false)
 ON CONFLICT (id) DO UPDATE SET 
   marketplace_visible = EXCLUDED.marketplace_visible,
