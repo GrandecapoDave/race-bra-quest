@@ -2470,6 +2470,587 @@ BEGIN
 END;
 $$;
 
+-- ----------------------------------------------------------------------------
+-- STEP 13: CORNHOLE & BOXE TOURNAMENTS
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.cornhole_matches (
+  id TEXT PRIMARY KEY,
+  stage_id UUID NOT NULL REFERENCES public.stages(id) ON DELETE CASCADE,
+  challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
+  round INTEGER NOT NULL,
+  match_index INTEGER NOT NULL,
+  team1_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  team2_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  winner_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'ready', 'completed')),
+  completed_at TIMESTAMPTZ DEFAULT NULL,
+  is_special_bye BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS public.boxe_matches (
+  id TEXT PRIMARY KEY,
+  stage_id UUID NOT NULL REFERENCES public.stages(id) ON DELETE CASCADE,
+  challenge_id UUID NOT NULL REFERENCES public.challenges(id) ON DELETE CASCADE,
+  round INTEGER NOT NULL,
+  match_index INTEGER NOT NULL,
+  team1_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  team2_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  winner_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'ready', 'completed')),
+  completed_at TIMESTAMPTZ DEFAULT NULL,
+  is_special_bye BOOLEAN NOT NULL DEFAULT false
+);
+
+ALTER TABLE public.cornhole_matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.boxe_matches ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public Read Cornhole Matches" ON public.cornhole_matches;
+DROP POLICY IF EXISTS "Admin All Cornhole Matches" ON public.cornhole_matches;
+DROP POLICY IF EXISTS "Public Read Boxe Matches" ON public.boxe_matches;
+DROP POLICY IF EXISTS "Admin All Boxe Matches" ON public.boxe_matches;
+
+CREATE POLICY "Public Read Cornhole Matches" ON public.cornhole_matches FOR SELECT USING (true);
+CREATE POLICY "Admin All Cornhole Matches" ON public.cornhole_matches FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Public Read Boxe Matches" ON public.boxe_matches FOR SELECT USING (true);
+CREATE POLICY "Admin All Boxe Matches" ON public.boxe_matches FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+
+ALTER TABLE public.game_settings ADD COLUMN IF NOT EXISTS cornhole_special_bye_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL;
+ALTER TABLE public.game_settings ADD COLUMN IF NOT EXISTS boxe_special_bye_team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL;
+
+CREATE OR REPLACE FUNCTION public.get_cornhole_settings()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_settings RECORD;
+BEGIN
+  SELECT * INTO v_settings FROM public.game_settings WHERE id = 'settings_01';
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('cornhole_special_bye_team_id', NULL);
+  END IF;
+  RETURN jsonb_build_object('cornhole_special_bye_team_id', v_settings.cornhole_special_bye_team_id);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_boxe_settings()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_settings RECORD;
+BEGIN
+  SELECT * INTO v_settings FROM public.game_settings WHERE id = 'settings_01';
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('boxe_special_bye_team_id', NULL);
+  END IF;
+  RETURN jsonb_build_object('boxe_special_bye_team_id', v_settings.boxe_special_bye_team_id);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_cornhole_special_bye(p_team_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  UPDATE public.game_settings 
+  SET cornhole_special_bye_team_id = p_team_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_boxe_special_bye(p_team_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  UPDATE public.game_settings 
+  SET boxe_special_bye_team_id = p_team_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_cornhole_tournament()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';
+  v_challenge_id UUID := 'c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0';
+  v_count INTEGER;
+  v_active_teams RECORD;
+  v_special_bye_id UUID;
+  v_teams_count INTEGER;
+  v_virtual_pool INTEGER;
+  v_k INTEGER;
+  v_num_matches INTEGER;
+  v_total_byes INTEGER;
+  v_num_tech_byes INTEGER;
+  v_rounds_count INTEGER;
+  v_team_array UUID[];
+  v_match_id TEXT;
+  v_index INTEGER := 1;
+  v_round INTEGER;
+  v_match INTEGER;
+  v_result JSONB;
+BEGIN
+  SELECT COUNT(*)::INTEGER INTO v_count FROM public.cornhole_matches WHERE challenge_id = v_challenge_id;
+  
+  IF v_count = 0 THEN
+    SELECT cornhole_special_bye_team_id INTO v_special_bye_id FROM public.game_settings WHERE id = 'settings_01';
+    
+    SELECT ARRAY(
+      SELECT id FROM public.teams 
+      WHERE active = true AND id IS DISTINCT FROM v_special_bye_id
+      ORDER BY nome_squadra ASC
+    ) INTO v_team_array;
+
+    IF v_special_bye_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.teams WHERE id = v_special_bye_id AND active = true) THEN
+      v_team_array := v_special_bye_id || v_team_array;
+    END IF;
+
+    v_teams_count := cardinality(v_team_array);
+    IF v_teams_count = 0 THEN
+      RETURN '[]'::jsonb;
+    END IF;
+
+    v_virtual_pool := CASE WHEN v_special_bye_id IS NOT NULL THEN v_teams_count + 1 ELSE v_teams_count END;
+    v_k := POWER(2, CEIL(LOG(2, v_virtual_pool)))::INTEGER;
+    v_num_matches := v_k / 2;
+    v_total_byes := v_k - v_teams_count;
+    v_num_tech_byes := CASE WHEN v_special_bye_id IS NOT NULL THEN GREATEST(0, v_total_byes - 1) ELSE v_total_byes END;
+    v_rounds_count := LOG(2, v_k)::INTEGER;
+
+    FOR v_round IN 0..(v_rounds_count - 1) LOOP
+      v_num_matches := v_k / POWER(2, v_round + 1)::INTEGER;
+      FOR v_match IN 0..(v_num_matches - 1) LOOP
+        v_match_id := 'cornhole_' || v_round::text || '_' || v_match::text || '_' || SUBSTRING(gen_random_uuid()::text FROM 1 FOR 8);
+        
+        INSERT INTO public.cornhole_matches (id, stage_id, challenge_id, round, match_index, team1_id, team2_id, winner_id, status, completed_at, is_special_bye)
+        VALUES (v_match_id, v_stage_id, v_challenge_id, v_round, v_match, NULL, NULL, NULL, 'pending', NULL, false);
+      END LOOP;
+    END LOOP;
+
+    v_num_matches := v_k / 2;
+    FOR v_match IN 0..(v_num_matches - 1) LOOP
+      IF v_match = 0 AND v_special_bye_id IS NOT NULL THEN
+        UPDATE public.cornhole_matches 
+        SET team1_id = v_special_bye_id, team2_id = NULL, winner_id = v_special_bye_id, status = 'completed', completed_at = now(), is_special_bye = true
+        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+        
+        v_index := v_index + 1;
+      ELSIF v_match > 0 AND v_match <= v_num_tech_byes THEN
+        IF v_index <= v_teams_count THEN
+          UPDATE public.cornhole_matches 
+          SET team1_id = v_team_array[v_index], team2_id = NULL, winner_id = v_team_array[v_index], status = 'completed', completed_at = now()
+          WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+          
+          v_index := v_index + 1;
+        END IF;
+      ELSE
+        IF v_index <= v_teams_count THEN
+          UPDATE public.cornhole_matches SET team1_id = v_team_array[v_index], status = 'ready'
+          WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+          v_index := v_index + 1;
+        END IF;
+        IF v_index <= v_teams_count THEN
+          UPDATE public.cornhole_matches SET team2_id = v_team_array[v_index]
+          WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+          v_index := v_index + 1;
+        END IF;
+      END IF;
+    END LOOP;
+
+    FOR v_round IN 0..(v_rounds_count - 2) LOOP
+      FOR v_match IN SELECT * FROM public.cornhole_matches WHERE challenge_id = v_challenge_id AND round = v_round AND status = 'completed' LOOP
+        IF v_match.winner_id IS NOT NULL THEN
+          IF v_match.match_index % 2 = 0 THEN
+            UPDATE public.cornhole_matches SET team1_id = v_match.winner_id
+            WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);
+          ELSE
+            UPDATE public.cornhole_matches SET team2_id = v_match.winner_id
+            WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);
+          END IF;
+        END IF;
+      END LOOP;
+    END LOOP;
+
+    UPDATE public.cornhole_matches 
+    SET status = 'ready' 
+    WHERE challenge_id = v_challenge_id AND status = 'pending' AND team1_id IS NOT NULL AND team2_id IS NOT NULL;
+
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result
+  FROM public.cornhole_matches m
+  WHERE m.challenge_id = v_challenge_id;
+
+  RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_boxe_tournament()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';
+  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';
+  v_count INTEGER;
+  v_result JSONB;
+BEGIN
+  SELECT COUNT(*)::INTEGER INTO v_count FROM public.boxe_matches WHERE challenge_id = v_challenge_id;
+  
+  IF v_count = 0 THEN
+    RETURN '[]'::jsonb;
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result
+  FROM public.boxe_matches m
+  WHERE m.challenge_id = v_challenge_id;
+
+  RETURN v_result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.generate_boxe_tournament(p_admin_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';
+  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';
+  v_special_bye_id UUID;
+  v_teams_count INTEGER;
+  v_virtual_pool INTEGER;
+  v_k INTEGER;
+  v_num_matches INTEGER;
+  v_total_byes INTEGER;
+  v_num_tech_byes INTEGER;
+  v_rounds_count INTEGER;
+  v_team_array UUID[];
+  v_match_id TEXT;
+  v_index INTEGER := 1;
+  v_round INTEGER;
+  v_match INTEGER;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  DELETE FROM public.boxe_matches WHERE challenge_id = v_challenge_id;
+
+  SELECT boxe_special_bye_team_id INTO v_special_bye_id FROM public.game_settings WHERE id = 'settings_01';
+  
+  SELECT ARRAY(
+    SELECT id FROM public.teams 
+    WHERE active = true AND id IS DISTINCT FROM v_special_bye_id
+    ORDER BY nome_squadra ASC
+  ) INTO v_team_array;
+
+  IF v_special_bye_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.teams WHERE id = v_special_bye_id AND active = true) THEN
+    v_team_array := v_special_bye_id || v_team_array;
+  END IF;
+
+  v_teams_count := cardinality(v_team_array);
+  IF v_teams_count = 0 THEN
+    RETURN;
+  END IF;
+
+  v_virtual_pool := CASE WHEN v_special_bye_id IS NOT NULL THEN v_teams_count + 1 ELSE v_teams_count END;
+  v_k := POWER(2, CEIL(LOG(2, v_virtual_pool)))::INTEGER;
+  v_num_matches := v_k / 2;
+  v_total_byes := v_k - v_teams_count;
+  v_num_tech_byes := CASE WHEN v_special_bye_id IS NOT NULL THEN GREATEST(0, v_total_byes - 1) ELSE v_total_byes END;
+  v_rounds_count := LOG(2, v_k)::INTEGER;
+
+  FOR v_round IN 0..(v_rounds_count - 1) LOOP
+    v_num_matches := v_k / POWER(2, v_round + 1)::INTEGER;
+    FOR v_match IN 0..(v_num_matches - 1) LOOP
+      v_match_id := 'boxe_' || v_round::text || '_' || v_match::text || '_' || SUBSTRING(gen_random_uuid()::text FROM 1 FOR 8);
+      
+      INSERT INTO public.boxe_matches (id, stage_id, challenge_id, round, match_index, team1_id, team2_id, winner_id, status, completed_at, is_special_bye)
+      VALUES (v_match_id, v_stage_id, v_challenge_id, v_round, v_match, NULL, NULL, NULL, 'pending', NULL, false);
+    END LOOP;
+  END LOOP;
+
+  v_num_matches := v_k / 2;
+  FOR v_match IN 0..(v_num_matches - 1) LOOP
+    IF v_match = 0 AND v_special_bye_id IS NOT NULL THEN
+      UPDATE public.boxe_matches 
+      SET team1_id = v_special_bye_id, team2_id = NULL, winner_id = v_special_bye_id, status = 'completed', completed_at = now(), is_special_bye = true
+      WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+      
+      v_index := v_index + 1;
+    ELSIF v_match > 0 AND v_match <= v_num_tech_byes THEN
+      IF v_index <= v_teams_count THEN
+        UPDATE public.boxe_matches 
+        SET team1_id = v_team_array[v_index], team2_id = NULL, winner_id = v_team_array[v_index], status = 'completed', completed_at = now()
+        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+        
+        v_index := v_index + 1;
+      END IF;
+    ELSE
+      IF v_index <= v_teams_count THEN
+        UPDATE public.boxe_matches SET team1_id = v_team_array[v_index], status = 'ready'
+        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+        v_index := v_index + 1;
+      END IF;
+      IF v_index <= v_teams_count THEN
+        UPDATE public.boxe_matches SET team2_id = v_team_array[v_index]
+        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;
+        v_index := v_index + 1;
+      END IF;
+    END IF;
+  END LOOP;
+
+  FOR v_round IN 0..(v_rounds_count - 2) LOOP
+    FOR v_match IN SELECT * FROM public.boxe_matches WHERE challenge_id = v_challenge_id AND round = v_round AND status = 'completed' LOOP
+      IF v_match.winner_id IS NOT NULL THEN
+        IF v_match.match_index % 2 = 0 THEN
+          UPDATE public.boxe_matches SET team1_id = v_match.winner_id
+          WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);
+        ELSE
+          UPDATE public.boxe_matches SET team2_id = v_match.winner_id
+          WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);
+        END IF;
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  UPDATE public.boxe_matches 
+  SET status = 'ready' 
+  WHERE challenge_id = v_challenge_id AND status = 'pending' AND team1_id IS NOT NULL AND team2_id IS NOT NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.submit_cornhole_match_result(
+  p_match_id TEXT,
+  p_winner_id UUID,
+  p_admin_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0';
+  v_match RECORD;
+  v_max_round INTEGER;
+  v_points_assigned BOOLEAN;
+  v_result JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT * INTO v_match FROM public.cornhole_matches WHERE id = p_match_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Match non trovato.';
+  END IF;
+
+  UPDATE public.cornhole_matches 
+  SET winner_id = p_winner_id, status = 'completed', completed_at = now()
+  WHERE id = p_match_id;
+
+  SELECT MAX(round)::INTEGER INTO v_max_round FROM public.cornhole_matches WHERE challenge_id = v_challenge_id;
+
+  IF v_match.round < v_max_round THEN
+    IF v_match.match_index % 2 = 0 THEN
+      UPDATE public.cornhole_matches SET team1_id = p_winner_id
+      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);
+    ELSE
+      UPDATE public.cornhole_matches SET team2_id = p_winner_id
+      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);
+    END IF;
+
+    UPDATE public.cornhole_matches 
+    SET status = 'ready'
+    WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2) AND team1_id IS NOT NULL AND team2_id IS NOT NULL;
+  ELSE
+    SELECT EXISTS(SELECT 1 FROM public.scores WHERE challenge_id = v_challenge_id) INTO v_points_assigned;
+    IF NOT v_points_assigned THEN
+      INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
+      VALUES (p_winner_id, v_challenge_id, 20, 'challenge_points', 'Vincitore Torneo Cornhole');
+
+      INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
+      VALUES (p_winner_id, v_challenge_id, 'completed', now())
+      ON CONFLICT (team_id, challenge_id) DO UPDATE SET stato = 'completed', completata_il = now();
+    END IF;
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result
+  FROM public.cornhole_matches m
+  WHERE m.challenge_id = v_challenge_id;
+
+  RETURN v_result;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.submit_boxe_match_result(
+  p_match_id TEXT,
+  p_winner_id UUID,
+  p_admin_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';
+  v_match RECORD;
+  v_max_round INTEGER;
+  v_points_assigned BOOLEAN;
+  v_result JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  SELECT * INTO v_match FROM public.boxe_matches WHERE id = p_match_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Match non trovato.';
+  END IF;
+
+  UPDATE public.boxe_matches 
+  SET winner_id = p_winner_id, status = 'completed', completed_at = now()
+  WHERE id = p_match_id;
+
+  SELECT MAX(round)::INTEGER INTO v_max_round FROM public.boxe_matches WHERE challenge_id = v_challenge_id;
+
+  IF v_match.round < v_max_round THEN
+    IF v_match.match_index % 2 = 0 THEN
+      UPDATE public.boxe_matches SET team1_id = p_winner_id
+      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);
+    ELSE
+      UPDATE public.boxe_matches SET team2_id = p_winner_id
+      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);
+    END IF;
+
+    UPDATE public.boxe_matches 
+    SET status = 'ready'
+    WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2) AND team1_id IS NOT NULL AND team2_id IS NOT NULL;
+  ELSE
+    SELECT EXISTS(SELECT 1 FROM public.scores WHERE challenge_id = v_challenge_id) INTO v_points_assigned;
+    IF NOT v_points_assigned THEN
+      INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)
+      VALUES (p_winner_id, v_challenge_id, 20, 'challenge_points', 'Vincitore Torneo Boxe');
+
+      INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)
+      VALUES (p_winner_id, v_challenge_id, 'completed', now())
+      ON CONFLICT (team_id, challenge_id) DO UPDATE SET stato = 'completed', completata_il = now();
+    END IF;
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result
+  FROM public.boxe_matches m
+  WHERE m.challenge_id = v_challenge_id;
+
+  RETURN v_result;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.rollback_cornhole_match_result(
+  p_match_id TEXT,
+  p_admin_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0';
+  v_result JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  UPDATE public.cornhole_matches 
+  SET winner_id = NULL, status = 'ready', completed_at = NULL
+  WHERE id = p_match_id;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result
+  FROM public.cornhole_matches m
+  WHERE m.challenge_id = v_challenge_id;
+
+  RETURN v_result;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.rollback_boxe_match_result(
+  p_match_id TEXT,
+  p_admin_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';
+  v_result JSONB;
+BEGIN
+  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;
+  IF NOT v_is_admin THEN
+    RAISE EXCEPTION 'Non autorizzato';
+  END IF;
+
+  UPDATE public.boxe_matches 
+  SET winner_id = NULL, status = 'ready', completed_at = NULL
+  WHERE id = p_match_id;
+
+  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result
+  FROM public.boxe_matches m
+  WHERE m.challenge_id = v_challenge_id;
+
+  RETURN v_result;
+END;
+$$;
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
+
