@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CornholeChallenge } from "@/components/challenges/CornholeChallenge";
@@ -12,6 +13,10 @@ export const Route = createFileRoute("/_authenticated/admin/cornhole")({
 });
 
 function AdminCornholePage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isClosing, setIsClosing] = useState(false);
+
   // Fetch challenge detail
   const { data: challenge, isLoading: loadingChallenge } = useQuery({
     queryKey: ["challenge_detail_cornhole"],
@@ -42,8 +47,17 @@ function AdminCornholePage() {
   const isCompleted = progressList && progressList.length > 0 && progressList.every((p: any) => p.stato === "completed");
 
   const handleSaveAndClose = async () => {
-    toast.success("Torneo concluso e risultati salvati nel database.");
-    refetchProgress();
+    setIsClosing(true);
+    try {
+      toast.success("Torneo Cornhole salvato e concluso con successo!");
+      await queryClient.invalidateQueries();
+      await refetchProgress();
+      navigate({ to: "/admin" });
+    } catch (e: any) {
+      toast.error(e.message || "Errore durante la chiusura.");
+    } finally {
+      setIsClosing(false);
+    }
   };
 
   if (loadingChallenge) {
@@ -79,7 +93,7 @@ function AdminCornholePage() {
         team={null}
         completed={isCompleted}
         onComplete={handleSaveAndClose}
-        completing={false}
+        completing={isClosing}
       />
     </div>
   );
