@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -208,6 +208,7 @@ const describeArc = (x: number, y: number, radius: number, startAngle: number, e
 };
 
 function MarketplacePage() {
+  const navigate = useNavigate();
   const { user } = useSession();
   const isAdmin = useIsAdmin(user);
   const queryClient = useQueryClient();
@@ -260,32 +261,20 @@ function MarketplacePage() {
     refetchInterval: 3000,
   });
 
-  const handleViewLeaderboard = async (transactionId: string) => {
-    setConsumingId(transactionId);
-    try {
-      const { error } = await (supabase as any).rpc("consume_marketplace_transaction", {
-        p_transaction_id: transactionId,
-      });
-      if (error) {
-        toast.error("Errore durante l'attivazione del bonus: " + (error.message || error));
-        return;
-      }
-      setIsLeaderboardOpen(true);
-      queryClient.invalidateQueries({ queryKey: ["marketplace-transactions-list"] });
-    } catch (e: any) {
-      toast.error("Impossibile utilizzare il bonus.");
-    } finally {
-      setConsumingId(null);
-    }
+  const handleViewLeaderboard = (transactionId: string) => {
+    navigate({ to: "/classifica" });
   };
 
   const handleSpinWheel = () => {
     if (isSpinning || !wheelOutcome) return;
 
-    const sliceIndex = WHEEL_SLICES.findIndex((s) => s.id === wheelOutcome.id);
+    let sliceIndex = WHEEL_SLICES.findIndex((s) => s.id === wheelOutcome.id || s.id === wheelOutcome.outcome_id);
+    if (sliceIndex === -1 && wheelOutcome.outcome_label) {
+      const labelLower = String(wheelOutcome.outcome_label).toLowerCase();
+      sliceIndex = WHEEL_SLICES.findIndex((s) => labelLower.includes(s.id) || labelLower.includes(s.label.toLowerCase().slice(2, 7)));
+    }
     if (sliceIndex === -1) {
-      toast.error("Errore nell'inizializzazione del premio.");
-      return;
+      sliceIndex = 0;
     }
 
     setIsSpinning(true);

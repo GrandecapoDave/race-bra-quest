@@ -26,8 +26,8 @@ function AdminPassaparolaPage() {
   const { user } = useSession();
   const queryClient = useQueryClient();
   
-  // Filter state: 'pending' | 'answered' | 'all'
-  const [filter, setFilter] = useState<"pending" | "answered" | "all">("pending");
+  // Filter state: 'pending' | 'completed' | 'answered' | 'all'
+  const [filter, setFilter] = useState<"pending" | "completed" | "answered" | "all">("pending");
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [internalNotes, setInternalNotes] = useState<Record<string, string>>({});
 
@@ -51,7 +51,7 @@ function AdminPassaparolaPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,timestamp:data_acquisto,request_text:dettagli->>request_text,response_text:dettagli->>response_text,nota_interna:dettagli->>nota_interna")
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,timestamp:data_acquisto,request_text:dettagli->>request_text,response_text:dettagli->>response_text,nota_interna:dettagli->>nota_interna,requested_at:dettagli->>requested_at")
         .eq("marketplace_item_id", "passaparola")
         .order("data_acquisto", { ascending: false });
       if (error) return [];
@@ -63,18 +63,21 @@ function AdminPassaparolaPage() {
   const transactions = transactionsQuery.data ?? [];
 
   // Filter for Passaparola transactions
-  const passaparolaTxs = transactions.filter((t: any) => t.item_id === "passaparola");
+  const passaparolaTxs = transactions.filter((t: any) => t.item_id === "passaparola" || t.marketplace_item_id === "passaparola");
 
   // Filtered lists
   const pendingRequests = passaparolaTxs.filter((t: any) => t.stato === "pending");
+  const boughtRequests = passaparolaTxs.filter((t: any) => t.stato === "completed");
   const answeredRequests = passaparolaTxs.filter((t: any) => t.stato === "used");
 
   const activeList = 
     filter === "pending" 
       ? pendingRequests 
-      : filter === "answered" 
-        ? answeredRequests 
-        : passaparolaTxs;
+      : filter === "completed"
+        ? boughtRequests
+        : filter === "answered" 
+          ? answeredRequests 
+          : passaparolaTxs;
 
   const handleRespond = async (transactionId: string, responseVal: "SÌ" | "NO") => {
     if (!user?.id) {
@@ -123,12 +126,12 @@ function AdminPassaparolaPage() {
               Gestione Passaparola
             </h1>
             <p className="text-xs text-muted-foreground">
-              Rispondi in tempo reale con SÌ o NO alle domande e richieste di aiuto inviate dalle squadre.
+              Rispondi con un secco <strong className="text-emerald-400">SÌ</strong> o <strong className="text-rose-400">NO</strong> alle domande delle squadre.
             </p>
           </div>
           
           {/* Tabs Filter */}
-          <div className="flex bg-zinc-900/60 p-1 rounded-xl border border-zinc-800 shrink-0">
+          <div className="flex bg-zinc-900/60 p-1 rounded-xl border border-zinc-800 shrink-0 flex-wrap gap-1">
             <button
               onClick={() => setFilter("pending")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -147,6 +150,21 @@ function AdminPassaparolaPage() {
               )}
             </button>
             <button
+              onClick={() => setFilter("completed")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                filter === "completed"
+                  ? "bg-zinc-800 text-white font-black"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <span>Acquistati</span>
+              {boughtRequests.length > 0 && (
+                <span className="bg-zinc-700 text-zinc-300 size-4 rounded-full flex items-center justify-center text-[9px] font-bold">
+                  {boughtRequests.length}
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setFilter("answered")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 filter === "answered"
@@ -154,7 +172,7 @@ function AdminPassaparolaPage() {
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              Risposti
+              Risposti ({answeredRequests.length})
             </button>
             <button
               onClick={() => setFilter("all")}
@@ -164,7 +182,7 @@ function AdminPassaparolaPage() {
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              Tutti
+              Tutti ({passaparolaTxs.length})
             </button>
           </div>
         </div>
@@ -223,9 +241,11 @@ function AdminPassaparolaPage() {
                       <div className={`px-2 py-0.5 rounded uppercase font-black tracking-wider text-[8px] flex items-center gap-1 ${
                         isPending 
                           ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" 
-                          : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : tr.stato === "completed"
+                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                       }`}>
-                        {isPending ? "🟠 IN ATTESA" : "🟢 RISPOSTO"}
+                        {isPending ? "🟠 IN ATTESA RISPOSTA" : tr.stato === "completed" ? "🔵 ACQUISTATO (ATTESA DOMANDA)" : "🟢 RISPOSTO"}
                       </div>
                     </div>
                   </div>
@@ -236,8 +256,10 @@ function AdminPassaparolaPage() {
                       <HelpCircle className="size-3.5 text-orange-500" />
                       <span>Domanda della Squadra:</span>
                     </div>
-                    <p className="text-xs text-foreground font-semibold leading-relaxed whitespace-pre-wrap pl-5">
-                      "{tr.request_text || "Nessun testo specificato."}"
+                    <p className={`text-xs leading-relaxed whitespace-pre-wrap pl-5 ${
+                      tr.request_text ? "text-foreground font-semibold" : "text-zinc-500 italic"
+                    }`}>
+                      {tr.request_text ? `"${tr.request_text}"` : "La squadra ha acquistato il bonus ma non ha ancora digitato e inviato la domanda."}
                     </p>
                   </div>
 

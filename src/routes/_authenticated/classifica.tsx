@@ -16,6 +16,7 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
+import { myTeamQuery, leaderboardQuery } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/classifica")({
   component: ClassificaPage,
@@ -33,23 +34,11 @@ function ClassificaPage() {
   const [isClosing, setIsClosing] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
 
-  // Query team details
-  const myTeamQuery = useQuery({
-    queryKey: ["my-team"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("*")
-        .eq("owner_id", user?.id)
-        .maybeSingle();
-      if (error) return null;
-      return data;
-    },
-  });
+  // Query team details using canonical race query
+  const teamQuery = useQuery(myTeamQuery);
+  const team = teamQuery.data;
 
-  const team = myTeamQuery.data;
-
-  // Query the team's bonus_classifica transaction — no auto-refetch while viewing
+  // Query the team's latest bonus_classifica transaction — no auto-refetch while viewing
   const classificationTxQuery = useQuery({
     queryKey: ["team-classification-bonus-detail", team?.id],
     enabled: !!team?.id,
@@ -58,9 +47,11 @@ function ClassificaPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id")
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,outcome:dettagli")
         .eq("team_id", team!.id)
         .eq("marketplace_item_id", "bonus_classifica")
+        .order("data_acquisto", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) return null;
       return data;
@@ -144,7 +135,7 @@ function ClassificaPage() {
   };
 
   // ─── Loading ───────────────────────────────────────────────────────────────
-  if (myTeamQuery.isLoading || (team?.id && classificationTxQuery.isLoading)) {
+  if (teamQuery.isLoading || (team?.id && classificationTxQuery.isLoading)) {
     return (
       <AppShell isAdmin={false}>
         <div className="flex h-[50vh] items-center justify-center">
@@ -236,8 +227,10 @@ function ClassificaPage() {
   }
 
   // ─── Active viewing state ──────────────────────────────────────────────────
-  const snapshot: any[] = tx.outcome?.snapshot || [];
-  const timestamp: string | undefined = tx.outcome?.snapshot_timestamp;
+  const boardQuery = useQuery(leaderboardQuery);
+  const snapshot: any[] = tx.outcome?.snapshot || tx.dettagli?.snapshot || [];
+  const displayRows: any[] = snapshot.length > 0 ? snapshot : (boardQuery.data || []);
+  const timestamp: string | undefined = tx.outcome?.snapshot_timestamp || tx.dettagli?.snapshot_timestamp;
 
   return (
     <AppShell isAdmin={false}>
@@ -268,7 +261,7 @@ function ClassificaPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="divide-y divide-border/10">
-            {snapshot.map((row: any, index: number) => {
+            {displayRows.map((row: any, index: number) => {
               const position = index + 1;
               const isCurrentTeam = row.team_id === team?.id;
               const medal =

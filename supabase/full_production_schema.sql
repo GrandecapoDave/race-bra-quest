@@ -374,26 +374,27 @@ BEGIN
     v_roll := floor(random() * 100) + 1;
 
     IF v_roll <= 3 THEN
-      v_label := '🏆 JACKPOT'; v_points := 20;
+      v_outcome_id := 'jackpot'; v_label := '🏆 JACKPOT (+20 PT)'; v_points := 20;
     ELSIF v_roll <= 6 THEN
-      v_label := '🧠 AIUTO EXTRA DI DAVE'; v_dave_help := true;
+      v_outcome_id := 'dave_help'; v_label := '🧠 AIUTO DAVE 📞'; v_dave_help := true;
     ELSIF v_roll <= 13 THEN
-      v_label := '💎 MEGA BONUS'; v_points := 15;
+      v_outcome_id := 'mega_bonus'; v_label := '💎 MEGA (+15 PT)'; v_points := 15;
     ELSIF v_roll <= 25 THEN
-      v_label := '⭐ BONUS'; v_points := 10;
+      v_outcome_id := 'bonus'; v_label := '⭐ BONUS (+10 PT)'; v_points := 10;
     ELSIF v_roll <= 45 THEN
-      v_label := '🎁 PICCOLO BONUS'; v_points := 5;
+      v_outcome_id := 'piccolo_bonus'; v_label := '🎁 PICCOLO (+5 PT)'; v_points := 5;
     ELSIF v_roll <= 55 THEN
-      v_label := '🪙 GETTONI BONUS'; v_tokens := 10;
+      v_outcome_id := 'gettoni_bonus'; v_label := '🪙 GETTONI (+10 TK)'; v_tokens := 10;
     ELSIF v_roll <= 65 THEN
-      v_label := '🎯 DOPPIO PREMIO'; v_points := 5; v_tokens := 5;
+      v_outcome_id := 'doppio_premio'; v_label := '🎯 DOPPIO (+5/5)'; v_points := 5; v_tokens := 5;
     ELSIF v_roll <= 80 THEN
-      v_label := '🍀 FORTUNA'; v_tokens := 5;
+      v_outcome_id := 'fortuna'; v_label := '🍀 FORTUNA (+5 TK)'; v_tokens := 5;
     ELSE
-      v_label := '🎉 SORPRESA'; v_points := 3;
+      v_outcome_id := 'sorpresa'; v_label := '🎉 SORPRESA (+3 PT)'; v_points := 3;
     END IF;
 
     v_dettagli := jsonb_build_object(
+      'id', v_outcome_id,
       'roll', v_roll,
       'outcome_label', v_label,
       'outcome_points', v_points,
@@ -441,6 +442,7 @@ BEGIN
     RETURN jsonb_build_object(
       'success', true, 
       'outcome', jsonb_build_object(
+        'id', v_outcome_id,
         'roll', v_roll,
         'outcome_label', v_label,
         'outcome_points', v_points,
