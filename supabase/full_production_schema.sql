@@ -568,7 +568,7 @@ BEGIN
     END IF;
   END IF;
 
-  RETURN jsonb_build_object('success', true, 'shielded', false, 'new_balance', v_team.token_balance - v_item.costo_token);
+  RETURN jsonb_build_object('success', true, 'shielded', false, 'new_balance', v_team.token_balance - v_item.costo_token, 'transaction_id', v_tx_id);
 END;
 $$;
 

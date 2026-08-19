@@ -545,6 +545,14 @@ function MarketplacePage() {
             description: `Il tuo punteggio è stato aggiornato: ${(currentPoints + 20)} PT. Saldo residuo: ${(balance - cost)} Token.`,
             duration: 6000,
           });
+        } else if (itemId === "passaparola") {
+          toast.success("📞 PASSAPAROLA ACQUISTATO!", {
+            description: "Inserisci ora la domanda per la Regia per ricevere una risposta SÌ o NO.",
+            duration: 5000,
+          });
+          if (data?.transaction_id) {
+            setUsePassaparolaTx({ id: data.transaction_id });
+          }
         } else {
           toast.success("Acquisto completato con successo!");
         }
@@ -719,6 +727,8 @@ function MarketplacePage() {
                           (() => {
                             const tx = myPurchases.find((t) => t.item_id === "passaparola");
                             if (!tx) return null;
+                            const requestText = tx.request_text || tx.outcome?.request_text || tx.dettagli?.request_text || "";
+                            const responseText = tx.response_text || tx.outcome?.response_text || tx.dettagli?.response_text || "";
                             if (tx.stato === "completed") {
                               return (
                                 <button
@@ -726,7 +736,7 @@ function MarketplacePage() {
                                   className="w-full py-2.5 rounded-xl bg-orange-500 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md hover:brightness-110 active:scale-[0.98] cursor-pointer"
                                 >
                                   <PhoneCall className="size-3.5" />
-                                  <span>Usa Passaparola</span>
+                                  <span>Fai Domanda alla Regia</span>
                                 </button>
                               );
                             }
@@ -737,9 +747,11 @@ function MarketplacePage() {
                                     <Clock className="size-3" />
                                     IN ATTESA DI RISPOSTA
                                   </span>
-                                  <p className="text-[11px] text-zinc-400 italic">
-                                    "{tx.request_text}"
-                                  </p>
+                                  {requestText && (
+                                    <p className="text-[11px] text-zinc-400 italic">
+                                      "{requestText}"
+                                    </p>
+                                  )}
                                 </div>
                               );
                             }
@@ -754,15 +766,17 @@ function MarketplacePage() {
                                     Concluso
                                   </span>
                                 </div>
-                                <div className="text-[11px] text-zinc-400 italic border-l-2 border-zinc-700 pl-2">
-                                  "{tx.request_text}"
-                                </div>
+                                {requestText && (
+                                  <div className="text-[11px] text-zinc-400 italic border-l-2 border-zinc-700 pl-2">
+                                    "{requestText}"
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5">
                                   <span className="text-[11px] text-zinc-500">Risposta:</span>
                                   <span className={`text-[11px] font-black px-2 py-0.5 rounded ${
-                                    tx.response_text === "SÌ" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                    responseText === "SÌ" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                                   }`}>
-                                    {tx.response_text === "SÌ" ? "✅ SÌ" : "❌ NO"}
+                                    {responseText === "SÌ" ? "✅ SÌ" : "❌ NO"}
                                   </span>
                                 </div>
                               </div>

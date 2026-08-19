@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { RaceTimer } from "@/components/RaceTimer";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   challengeState,
   challengesQuery,
@@ -52,8 +53,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useSession();
   const isAdmin = useIsAdmin(user);
+
+  const [usePassaparolaTx, setUsePassaparolaTx] = useState<any | null>(null);
+  const [passaparolaText, setPassaparolaText] = useState("");
+  const [isSendingPassaparola, setIsSendingPassaparola] = useState(false);
 
   const [dismissedShieldId, setDismissedShieldId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -240,6 +246,37 @@ function Dashboard() {
   const activePartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "completed");
   const usedPartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "used");
 
+  const activePassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "completed");
+  const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
+  const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used");
+
+  const handleSendPassaparola = async () => {
+    if (!usePassaparolaTx) return;
+    if (!passaparolaText.trim()) {
+      toast.error("Inserisci la domanda per la Regia.");
+      return;
+    }
+    setIsSendingPassaparola(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("submit_passaparola_request", {
+        p_transaction_id: usePassaparolaTx.id,
+        p_request_text: passaparolaText.trim(),
+      });
+      if (error) {
+        toast.error(`Errore: ${error.message || "Impossibile inviare la richiesta"}`);
+        return;
+      }
+      toast.success("Richiesta inviata con successo alla Regia! Attendi risposta.");
+      setUsePassaparolaTx(null);
+      setPassaparolaText("");
+      queryClient.invalidateQueries();
+    } catch (err) {
+      toast.error("Si è verificato un errore durante l'invio.");
+    } finally {
+      setIsSendingPassaparola(false);
+    }
+  };
+
   const isTeamFrozen = team.data?.freeze_expires_at && new Date(team.data.freeze_expires_at).getTime() > Date.now();
   const activeEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "completed");
   const solvedEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "used");
@@ -374,6 +411,18 @@ function Dashboard() {
                   <span>SCUDO ATTIVO</span>
                 </div>
               )}
+              {activePassaparola && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <PhoneCall className="size-3 stroke-[3]" />
+                  <span>PASSAPAROLA DISP.</span>
+                </div>
+              )}
+              {pendingPassaparola && (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <Clock className="size-3 animate-spin" />
+                  <span>ATTESA REGIA</span>
+                </div>
+              )}
               {activePartenza && (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
                   <Zap className="size-3 stroke-[3]" />
@@ -447,6 +496,68 @@ function Dashboard() {
             <ProgressBar value={percent} className="mt-2" />
           </div>
         </section>
+
+        {/* PASSAPAROLA ACTIVE / PENDING / ANSWERED BANNER */}
+        {activePassaparola && (
+          <div className="surface p-4.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/5 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                <PhoneCall className="size-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
+                  📞 Bonus Passaparola Disponibile
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setUsePassaparolaTx(activePassaparola)}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-orange-500 text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-1.5"
+            >
+              <PhoneCall className="size-3.5" />
+              <span>Fai la Domanda</span>
+            </button>
+          </div>
+        )}
+
+        {pendingPassaparola && (
+          <div className="surface p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                <Clock className="size-3.5" />
+                Passaparola: In attesa di risposta dalla Regia
+              </span>
+              <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
+            </div>
+            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
+              "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
+            </div>
+          </div>
+        )}
+
+        {answeredPassaparola && (
+          <div className="surface p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <PhoneCall className="size-3.5 text-emerald-400" />
+                Risposta Regia Passaparola
+              </span>
+              <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
+                (answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ"
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                  : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+              }`}>
+                Risposta: {(answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ" ? "✅ SÌ" : "❌ NO"}
+              </span>
+            </div>
+            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
+              "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
+            </div>
+          </div>
+        )}
 
         {/* PROVA CORRENTE (QUEST) */}
         <section className="space-y-2.5">
@@ -629,6 +740,67 @@ function Dashboard() {
             })}
           </div>
         </section>
+
+        {/* USE PASSAPAROLA MODAL */}
+        {usePassaparolaTx && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="surface max-w-md w-full rounded-2xl p-6 shadow-2xl border border-zinc-800 bg-[#070d1e] space-y-5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/25 text-orange-500 shrink-0">
+                  <PhoneCall className="size-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <h3 className="text-md font-black text-foreground uppercase tracking-wide leading-none">
+                    Usa Passaparola
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Scrivi brevemente su cosa ti serve l'aiuto SÌ/NO della Regia.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-wider">
+                  Descrivi l'enigma, la prova o il dubbio...
+                </label>
+                <textarea
+                  placeholder="Esempio: Nel rebus al checkpoint dobbiamo considerare anche il titolo?"
+                  value={passaparolaText}
+                  onChange={(e) => setPassaparolaText(e.target.value)}
+                  disabled={isSendingPassaparola}
+                  rows={4}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-foreground placeholder-zinc-600 focus:outline-none focus:border-zinc-700 transition-colors resize-none"
+                />
+              </div>
+
+              <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800 text-[10px] text-zinc-500 leading-normal">
+                ⚠️ <strong>Nessuna risposta automatica:</strong> La richiesta verrà notificata alla Regia fisica che vi risponderà manualmente con un <strong>SÌ</strong> o con un <strong>NO</strong>.
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setUsePassaparolaTx(null);
+                    setPassaparolaText("");
+                  }}
+                  disabled={isSendingPassaparola}
+                  className="flex-1 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-xs font-black uppercase text-muted-foreground transition-all cursor-pointer"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={handleSendPassaparola}
+                  disabled={isSendingPassaparola || !passaparolaText.trim()}
+                  className="flex-1 py-2.5 rounded-xl bg-orange-500 text-black font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {isSendingPassaparola ? <Loader2 className="size-3.5 animate-spin" /> : <span>Invia alla Regia</span>}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </AppShell>
