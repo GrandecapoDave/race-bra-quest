@@ -185,7 +185,7 @@ export const myTeamQuery = queryOptions({
     if (!idData) return null;
     const { data, error } = await (supabase as any)
       .from("teams")
-      .select("id,name:nome_squadra,motto,avatar_url,color:colore,created_at,token_balance")
+      .select("id,name:nome_squadra,motto,avatar_url,color:colore,created_at,token_balance,freeze_started_at,freeze_expires_at,freeze_duration_seconds")
       .eq("id", idData as string)
       .maybeSingle();
     if (error) {
@@ -202,6 +202,9 @@ export const myTeamQuery = queryOptions({
       owner_id: data.id,
       created_at: data.created_at,
       token_balance: data.token_balance ?? 0,
+      freeze_started_at: data.freeze_started_at,
+      freeze_expires_at: data.freeze_expires_at,
+      freeze_duration_seconds: data.freeze_duration_seconds,
     } as Team;
   },
 });

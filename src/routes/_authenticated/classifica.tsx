@@ -38,6 +38,9 @@ function ClassificaPage() {
   const teamQuery = useQuery(myTeamQuery);
   const team = teamQuery.data;
 
+  // Unconditionally query leaderboard for backup / display rows (Rules of Hooks)
+  const boardQuery = useQuery(leaderboardQuery);
+
   // Query the team's latest bonus_classifica transaction — no auto-refetch while viewing
   const classificationTxQuery = useQuery({
     queryKey: ["team-classification-bonus-detail", team?.id],
@@ -227,7 +230,6 @@ function ClassificaPage() {
   }
 
   // ─── Active viewing state ──────────────────────────────────────────────────
-  const boardQuery = useQuery(leaderboardQuery);
   const snapshot: any[] = tx.outcome?.snapshot || tx.dettagli?.snapshot || [];
   const displayRows: any[] = snapshot.length > 0 ? snapshot : (boardQuery.data || []);
   const timestamp: string | undefined = tx.outcome?.snapshot_timestamp || tx.dettagli?.snapshot_timestamp;

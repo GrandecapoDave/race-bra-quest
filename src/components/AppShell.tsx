@@ -208,7 +208,7 @@ function AppShellInner({
   }, []);
 
   // Query database state to determine if Marketplace is unlocked and active
-  const team = useQuery({ ...myTeamQuery, enabled: !isAdmin });
+  const team = useQuery({ ...myTeamQuery, enabled: !isAdmin, refetchInterval: 3000 });
 
   // Query all teams list to identify attacker name
   const allTeamsQuery = useQuery({
@@ -235,7 +235,15 @@ function AppShellInner({
     }
   });
 
-  const expiresMs = team.data?.freeze_expires_at ? new Date(team.data.freeze_expires_at).getTime() : 0;
+  // Find active maluses (checking state completed for freeze and enigma)
+  const activeFreezeTx = activeMalusesQuery.data?.find((t: any) => t.item_id === "freeze_2min" && t.stato === "completed");
+  const activeEnigmaTx = activeMalusesQuery.data?.find((t: any) => t.item_id === "enigma_extra" && t.stato === "completed");
+
+  const freezeExpiry = team.data?.freeze_expires_at 
+    || activeFreezeTx?.dettagli?.freeze_expires_at 
+    || activeFreezeTx?.outcome?.freeze_expires_at;
+
+  const expiresMs = freezeExpiry ? new Date(freezeExpiry).getTime() : 0;
   const isFrozen = secondsLeft > 0;
 
   useEffect(() => {
@@ -260,10 +268,6 @@ function AppShellInner({
       if (interval) clearInterval(interval);
     };
   }, [expiresMs, queryClient]);
-
-  // Find active maluses (checking state completed for freeze and enigma)
-  const activeFreezeTx = activeMalusesQuery.data?.find((t: any) => t.item_id === "freeze_2min" && t.stato === "completed");
-  const activeEnigmaTx = activeMalusesQuery.data?.find((t: any) => t.item_id === "enigma_extra" && t.stato === "completed");
 
   const pendingUnluckyWheelTx = activeMalusesQuery.data?.find(
     (t: any) => t.item_id === "ruota_sfortunata" && t.stato === "completed"
