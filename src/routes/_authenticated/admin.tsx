@@ -286,6 +286,7 @@ function AdminLayout() {
   // Fetch settings
   const settings = useQuery({
     queryKey: ["admin-settings"],
+    refetchInterval: 3000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("settings")
@@ -341,28 +342,61 @@ function AdminLayout() {
     }
   });
 
-  // Chronometer for elapsed race time
+  // Chronometer for elapsed race time (active / frozen when terminated / 00:00:00 when not started)
   const [raceTime, setRaceTime] = useState("00:00:00");
   useEffect(() => {
-    const interval = setInterval(() => {
+    const updateTime = () => {
       const startedAtSetting = (settings.data ?? []).find(s => s.id === "game_started_at");
       const statusSetting = (settings.data ?? []).find(s => s.id === "game_status");
-      if (!startedAtSetting || statusSetting?.value === "Gara non iniziata") {
+      const endedAtSetting = (settings.data ?? []).find(s => s.id === "game_ended_at");
+
+      const status = statusSetting?.value || "Gara non iniziata";
+
+      // 1. NON INIZIATA: timer always 00:00:00
+      if (!startedAtSetting?.value || status === "Gara non iniziata") {
         setRaceTime("00:00:00");
         return;
       }
-      const diffMs = Date.now() - new Date(startedAtSetting.value).getTime();
-      if (diffMs <= 0) {
+
+      const startMs = new Date(startedAtSetting.value).getTime();
+      if (isNaN(startMs) || startMs <= 0) {
         setRaceTime("00:00:00");
         return;
       }
+
+      // 2. GARA TERMINATA: timer FROZEN at (endedAt - startedAt)
+      let endMs = Date.now();
+      if (status === "Gara terminata") {
+        if (endedAtSetting?.value) {
+          const parsedEndMs = new Date(endedAtSetting.value).getTime();
+          if (!isNaN(parsedEndMs) && parsedEndMs > 0) {
+            endMs = parsedEndMs;
+          } else if (statusSetting?.updated_at) {
+            endMs = new Date(statusSetting.updated_at).getTime();
+          }
+        } else if (statusSetting?.updated_at) {
+          endMs = new Date(statusSetting.updated_at).getTime();
+        }
+      }
+
+      // 3. Compute formatted elapsed time
+      const diffMs = Math.max(0, endMs - startMs);
       const totalSecs = Math.floor(diffMs / 1000);
       const hours = String(Math.floor(totalSecs / 3600)).padStart(2, "0");
       const minutes = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, "0");
       const seconds = String(totalSecs % 60).padStart(2, "0");
       setRaceTime(`${hours}:${minutes}:${seconds}`);
-    }, 1000);
-    return () => clearInterval(interval);
+    };
+
+    updateTime();
+
+    const statusSetting = (settings.data ?? []).find(s => s.id === "game_status");
+    // Only tick actively if the race is active
+    if (statusSetting?.value === "Gara attiva") {
+      const interval = setInterval(updateTime, 1000);
+      return () => clearInterval(interval);
+    }
+    return undefined;
   }, [settings.data]);
 
   // Global actions and operation states
@@ -394,10 +428,29 @@ function AdminLayout() {
 
   // UPDATE GAME STATUS
   async function handleUpdateGameStatus(status: string) {
+    const nowIso = new Date().toISOString();
+    const updates: { id: string; value: string; updated_at: string }[] = [
+      { id: "game_status", value: status, updated_at: nowIso }
+    ];
+
+    if (status === "Gara attiva") {
+      const startedAtSetting = (settings.data ?? []).find(s => s.id === "game_started_at");
+      const currentStatus = (settings.data ?? []).find(s => s.id === "game_status")?.value;
+      if (!startedAtSetting?.value || currentStatus === "Gara non iniziata") {
+        updates.push({ id: "game_started_at", value: nowIso, updated_at: nowIso });
+      }
+      updates.push({ id: "game_ended_at", value: "", updated_at: nowIso });
+    } else if (status === "Gara terminata") {
+      updates.push({ id: "game_ended_at", value: nowIso, updated_at: nowIso });
+    } else if (status === "Gara non iniziata") {
+      updates.push({ id: "game_started_at", value: "", updated_at: nowIso });
+      updates.push({ id: "game_ended_at", value: "", updated_at: nowIso });
+    }
+
     const { error } = await (supabase as any)
       .from("settings")
-      .update({ value: status })
-      .eq("id", "game_status");
+      .upsert(updates, { onConflict: "id" });
+
     if (error) {
       toast.error(error.message);
       return;
