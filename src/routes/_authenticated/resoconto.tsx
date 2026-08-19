@@ -248,7 +248,7 @@ function TeamResocontoPage() {
                 </h3>
 
                 <div className="space-y-3">
-                  {team.stages_breakdown.map((sb: any) => {
+                  {(team.stages_breakdown ?? team.stages ?? []).map((sb: any) => {
                     const stageKey = `${team.team_id}_${sb.stage_id}`;
                     const isOpen = openStages[stageKey] ?? true;
 
