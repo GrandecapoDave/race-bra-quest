@@ -272,14 +272,8 @@ function AppShellInner({
   const pendingUnluckyWheelTx = activeMalusesQuery.data?.find(
     (t: any) => t.item_id === "ruota_sfortunata" && t.stato === "completed"
   );
-  const completedUnluckyWheelTx = activeMalusesQuery.data?.find(
-    (t: any) => t.item_id === "ruota_sfortunata" && t.stato === "used"
-  );
 
-  const showUnluckyWheel = pendingUnluckyWheelTx || (completedUnluckyWheelTx && localStorage.getItem("dismissed_unlucky_" + completedUnluckyWheelTx.id) !== "true");
-  const unluckyWheelTxToShow = pendingUnluckyWheelTx || completedUnluckyWheelTx;
-
-  const currentActiveMalusTx = activeFreezeTx || activeEnigmaTx || pendingUnluckyWheelTx || completedUnluckyWheelTx;
+  const currentActiveMalusTx = activeFreezeTx || activeEnigmaTx || pendingUnluckyWheelTx;
   const attackerTeam = currentActiveMalusTx
     ? allTeamsQuery.data?.find((t: any) => t.id === currentActiveMalusTx.buyer_team_id)
     : null;
@@ -311,7 +305,7 @@ function AppShellInner({
   };
 
   const handleSpinUnluckyWheel = async () => {
-    if (isUnluckySpinning || !unluckyWheelTxToShow) return;
+    if (isUnluckySpinning || !pendingUnluckyWheelTx) return;
     setIsUnluckySpinning(true);
     setShowUnluckyPrize(false);
 
@@ -358,8 +352,6 @@ function AppShellInner({
   };
 
   const handleDismissUnluckyWheel = () => {
-    if (!unluckyWheelTxToShow) return;
-    localStorage.setItem("dismissed_unlucky_" + unluckyWheelTxToShow.id, "true");
     setUnluckyRotation(0);
     setIsUnluckySpinning(false);
     setShowUnluckyPrize(false);
@@ -367,17 +359,7 @@ function AppShellInner({
     queryClient.invalidateQueries();
   };
 
-  useEffect(() => {
-    if (completedUnluckyWheelTx && completedUnluckyWheelTx.outcome) {
-      setUnluckyOutcome(completedUnluckyWheelTx.outcome);
-      setShowUnluckyPrize(true);
-      
-      const sliceIndex = UNLUCKY_WHEEL_SLICES.findIndex((s) => s.id === completedUnluckyWheelTx.outcome.id);
-      if (sliceIndex !== -1) {
-        setUnluckyRotation(360 * 5 + (360 - (sliceIndex * 60 + 30)));
-      }
-    }
-  }, [completedUnluckyWheelTx]);
+
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
@@ -699,7 +681,7 @@ function AppShellInner({
         </header>
 
         <main className="mx-auto w-full max-w-3xl min-w-0 px-3 sm:px-4 py-4 sm:py-5 pb-28 md:pb-12 box-border overflow-x-hidden">
-          {isFrozen ? (
+          {isFrozen && !isUnluckySpinning && !showUnluckyPrize ? (
             <div className="flex flex-col items-center justify-center bg-zinc-950/40 border border-cyan-500/20 backdrop-blur-md rounded-3xl p-8 py-16 text-center space-y-6 my-10 animate-in fade-in zoom-in-95 duration-300 max-w-lg mx-auto shadow-2xl shadow-cyan-950/20">
               <div className="size-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center animate-pulse shadow-lg shadow-cyan-500/5">
                 <Snowflake className="size-10 text-cyan-400 animate-spin-slow" />
@@ -721,7 +703,7 @@ function AppShellInner({
                 Le azioni di gara riprenderanno automaticamente alla scadenza del timer
               </p>
             </div>
-          ) : activeEnigmaTx ? (
+          ) : activeEnigmaTx && !isUnluckySpinning && !showUnluckyPrize ? (
             <div className="flex flex-col items-center justify-center bg-zinc-950/40 border border-purple-500/20 backdrop-blur-md rounded-3xl p-6 sm:p-8 py-12 text-center space-y-6 my-10 animate-in fade-in zoom-in-95 duration-300 max-w-lg mx-auto shadow-2xl shadow-purple-950/20">
               <div className="size-20 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center animate-pulse shadow-lg shadow-purple-500/5">
                 <Puzzle className="size-10 text-purple-400" />
@@ -795,7 +777,7 @@ function AppShellInner({
                 </button>
               </form>
             </div>
-          ) : showUnluckyWheel ? (
+          ) : (pendingUnluckyWheelTx || isUnluckySpinning || showUnluckyPrize) ? (
             <div className="flex flex-col items-center justify-center bg-zinc-950/40 border border-amber-500/20 backdrop-blur-md rounded-3xl p-6 sm:p-8 py-12 text-center space-y-6 my-10 animate-in fade-in zoom-in-95 duration-300 max-w-lg mx-auto shadow-2xl shadow-amber-950/20">
               <div className="size-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center animate-pulse shadow-lg shadow-amber-500/5">
                 <ShieldAlert className="size-10 text-amber-400" />
