@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -33,6 +33,8 @@ import {
   Check,
   Flame,
   ArrowRight,
+  ArrowLeft,
+  Home,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/resoconto")({
@@ -359,6 +361,14 @@ function AdminResocontoPage() {
                 ⚠️ RIAPRI RISULTATI
               </button>
             )}
+
+            <Link
+              to="/admin"
+              className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <ArrowLeft className="size-3.5" />
+              DASHBOARD
+            </Link>
           </div>
         </div>
 

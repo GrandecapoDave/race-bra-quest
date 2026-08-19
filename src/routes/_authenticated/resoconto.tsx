@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/hooks/useAuth";
@@ -22,6 +22,8 @@ import {
   Skull,
   Flame,
   ArrowRight,
+  Home,
+  ArrowLeft,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/resoconto")({
@@ -59,7 +61,7 @@ function TeamResocontoPage() {
   // Not published state: Strict lock screen
   if (!isPublished || !reportData || !reportData.teams) {
     return (
-      <div className="surface p-10 text-center rounded-2xl border border-border/40 bg-zinc-950/60 max-w-md mx-auto space-y-4 my-8 shadow-2xl">
+      <div className="surface p-10 text-center rounded-2xl border border-border/40 bg-zinc-950/60 max-w-md mx-auto space-y-5 my-8 shadow-2xl">
         <div className="size-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-muted-foreground">
           <Lock className="size-8 text-amber-500" />
         </div>
@@ -70,6 +72,15 @@ function TeamResocontoPage() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             🏁 Il resoconto finale verrà pubblicato dalla Regia al termine della gara.
           </p>
+        </div>
+        <div>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider transition-all hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer"
+          >
+            <Home className="size-4" />
+            Torna alla Dashboard
+          </Link>
         </div>
       </div>
     );
@@ -98,6 +109,16 @@ function TeamResocontoPage() {
           <p className="text-xs text-muted-foreground font-semibold mt-1">
             Pubblicato dalla Regia il {publishedAt ? new Date(publishedAt).toLocaleString("it-IT") : ""} · Trasparenza completa di tutti i punteggi, tempi e bonus.
           </p>
+        </div>
+
+        <div>
+          <Link
+            to="/dashboard"
+            className="px-4 py-2.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 shadow-sm cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            Torna alla Dashboard
+          </Link>
         </div>
       </div>
 
