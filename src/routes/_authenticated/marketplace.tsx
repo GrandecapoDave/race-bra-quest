@@ -329,7 +329,7 @@ function MarketplacePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
-        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,timestamp:data_acquisto,outcome:dettagli")
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,costo:costo_token,timestamp:data_acquisto,outcome:dettagli")
         .order("data_acquisto", { ascending: false });
       if (error) {
         console.warn("Error transactionsQuery:", error);
@@ -937,12 +937,17 @@ function MarketplacePage() {
                   const details = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id);
                   const isClassifica = b.item_id === "bonus_classifica";
                   const isUsed = b.stato === "used";
+                  const itemCost = b.costo ?? b.costo_token ?? details?.costo ?? 0;
 
                   return (
                     <li key={b.id} className="flex flex-col gap-2 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800 text-xs">
                       <div className="flex justify-between items-center">
                         <span className="font-extrabold text-foreground">{details?.nome || b.item_id}</span>
-                        <span className="text-[10px] text-zinc-500 font-semibold">{new Date(b.timestamp).toLocaleDateString("it-IT")}</span>
+                        <span className="text-[10px] text-emerald-400 font-bold">-{itemCost} 🪙</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-zinc-500">
+                        <span>Stato: <strong className="text-zinc-300">{isUsed ? "Utilizzato" : b.stato === "blocked" ? "Bloccato" : "Attivo"}</strong></span>
+                        <span>{new Date(b.timestamp || b.data_acquisto).toLocaleDateString("it-IT")}</span>
                       </div>
                       {isClassifica && (
                         <div className="flex justify-end pt-1.5 border-t border-border/5">
@@ -985,15 +990,16 @@ function MarketplacePage() {
                 {mySentMaluses.map((m) => {
                   const details = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
                   const target = teams.find((t) => t.id === m.target_team_id);
+                  const itemCost = m.costo ?? m.costo_token ?? details?.costo ?? 0;
                   return (
                     <li key={m.id} className="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800 text-xs space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="font-extrabold text-foreground">{details?.nome || m.item_id}</span>
-                        <span className="text-[10px] text-rose-500 font-bold">-{m.costo} 🪙</span>
+                        <span className="text-[10px] text-rose-500 font-bold">-{itemCost} 🪙</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-zinc-500">
                         <span>Colpita: <strong className="text-rose-400/90">{target?.nome_squadra || "Sconosciuta"}</strong></span>
-                        <span>{new Date(m.timestamp).toLocaleDateString("it-IT")}</span>
+                        <span>{new Date(m.timestamp || m.data_acquisto).toLocaleDateString("it-IT")}</span>
                       </div>
                     </li>
                   );
@@ -1013,16 +1019,19 @@ function MarketplacePage() {
               <ul className="space-y-2">
                 {myReceivedMaluses.map((m) => {
                   const details = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
-                  const buyer = teams.find((t) => t.id === m.buyer_team_id);
+                  const buyer = teams.find((t) => t.id === (m.buyer_team_id || m.team_id));
+                  const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
                   return (
                     <li key={m.id} className="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800 text-xs space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="font-extrabold text-foreground">{details?.nome || m.item_id}</span>
-                        <span className="text-[10px] text-amber-500 font-bold">Ricevuto</span>
+                        <span className={`text-[10px] font-bold ${isBlocked ? "text-emerald-400" : "text-amber-500"}`}>
+                          {isBlocked ? "🛡️ Bloccato da Scudo" : "Ricevuto"}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-zinc-500">
                         <span>Mandato da: <strong className="text-amber-400">{buyer?.nome_squadra || "Anonimo"}</strong></span>
-                        <span>{new Date(m.timestamp).toLocaleDateString("it-IT")}</span>
+                        <span>{new Date(m.timestamp || m.data_acquisto).toLocaleDateString("it-IT")}</span>
                       </div>
                     </li>
                   );
@@ -1042,12 +1051,14 @@ function MarketplacePage() {
           ) : (
             <div className="divide-y divide-border/10">
               {myPurchases.map((t) => {
-                const isReward = t.item_id === "reward_stage";
+                const isReward = t.item_id === "reward_stage" || (t.costo ?? t.costo_token ?? 0) < 0;
                 const details = isReward ? {
                   nome: `🏁 RICOMPENSA TAPPA ${t.outcome?.stage_index ?? ""}`,
                   categoria: "RICOMPENSA"
                 } : MARKETPLACE_ITEMS.find((i) => i.id === t.item_id);
                 const target = teams.find((tm) => tm.id === t.target_team_id);
+                const itemCost = t.costo ?? t.costo_token ?? (isReward ? 0 : (details as any)?.costo ?? 0);
+
                 return (
                   <div key={t.id} className="flex justify-between items-center py-3 text-xs">
                     <div className="space-y-0.5">
@@ -1064,7 +1075,7 @@ function MarketplacePage() {
                         </span>
                       </p>
                       <p className="text-[10px] text-zinc-500">
-                        {new Date(t.timestamp).toLocaleString("it-IT")}
+                        {new Date(t.timestamp || t.data_acquisto).toLocaleString("it-IT")}
                         {target && (
                           <span> · Bersaglio: <strong className="text-zinc-400">{target.nome_squadra}</strong></span>
                         )}
@@ -1075,11 +1086,11 @@ function MarketplacePage() {
                     </div>
                     {isReward ? (
                       <span className="font-black text-emerald-400 flex items-center gap-0.5 shrink-0">
-                        +{Math.abs(t.costo)} 🪙
+                        +{Math.abs(itemCost)} 🪙
                       </span>
                     ) : (
                       <span className="font-black text-red-500 flex items-center gap-0.5 shrink-0">
-                        -{t.costo} 🪙
+                        -{Math.abs(itemCost)} 🪙
                       </span>
                     )}
                   </div>

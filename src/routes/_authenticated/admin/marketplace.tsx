@@ -45,7 +45,10 @@ function AdminMarketplacePage() {
   const settings = gameSettings.data as any;
   const isMarketplaceActive = settings?.marketplace_active === true;
   const totalPurchases = transactions.length;
-  const totalTokensSpent = transactions.reduce((acc: number, t: any) => acc + (t.costo ?? 0), 0);
+  const totalTokensSpent = transactions.reduce((acc: number, t: any) => {
+    const c = t.costo ?? t.costo_token ?? 0;
+    return c > 0 ? acc + c : acc;
+  }, 0);
   const activatedAt = settings?.activated_at ? new Date(settings.activated_at).toLocaleString("it-IT") : "Non disponibile";
   const activatedBy = settings?.activated_by || "Non disponibile";
 
@@ -601,13 +604,16 @@ function AdminMarketplacePage() {
                           <td className="py-3 font-semibold text-zinc-400">
                             {targetTeam ? targetTeam.nome_squadra : "—"}
                           </td>
-                          {isReward ? (
-                            <td className="py-3 font-mono font-black text-emerald-400">+{Math.abs(tr.costo)} 🪙</td>
-                          ) : (
-                            <td className="py-3 font-mono font-black text-rose-500">-{tr.costo} 🪙</td>
-                          )}
+                          {(() => {
+                            const cost = tr.costo ?? tr.costo_token ?? 0;
+                            return isReward || cost < 0 ? (
+                              <td className="py-3 font-mono font-black text-emerald-400">+{Math.abs(cost)} 🪙</td>
+                            ) : (
+                              <td className="py-3 font-mono font-black text-rose-500">-{Math.abs(cost)} 🪙</td>
+                            );
+                          })()}
                           <td className="py-3 text-right text-zinc-500 text-[10px]">
-                            {new Date(tr.timestamp).toLocaleString("it-IT")}
+                            {new Date(tr.timestamp || tr.data_acquisto).toLocaleString("it-IT")}
                           </td>
                         </tr>
                       );

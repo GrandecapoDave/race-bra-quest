@@ -624,10 +624,13 @@ function Dashboard() {
                       <p className="text-[11px] text-muted-foreground italic font-semibold">Nessun bonus attivo</p>
                     ) : (
                       myBonuses.map((b) => {
-                        const name = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id)?.nome || b.item_id;
+                        const item = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id);
+                        const name = item?.nome || b.item_id;
+                        const cost = b.costo ?? b.costo_token ?? (item as any)?.costo ?? 0;
                         return (
-                          <div key={b.id} className="text-xs font-bold text-foreground truncate bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80">
-                            {name}
+                          <div key={b.id} className="text-xs font-bold text-foreground bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80 flex items-center justify-between gap-1">
+                            <span className="truncate">{name}</span>
+                            <span className="text-[10px] text-emerald-400 font-extrabold shrink-0">-{cost} 🪙</span>
                           </div>
                         );
                       })
@@ -647,11 +650,16 @@ function Dashboard() {
                       <p className="text-[11px] text-muted-foreground italic font-semibold">Nessun malus inviato</p>
                     ) : (
                       mySentMaluses.map((m) => {
-                        const name = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id)?.nome || m.item_id;
+                        const item = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
+                        const name = item?.nome || m.item_id;
                         const target = allTeams.find((t) => t.id === m.target_team_id)?.nome_squadra || "Sconosciuta";
+                        const cost = m.costo ?? m.costo_token ?? (item as any)?.costo ?? 0;
                         return (
                           <div key={m.id} className="text-[11px] font-bold text-foreground bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80 flex flex-col gap-0.5 min-w-0">
-                            <span className="truncate">{name}</span>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="truncate">{name}</span>
+                              <span className="text-[10px] text-rose-400 font-extrabold shrink-0">-{cost} 🪙</span>
+                            </div>
                             <span className="text-[9px] text-rose-500 font-extrabold truncate">→ {target}</span>
                           </div>
                         );
@@ -673,10 +681,14 @@ function Dashboard() {
                     ) : (
                       myReceivedMaluses.map((m) => {
                         const name = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id)?.nome || m.item_id;
-                        const buyer = allTeams.find((t) => t.id === m.buyer_team_id)?.nome_squadra || "Sconosciuta";
+                        const buyer = allTeams.find((t) => t.id === (m.buyer_team_id || m.team_id))?.nome_squadra || "Sconosciuta";
+                        const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
                         return (
                           <div key={m.id} className="text-[11px] font-bold text-foreground bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80 flex flex-col gap-0.5 min-w-0">
-                            <span className="truncate">{name}</span>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="truncate">{name}</span>
+                              {isBlocked && <span className="text-[9px] text-emerald-400 font-extrabold shrink-0">🛡️ Bloccato</span>}
+                            </div>
                             <span className="text-[9px] text-amber-500 font-extrabold truncate">← {buyer}</span>
                           </div>
                         );
