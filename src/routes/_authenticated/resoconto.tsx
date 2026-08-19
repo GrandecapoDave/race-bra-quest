@@ -152,7 +152,7 @@ function TeamResocontoPage() {
             >
               {t.avatar_url ?? "🏳️"}
             </span>
-            {t.nome_squadra || t.name}
+            {t.nome_squadra || t.name || t.team_name}
           </button>
         ))}
       </div>
@@ -160,6 +160,13 @@ function TeamResocontoPage() {
       {/* TEAMS REPORT CARDS */}
       <div className="space-y-8">
         {filteredTeams.map((team: any) => {
+          const teamPos = team.position ?? team.rank ?? 1;
+          const teamName = team.nome_squadra || team.name || team.team_name || "Squadra";
+          const initialTokens = team.tokens_initial ?? 50;
+          const gainedTokens = team.tokens_gained_rewards ?? team.tokens_gained_stage_rewards ?? 0;
+          const spentTokens = team.tokens_spent_marketplace ?? 0;
+          const balanceTokens = team.token_balance ?? 50;
+
           return (
             <div
               key={team.team_id}
@@ -180,15 +187,15 @@ function TeamResocontoPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black uppercase tracking-widest text-primary px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                        {team.position === 1 ? "🥇 1° Posto" : team.position === 2 ? "🥈 2° Posto" : team.position === 3 ? "🥉 3° Posto" : `#${team.position} in Classifica`}
+                        {teamPos === 1 ? "🥇 1° Posto" : teamPos === 2 ? "🥈 2° Posto" : teamPos === 3 ? "🥉 3° Posto" : `#${teamPos} in Classifica`}
                       </span>
                       <h2 className="text-2xl font-display font-black text-foreground uppercase tracking-wide">
-                        {team.nome_squadra || team.name}
+                        {teamName}
                       </h2>
                     </div>
                     <p className="text-xs text-muted-foreground font-semibold mt-1">
                       {team.motto ? `"${team.motto}" · ` : ""}
-                      Prove completate: {team.completed_challenges} · Tempo totale: {formatDuration(team.total_duration_seconds)}
+                      Prove completate: {team.completed_challenges ?? 0} · Tempo totale: {formatDuration(team.total_duration_seconds ?? 0)}
                     </p>
                   </div>
                 </div>
@@ -197,21 +204,21 @@ function TeamResocontoPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Totali</span>
-                    <p className="text-xl font-display font-black text-primary">{team.total_points} PT</p>
+                    <p className="text-xl font-display font-black text-primary">{team.total_points ?? 0} PT</p>
                   </div>
                   <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Sfide</span>
-                    <p className="text-lg font-mono font-black text-emerald-400">{team.challenges_points} PT</p>
+                    <p className="text-lg font-mono font-black text-emerald-400">{team.challenges_points ?? 0} PT</p>
                   </div>
                   <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Cattiveria</span>
-                    <p className={`text-lg font-mono font-black ${team.cattiveria_points >= 0 ? "text-purple-400" : "text-rose-400"}`}>
-                      {team.cattiveria_points > 0 ? `+${team.cattiveria_points}` : team.cattiveria_points} 😈
+                    <p className={`text-lg font-mono font-black ${(team.cattiveria_points ?? 0) >= 0 ? "text-purple-400" : "text-rose-400"}`}>
+                      {(team.cattiveria_points ?? 0) > 0 ? `+${team.cattiveria_points}` : (team.cattiveria_points ?? 0)} 😈
                     </p>
                   </div>
                   <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Saldo Token</span>
-                    <p className="text-lg font-mono font-black text-amber-400">{team.token_balance} 🪙</p>
+                    <p className="text-lg font-mono font-black text-amber-400">{balanceTokens} 🪙</p>
                   </div>
                 </div>
               </div>
@@ -224,19 +231,19 @@ function TeamResocontoPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
                     <p className="text-[9px] text-muted-foreground uppercase font-bold">Iniziali</p>
-                    <p className="font-mono font-bold text-zinc-300">+{team.tokens_initial} TK</p>
+                    <p className="font-mono font-bold text-zinc-300">+{initialTokens} TK</p>
                   </div>
                   <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
                     <p className="text-[9px] text-muted-foreground uppercase font-bold">Guadagnati a Fine Tappa</p>
-                    <p className="font-mono font-bold text-emerald-400">+{team.tokens_gained_rewards} TK</p>
+                    <p className="font-mono font-bold text-emerald-400">+{gainedTokens} TK</p>
                   </div>
                   <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
                     <p className="text-[9px] text-muted-foreground uppercase font-bold">Spesi nel Marketplace</p>
-                    <p className="font-mono font-bold text-rose-400">−{team.tokens_spent_marketplace} TK</p>
+                    <p className="font-mono font-bold text-rose-400">−{spentTokens} TK</p>
                   </div>
                   <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
                     <p className="text-[9px] text-muted-foreground uppercase font-bold">Saldo Finale</p>
-                    <p className="font-mono font-black text-amber-400">{team.token_balance} TK</p>
+                    <p className="font-mono font-black text-amber-400">{balanceTokens} TK</p>
                   </div>
                 </div>
               </div>
