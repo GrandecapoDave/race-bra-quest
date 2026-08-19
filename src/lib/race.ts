@@ -390,15 +390,23 @@ export function isStageUnlocked(
   return prevChallenges.every((c) => completedIds.has(c.id));
 }
 
+export type ReportStatus = {
+  status: "NOT_CALCULATED" | "CALCULATED" | "PUBLISHED";
+  is_calculated: boolean;
+  is_published: boolean;
+  calculated_at: string | null;
+  published_at: string | null;
+};
+
 export const reportStatusQuery = queryOptions({
   queryKey: ["report-status"],
-  staleTime: 5000,
+  staleTime: 3000,
   queryFn: async () => {
     const { data, error } = await supabase.rpc("get_report_status");
     if (error) throw error;
-    return data as { state: "PRIVATE_LIVE" | "PUBLISHED_FINAL"; is_published: boolean; published_at: string | null };
+    return data as ReportStatus;
   },
-  refetchInterval: 10000,
+  refetchInterval: 5000,
 });
 
 export const gameReportQuery = (userId?: string) =>
