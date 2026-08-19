@@ -46,7 +46,7 @@ function PartenzeAnticipateAdmin() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("marketplace_transactions")
-        .select("*,item_id:marketplace_item_id")
+        .select("*,buyer_team_id:team_id,item_id:marketplace_item_id")
         .eq("marketplace_item_id", "partenza_anticipata");
       if (error) return [];
       return data ?? [];
@@ -60,7 +60,7 @@ function PartenzeAnticipateAdmin() {
   // Build a map: team_id → transaction
   const txByTeam = new Map<string, any>();
   for (const tx of transactions) {
-    txByTeam.set(tx.buyer_team_id, tx);
+    txByTeam.set(tx.team_id || tx.buyer_team_id, tx);
   }
 
   const handleMarkUsed = async (tx: any) => {
