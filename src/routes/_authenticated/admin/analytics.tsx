@@ -31,33 +31,35 @@ function AdminAnalyticsPage() {
   // ── 1. GENERAL METRICS ────────────────────────────────────────────────────
   const totalStages = stagesList.length;
   const totalChallenges = challengesList.length;
-  const activeTeams = teamsList.filter((t: any) => t.active).length;
-  const totalPoints = challengesList.reduce((sum: number, c: any) => sum + (c.punteggio_massimo || 0), 0);
+  const activeTeams = teamsList.filter((t: any) => t.active !== false).length;
+  const totalPoints = challengesList.reduce((sum: number, c: any) => sum + (c.points ?? c.punteggio_massimo ?? 0), 0);
 
   // Avg points per team (from allScores)
   const teamIds = [...new Set(scoresList.map((s: any) => s.team_id))] as string[];
   const avgPointsPerTeam = teamIds.length > 0
     ? Math.round(
         teamIds.reduce((sum, tid) => {
-          const pts = scoresList.filter((s: any) => s.team_id === tid).reduce((a: number, s: any) => a + (s.punti || 0), 0);
+          const pts = scoresList.filter((s: any) => s.team_id === tid).reduce((a: number, s: any) => a + (s.punti ?? s.points ?? 0), 0);
           return sum + pts;
         }, 0) / teamIds.length
       )
     : 0;
 
   // Pending photos to review
-  const pendingPhotoCount = submissionsList.filter((s: any) =>
-    (s.stato_approvazione === "pending" || s.stato_approvazione === null) &&
-    (s.challenges?.tipo_sfida === "photo" || s.challenges?.tipo_sfida === "living_poster")
-  ).length;
+  const pendingPhotoCount = submissionsList.filter((s: any) => {
+    const type = s.challenges?.type ?? s.challenges?.tipo_sfida;
+    return (s.stato_approvazione === "pending" || s.stato_approvazione === null) &&
+      (type === "photo" || type === "living_poster");
+  }).length;
 
   // ── 2. STAGE BREAKDOWN ────────────────────────────────────────────────────
   const stageBreakdown = stagesList.map((st: any) => {
     const stChallenges = challengesList.filter((c: any) => c.stage_id === st.id);
-    const pts = stChallenges.reduce((sum: number, c: any) => sum + (c.punteggio_massimo || 0), 0);
+    const pts = stChallenges.reduce((sum: number, c: any) => sum + (c.points ?? c.punteggio_massimo ?? 0), 0);
     const percentage = totalPoints > 0 ? ((pts / totalPoints) * 100).toFixed(2) : "0.00";
+    const stageName = st.title ?? st.nome_tappa ?? `Tappa ${st.order_index ?? st.numero_tappa ?? st.ordine}`;
     return {
-      name: st.nome_tappa || st.title || `Tappa ${st.ordine}`,
+      name: stageName,
       challengesCount: stChallenges.length,
       maxPoints: pts,
       weight: parseFloat(percentage),
@@ -74,25 +76,26 @@ function AdminAnalyticsPage() {
   };
 
   challengesList.forEach((c: any) => {
-    const type = c.tipo_sfida || "";
+    const type = c.type ?? c.tipo_sfida ?? "";
+    const pts = c.points ?? c.punteggio_massimo ?? 0;
     let categorized = false;
     Object.entries(categories).forEach(([catName, catObj]) => {
       if (catObj.types.includes(type) || (catName === "Prove Abilità" && type.includes("enigma"))) {
         catObj.count++;
-        catObj.points += (c.punteggio_massimo || 0);
+        catObj.points += pts;
         categorized = true;
       }
     });
     if (!categorized) {
       if (type === "banca" || type === "codice" || type === "team_setup") {
         categories["Prove Strategiche"]!.count++;
-        categories["Prove Strategiche"]!.points += (c.punteggio_massimo || 0);
+        categories["Prove Strategiche"]!.points += pts;
       } else if (type === "social" || type === "living_poster" || type === "photo") {
         categories["Prove Sociali"]!.count++;
-        categories["Prove Sociali"]!.points += (c.punteggio_massimo || 0);
+        categories["Prove Sociali"]!.points += pts;
       } else {
         categories["Prove Abilità"]!.count++;
-        categories["Prove Abilità"]!.points += (c.punteggio_massimo || 0);
+        categories["Prove Abilità"]!.points += pts;
       }
     }
   });
@@ -111,28 +114,28 @@ function AdminAnalyticsPage() {
   // ── NEW SECTION 2: CHALLENGE STATS ────────────────────────────────────────
   const challengeStats = challengesList.map((c: any) => {
     const stage = stagesList.find((st: any) => st.id === c.stage_id);
-    const stageName = stage ? (stage.nome_tappa || stage.title || `Tappa ${stage.ordine}`) : "—";
+    const stageName = stage ? (stage.title ?? stage.nome_tappa ?? `Tappa ${stage.order_index ?? stage.numero_tappa ?? stage.ordine}`) : "—";
 
     const completions = progressList.filter(
-      (p: any) => p.challenge_id === c.id && p.stato === "completed"
+      (p: any) => p.challenge_id === c.id && (p.stato === "completed" || p.status === "completed")
     ).length;
 
     const pct = activeTeams > 0 ? Math.round((completions / activeTeams) * 100) : 0;
 
     const challengeScores = scoresList.filter((s: any) => s.challenge_id === c.id);
-    const totalAssigned = challengeScores.reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
-    const positiveScores = challengeScores.filter((s: any) => (s.punti || 0) > 0);
+    const totalAssigned = challengeScores.reduce((sum: number, s: any) => sum + (s.punti ?? s.points ?? 0), 0);
+    const positiveScores = challengeScores.filter((s: any) => (s.punti ?? s.points ?? 0) > 0);
     const avgAssigned =
       positiveScores.length > 0
-        ? Math.round(positiveScores.reduce((sum: number, s: any) => sum + s.punti, 0) / positiveScores.length)
+        ? Math.round(positiveScores.reduce((sum: number, s: any) => sum + (s.punti ?? s.points ?? 0), 0) / positiveScores.length)
         : null;
 
     return {
       id: c.id,
-      titolo: c.titolo || "—",
+      titolo: c.title ?? c.titolo ?? "—",
       stageName,
-      tipo: c.tipo_sfida || "—",
-      maxPoints: c.punteggio_massimo || 0,
+      tipo: c.type ?? c.tipo_sfida ?? "—",
+      maxPoints: c.points ?? c.punteggio_massimo ?? 0,
       completions,
       pct,
       totalAssigned,
@@ -152,26 +155,26 @@ function AdminAnalyticsPage() {
   }
 
   const teamLeaderboard: TeamRow[] = teamsList
-    .filter((t: any) => t.active)
+    .filter((t: any) => t.active !== false)
     .map((t: any) => {
       const teamProgress = progressList.filter((p: any) => p.team_id === t.id);
-      const completedChallenges = teamProgress.filter((p: any) => p.stato === "completed").length;
+      const completedChallenges = teamProgress.filter((p: any) => (p.stato === "completed" || p.status === "completed")).length;
 
       const teamScores = scoresList.filter((s: any) => s.team_id === t.id);
-      const totalPts = teamScores.reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
-      const pendingPts = teamScores.filter((s: any) => (s.punti || 0) === 0).length;
+      const totalPts = teamScores.reduce((sum: number, s: any) => sum + (s.punti ?? s.points ?? 0), 0);
+      const pendingPts = teamScores.filter((s: any) => (s.punti ?? s.points ?? 0) === 0).length;
 
       // Determine current stage: find the first stage not fully completed
       let currentStage = "—";
-      const sortedStages = [...stagesList].sort((a: any, b: any) => a.ordine - b.ordine);
+      const sortedStages = [...stagesList].sort((a: any, b: any) => (a.order_index ?? a.numero_tappa ?? a.ordine) - (b.order_index ?? b.numero_tappa ?? b.ordine));
       for (const st of sortedStages) {
         const stageChallenges = challengesList.filter((c: any) => c.stage_id === st.id);
         if (stageChallenges.length === 0) continue;
         const allCompleted = stageChallenges.every((c: any) =>
-          teamProgress.some((p: any) => p.challenge_id === c.id && p.stato === "completed")
+          teamProgress.some((p: any) => p.challenge_id === c.id && (p.stato === "completed" || p.status === "completed"))
         );
         if (!allCompleted) {
-          currentStage = st.nome_tappa || st.title || `Tappa ${st.ordine}`;
+          currentStage = st.title ?? st.nome_tappa ?? `Tappa ${st.order_index ?? st.numero_tappa ?? st.ordine}`;
           break;
         }
         currentStage = "✅ Completata";
@@ -179,7 +182,7 @@ function AdminAnalyticsPage() {
 
       return {
         id: t.id,
-        nome_squadra: t.nome_squadra || "—",
+        nome_squadra: t.nome_squadra ?? t.name ?? "—",
         token_balance: t.token_balance ?? 0,
         completedChallenges,
         totalPoints: totalPts,

@@ -370,6 +370,7 @@ function AdminLayout() {
   const [isEvaluating, setIsEvaluating] = useState<Record<string, boolean>>({});
   const [isEvaluatingSocial, setIsEvaluatingSocial] = useState<Record<string, boolean>>({});
   const [isForcingCode, setIsForcingCode] = useState<Record<string, boolean>>({});
+  const [isUpdatingCodeSettings, setIsUpdatingCodeSettings] = useState(false);
   const [isTogglingMarketplace, setIsTogglingMarketplace] = useState(false);
   const [isProcessingBank, setIsProcessingBank] = useState(false);
 
@@ -625,6 +626,7 @@ function AdminLayout() {
       toast.error("Il codice PIN deve essere lungo esattamente 10 cifre");
       return;
     }
+    setIsUpdatingCodeSettings(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const adminId = userData.user?.id || "11111111-1111-1111-1111-111111111111";
@@ -641,6 +643,8 @@ function AdminLayout() {
       }
     } catch (e: any) {
       toast.error(e.message);
+    } finally {
+      setIsUpdatingCodeSettings(false);
     }
   }
 
@@ -836,6 +840,7 @@ function AdminLayout() {
           isEvaluating,
           isEvaluatingSocial,
           isForcingCode,
+          isUpdatingCodeSettings,
           isTogglingMarketplace,
           isProcessingBank,
           handleUpdateGameStatus,
