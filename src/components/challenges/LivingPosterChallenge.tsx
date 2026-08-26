@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, Check, Loader2, MapPin, Film, Sparkles } from "lucide-react";
+import { Camera, Check, Loader2, MapPin, Film, Sparkles, FlipHorizontal, RotateCw, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Challenge, Team } from "@/lib/race";
+import { transformImageFile } from "@/lib/imageUtils";
 
 export function LivingPosterChallenge({
   challenge,
@@ -22,6 +23,8 @@ export function LivingPosterChallenge({
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [flipH, setFlipH] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   // Fetch or assign poster for the team
   const posterQuery = useQuery({
@@ -95,9 +98,20 @@ export function LivingPosterChallenge({
       return;
     }
 
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(file);
+    setFlipH(false);
+    setRotation(0);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
+  }
+
+  function handleCancelSelect() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setFlipH(false);
+    setRotation(0);
   }
 
   async function handleUpload() {
@@ -108,14 +122,15 @@ export function LivingPosterChallenge({
 
     setUploading(true);
     try {
+      const processedFile = await transformImageFile(selectedFile, flipH, rotation);
       const coords = await getPosition();
-      const ext = selectedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${team.id}/${challenge.id}-${Date.now()}.${ext}`;
 
-      // Upload file to supabase mock storage
+      // Upload file to supabase storage
       const { error: upErr } = await supabase.storage
         .from("team-media")
-        .upload(path, selectedFile, { upsert: false, contentType: selectedFile.type });
+        .upload(path, processedFile, { upsert: false, contentType: processedFile.type });
       
       if (upErr) throw new Error(upErr.message);
 
@@ -133,6 +148,7 @@ export function LivingPosterChallenge({
       if (insErr) throw new Error(insErr.message);
 
       toast.success("Foto della locandina inviata! La sfida è completata.");
+      handleCancelSelect();
       
       // Complete challenge to unlock next stage immediately
       onComplete();
@@ -312,16 +328,48 @@ export function LivingPosterChallenge({
               </label>
             ) : (
               <div className="space-y-4">
-                <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center">
-                  <img src={previewUrl} alt="Anteprima caricamento" className="max-h-[300px] object-contain" />
-                  <button
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setPreviewUrl(null);
+                <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center p-2">
+                  <img
+                    src={previewUrl}
+                    alt="Anteprima caricamento"
+                    className="max-h-[300px] object-contain transition-transform duration-200"
+                    style={{
+                      transform: `${flipH ? "scaleX(-1)" : ""} rotate(${rotation}deg)`,
                     }}
+                  />
+                  <button
+                    onClick={handleCancelSelect}
+                    disabled={uploading}
                     className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 text-xs font-bold"
                   >
                     Annulla
+                  </button>
+                </div>
+
+                {/* TRANSFORMATION CONTROLS */}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFlipH(!flipH)}
+                    disabled={uploading}
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                      flipH
+                        ? "bg-red-600 text-white border-red-500 shadow-sm"
+                        : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <FlipHorizontal className="size-4" />
+                    <span>{flipH ? "Ribaltata (Attiva)" : "Ribalta Orizzontale"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRotation((r) => (r + 90) % 360)}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-zinc-900 text-zinc-300 border border-zinc-800 hover:bg-zinc-800 transition-colors"
+                  >
+                    <RotateCw className="size-4" />
+                    <span>Ruota 90°</span>
                   </button>
                 </div>
 

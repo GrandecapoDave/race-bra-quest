@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, Check, Loader2, X, Sparkles } from "lucide-react";
+import { Camera, Check, Loader2, X, Sparkles, FlipHorizontal, RotateCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Challenge, Team } from "@/lib/race";
+import { transformImageFile } from "@/lib/imageUtils";
 
 export function SocialChallenge({
   challenge,
@@ -25,6 +26,10 @@ export function SocialChallenge({
   const [file2, setFile2] = useState<File | null>(null);
   const [preview1, setPreview1] = useState<string | null>(null);
   const [preview2, setPreview2] = useState<string | null>(null);
+  const [flipH1, setFlipH1] = useState(false);
+  const [flipH2, setFlipH2] = useState(false);
+  const [rotation1, setRotation1] = useState(0);
+  const [rotation2, setRotation2] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team social submission status
@@ -98,10 +103,16 @@ export function SocialChallenge({
     }
     const url = URL.createObjectURL(file);
     if (index === 1) {
+      if (preview1) URL.revokeObjectURL(preview1);
       setFile1(file);
+      setFlipH1(false);
+      setRotation1(0);
       setPreview1(url);
     } else {
+      if (preview2) URL.revokeObjectURL(preview2);
       setFile2(file);
+      setFlipH2(false);
+      setRotation2(0);
       setPreview2(url);
     }
   }
@@ -118,23 +129,25 @@ export function SocialChallenge({
 
     setSubmitting(true);
     try {
-      // 1. Upload Photo 1
+      // 1. Upload Photo 1 with transformations
       setUploading1(true);
-      const ext1 = file1.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const processed1 = await transformImageFile(file1, flipH1, rotation1);
+      const ext1 = processed1.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path1 = `${team.id}/social-1-${Date.now()}.${ext1}`;
       const { error: upErr1 } = await supabase.storage
         .from("team-media")
-        .upload(path1, file1, { upsert: false, contentType: file1.type });
+        .upload(path1, processed1, { upsert: false, contentType: processed1.type });
       if (upErr1) throw new Error("Upload Foto 1 fallito: " + upErr1.message);
       setUploading1(false);
 
-      // 2. Upload Photo 2
+      // 2. Upload Photo 2 with transformations
       setUploading2(true);
-      const ext2 = file2.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const processed2 = await transformImageFile(file2, flipH2, rotation2);
+      const ext2 = processed2.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path2 = `${team.id}/social-2-${Date.now()}.${ext2}`;
       const { error: upErr2 } = await supabase.storage
         .from("team-media")
-        .upload(path2, file2, { upsert: false, contentType: file2.type });
+        .upload(path2, processed2, { upsert: false, contentType: processed2.type });
       if (upErr2) throw new Error("Upload Foto 2 fallito: " + upErr2.message);
       setUploading2(false);
 
@@ -151,6 +164,10 @@ export function SocialChallenge({
       setFile2(null);
       setPreview1(null);
       setPreview2(null);
+      setFlipH1(false);
+      setFlipH2(false);
+      setRotation1(0);
+      setRotation2(0);
       await socialSubQuery.refetch();
       await queryClient.invalidateQueries();
     } catch (e: any) {
@@ -289,32 +306,65 @@ export function SocialChallenge({
         <section className="space-y-6 animate-pop-in">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* PHOTO 1 SLOT */}
-            <div className="surface p-4 border border-border/40 bg-zinc-950/20 rounded-2xl flex flex-col justify-between h-56">
+            <div className="surface p-4 border border-border/40 bg-zinc-950/20 rounded-2xl flex flex-col justify-between min-h-64 space-y-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">📷 Foto Sconosciuto #1</p>
               
-              <div className="flex-1 flex items-center justify-center py-2">
+              <div className="flex-1 flex flex-col items-center justify-center">
                 {preview1 ? (
-                  <div className="relative h-28 w-auto overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex justify-center">
-                    <img src={preview1} alt="Anteprima 1" className="h-full w-auto object-contain" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFile1(null);
-                        setPreview1(null);
-                      }}
-                      className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1"
-                    >
-                      <X className="size-3.5" />
-                    </button>
+                  <div className="space-y-2 w-full flex flex-col items-center">
+                    <div className="relative h-32 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-1">
+                      <img
+                        src={preview1}
+                        alt="Anteprima 1"
+                        className="h-full w-auto object-contain transition-transform duration-200"
+                        style={{
+                          transform: `${flipH1 ? "scaleX(-1)" : ""} rotate(${rotation1}deg)`,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFile1(null);
+                          setPreview1(null);
+                          setFlipH1(false);
+                          setRotation1(0);
+                        }}
+                        className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFlipH1(!flipH1)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                          flipH1
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800"
+                        }`}
+                      >
+                        <FlipHorizontal className="size-3.5" />
+                        <span>{flipH1 ? "Ribaltata" : "Ribalta"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRotation1((r) => (r + 90) % 360)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-zinc-300 border border-zinc-800 hover:bg-zinc-800 transition-colors"
+                      >
+                        <RotateCw className="size-3.5" />
+                        <span>Ruota</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <label className="flex cursor-pointer flex-col items-center gap-1.5 p-4 text-center rounded-xl hover:bg-zinc-900/30 transition-all border border-dashed border-border/30 w-full justify-center h-28">
+                  <label className="flex cursor-pointer flex-col items-center gap-1.5 p-4 text-center rounded-xl hover:bg-zinc-900/30 transition-all border border-dashed border-border/30 w-full justify-center h-32">
                     <Camera className="size-6 text-primary" />
                     <span className="text-[11px] font-bold text-zinc-300">Carica Foto 1</span>
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
@@ -328,32 +378,65 @@ export function SocialChallenge({
             </div>
 
             {/* PHOTO 2 SLOT */}
-            <div className="surface p-4 border border-border/40 bg-zinc-950/20 rounded-2xl flex flex-col justify-between h-56">
+            <div className="surface p-4 border border-border/40 bg-zinc-950/20 rounded-2xl flex flex-col justify-between min-h-64 space-y-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">📷 Foto Sconosciuto #2</p>
 
-              <div className="flex-1 flex items-center justify-center py-2">
+              <div className="flex-1 flex flex-col items-center justify-center">
                 {preview2 ? (
-                  <div className="relative h-28 w-auto overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex justify-center">
-                    <img src={preview2} alt="Anteprima 2" className="h-full w-auto object-contain" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFile2(null);
-                        setPreview2(null);
-                      }}
-                      className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1"
-                    >
-                      <X className="size-3.5" />
-                    </button>
+                  <div className="space-y-2 w-full flex flex-col items-center">
+                    <div className="relative h-32 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-1">
+                      <img
+                        src={preview2}
+                        alt="Anteprima 2"
+                        className="h-full w-auto object-contain transition-transform duration-200"
+                        style={{
+                          transform: `${flipH2 ? "scaleX(-1)" : ""} rotate(${rotation2}deg)`,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFile2(null);
+                          setPreview2(null);
+                          setFlipH2(false);
+                          setRotation2(0);
+                        }}
+                        className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFlipH2(!flipH2)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                          flipH2
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800"
+                        }`}
+                      >
+                        <FlipHorizontal className="size-3.5" />
+                        <span>{flipH2 ? "Ribaltata" : "Ribalta"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRotation2((r) => (r + 90) % 360)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-zinc-300 border border-zinc-800 hover:bg-zinc-800 transition-colors"
+                      >
+                        <RotateCw className="size-3.5" />
+                        <span>Ruota</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <label className="flex cursor-pointer flex-col items-center gap-1.5 p-4 text-center rounded-xl hover:bg-zinc-900/30 transition-all border border-dashed border-border/30 w-full justify-center h-28">
+                  <label className="flex cursor-pointer flex-col items-center gap-1.5 p-4 text-center rounded-xl hover:bg-zinc-900/30 transition-all border border-dashed border-border/30 w-full justify-center h-32">
                     <Camera className="size-6 text-primary" />
                     <span className="text-[11px] font-bold text-zinc-300">Carica Foto 2</span>
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];

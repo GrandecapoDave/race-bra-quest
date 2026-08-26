@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, Check, Loader2, MapPin } from "lucide-react";
+import { Camera, Check, Loader2, MapPin, FlipHorizontal, RotateCw, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { mediaQuery, type Challenge, type Team } from "@/lib/race";
+import { transformImageFile } from "@/lib/imageUtils";
 
 export function PhotoChallenge({
   challenge,
@@ -22,7 +23,19 @@ export function PhotoChallenge({
   const media = useQuery(mediaQuery(team?.id));
   const [uploading, setUploading] = useState(false);
 
+  // Selected file preview & transform state before upload
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [flipH, setFlipH] = useState(false);
+  const [rotation, setRotation] = useState(0);
+
   const photos = (media.data ?? []).filter((m) => m.challenge_id === challenge.id);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   async function getPosition(): Promise<{ lat: number | null; lng: number | null }> {
     if (typeof navigator === "undefined" || !navigator.geolocation) return { lat: null, lng: null };
@@ -35,7 +48,7 @@ export function PhotoChallenge({
     });
   }
 
-  async function handleFile(file: File) {
+  function handleFileSelected(file: File) {
     if (!team) {
       toast.error("Crea prima la tua squadra");
       return;
@@ -44,15 +57,40 @@ export function PhotoChallenge({
       toast.error("Immagine troppo grande (max 15MB)");
       return;
     }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPendingFile(file);
+    setFlipH(false);
+    setRotation(0);
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function handleCancelPending() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPendingFile(null);
+    setPreviewUrl(null);
+    setFlipH(false);
+    setRotation(0);
+  }
+
+  async function handleConfirmUpload() {
+    if (!team || !pendingFile) {
+      toast.error("Nessuna foto selezionata");
+      return;
+    }
+
     setUploading(true);
     try {
+      // Apply flip horizontal / rotation if requested
+      const processedFile = await transformImageFile(pendingFile, flipH, rotation);
+
       const coords = await getPosition();
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const ext = processedFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${team.id}/${challenge.id}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("team-media")
-        .upload(path, file, { upsert: false, contentType: file.type });
+        .upload(path, processedFile, { upsert: false, contentType: processedFile.type });
       if (upErr) throw new Error(upErr.message);
+
       const { error } = await (supabase as any).from("submissions").insert({
         team_id: team.id,
         challenge_id: challenge.id,
@@ -63,7 +101,9 @@ export function PhotoChallenge({
         stato_approvazione: "approved", // approved: team proceeds immediately
       });
       if (error) throw new Error(error.message);
+
       toast.success("Foto caricata! La prova è completata.");
+      handleCancelPending();
       onComplete(); // unlock next challenge immediately
       await queryClient.invalidateQueries();
     } catch (e) {
@@ -75,29 +115,114 @@ export function PhotoChallenge({
 
   return (
     <div className="space-y-4">
-      <label className="surface flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-border/80 p-5 sm:p-8 text-center transition-colors hover:border-primary w-full min-w-0 box-border">
-        {uploading ? (
-          <Loader2 className="size-8 animate-spin text-primary" />
-        ) : (
-          <Camera className="size-8 text-primary" />
-        )}
-        <span className="font-bold text-sm sm:text-base">Scatta o carica la foto ufficiale</span>
-        <span className="text-xs text-muted-foreground">
-          Salviamo automaticamente posizione GPS e orario
-        </span>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          disabled={uploading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-            e.target.value = "";
-          }}
-        />
-      </label>
+      {/* PENDING PHOTO REVIEW & ADJUSTMENT MODAL/CARD */}
+      {previewUrl && pendingFile ? (
+        <div className="surface p-4 rounded-2xl border-2 border-primary/40 bg-zinc-950/60 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <Camera className="size-4" /> Anteprima & Regolazione Scatto
+            </h4>
+            <button
+              onClick={handleCancelPending}
+              disabled={uploading}
+              className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/10 transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+
+          <div className="relative rounded-xl overflow-hidden bg-black/80 flex items-center justify-center min-h-[220px] max-h-[360px] border border-border/30">
+            <img
+              src={previewUrl}
+              alt="Anteprima scatto"
+              className="max-h-[340px] w-auto object-contain transition-transform duration-200"
+              style={{
+                transform: `${flipH ? "scaleX(-1)" : ""} rotate(${rotation}deg)`,
+              }}
+            />
+          </div>
+
+          {/* TRANSFORMATION CONTROLS */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setFlipH(!flipH)}
+              disabled={uploading}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                flipH
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-zinc-900/80 text-foreground border-border/50 hover:bg-zinc-800"
+              }`}
+            >
+              <FlipHorizontal className="size-4" />
+              <span>{flipH ? "Ribaltata (Attiva)" : "Ribalta Orizzontale"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRotation((r) => (r + 90) % 360)}
+              disabled={uploading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-zinc-900/80 text-foreground border border-border/50 hover:bg-zinc-800 transition-colors"
+            >
+              <RotateCw className="size-4" />
+              <span>Ruota 90°</span>
+            </button>
+          </div>
+
+          {/* CONFIRM / CANCEL BUTTONS */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleCancelPending}
+              disabled={uploading}
+              className="px-4 py-3 rounded-xl text-xs font-extrabold text-muted-foreground bg-zinc-900 border border-border/40 hover:bg-zinc-800 transition-colors text-center"
+            >
+              Scatta di nuovo
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmUpload}
+              disabled={uploading}
+              className="primary-gradient flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-extrabold text-primary-foreground shadow-md transition-opacity disabled:opacity-40"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Salvataggio...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="size-4" />
+                  <span>Consegna Foto</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label className="surface flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-border/80 p-5 sm:p-8 text-center transition-colors hover:border-primary w-full min-w-0 box-border">
+          {uploading ? (
+            <Loader2 className="size-8 animate-spin text-primary" />
+          ) : (
+            <Camera className="size-8 text-primary" />
+          )}
+          <span className="font-bold text-sm sm:text-base">Scatta o carica la foto ufficiale</span>
+          <span className="text-xs text-muted-foreground">
+            Potrai visualizzare l'anteprima, ribaltarla o ruotarla prima dell'invio
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelected(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
         {photos.map((p) => (
@@ -112,7 +237,7 @@ export function PhotoChallenge({
       ) : (
         <button
           onClick={onComplete}
-          disabled={photos.length === 0 || completing}
+          disabled={photos.length === 0 || completing || !!pendingFile}
           className="primary-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-extrabold text-primary-foreground disabled:opacity-40"
         >
           {completing && <Loader2 className="size-4 animate-spin" />}
