@@ -566,7 +566,16 @@ function AppShellInner({
                     <SidebarMenuButton asChild tooltip={item.label}>
                       <Link
                         to={item.to}
-                        onClick={closeMobileMenu}
+                        onClick={async () => {
+                          closeMobileMenu();
+                          if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
+                            await (supabase as any).rpc("consume_marketplace_transaction", {
+                              p_transaction_id: classificationTx.id,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+                            queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+                          }
+                        }}
                         activeProps={{ className: activeLinkClass }}
                         className={inactiveLinkClass}
                       >
@@ -606,7 +615,16 @@ function AppShellInner({
                       <SidebarMenuButton asChild tooltip={item.label}>
                         <Link
                           to={item.to}
-                          onClick={closeMobileMenu}
+                          onClick={async () => {
+                            closeMobileMenu();
+                            if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
+                              await (supabase as any).rpc("consume_marketplace_transaction", {
+                                p_transaction_id: classificationTx.id,
+                              });
+                              queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+                              queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+                            }
+                          }}
                           activeProps={{ className: activeLinkClass }}
                           className={inactiveLinkClass}
                         >
@@ -935,6 +953,15 @@ function AppShellInner({
             <NavItem
               key={item.to}
               to={item.to}
+              onClick={async () => {
+                if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
+                  await (supabase as any).rpc("consume_marketplace_transaction", {
+                    p_transaction_id: classificationTx.id,
+                  });
+                  queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+                  queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+                }
+              }}
               icon={
                 <item.icon
                   className="size-5 transition-transform"
@@ -945,7 +972,17 @@ function AppShellInner({
             />
           ))}
           <button
-            onClick={toggleSidebar}
+            onClick={async () => {
+              if (currentPath === "/classifica" && classificationTx?.id) {
+                await (supabase as any).rpc("consume_marketplace_transaction", {
+                  p_transaction_id: classificationTx.id,
+                });
+                queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+                queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+                navigate({ to: "/dashboard" });
+              }
+              toggleSidebar();
+            }}
             className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-semibold text-slate-400 transition-colors hover:text-primary active:scale-95 cursor-pointer min-w-0"
             aria-label="Apri menu"
           >
@@ -962,14 +999,17 @@ function NavItem({
   to,
   icon,
   label,
+  onClick,
 }: {
   to: string;
   icon: ReactNode;
   label: string;
+  onClick?: () => void;
 }) {
   return (
     <Link
       to={to}
+      onClick={onClick}
       activeProps={{ className: "text-orange-400 scale-105 font-bold" }}
       inactiveProps={{ className: "text-slate-400 font-medium" }}
       className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] transition-all hover:text-primary min-w-0"

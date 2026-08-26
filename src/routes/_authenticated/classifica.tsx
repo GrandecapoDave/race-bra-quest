@@ -241,7 +241,22 @@ function ClassificaPage() {
 
   return (
     <AppShell isAdmin={false}>
-      <div className="space-y-6 max-w-lg mx-auto pb-10">
+      <div className="space-y-5 max-w-lg mx-auto pb-10">
+        {/* Top Sticky/Prominent Action Bar */}
+        <div className="flex items-center justify-between bg-zinc-950/80 backdrop-blur-md p-3 px-4 rounded-2xl border border-zinc-800/80 shadow-lg">
+          <span className="text-[11px] font-black uppercase text-amber-500 tracking-wider flex items-center gap-1.5">
+            <Trophy className="size-4" /> Bonus Attivo
+          </span>
+          <button
+            onClick={handleCloseClassifica}
+            disabled={isClosing}
+            className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 border border-red-500/40"
+          >
+            {isClosing ? <Loader2 className="size-3.5 animate-spin" /> : <XCircle className="size-3.5" />}
+            <span>Chiudi Classifica</span>
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="size-14 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 flex items-center justify-center mx-auto animate-pulse">
