@@ -1253,6 +1253,8 @@ export function PosterComparisonCard({
 }) {
   const [teamPhotoUrl, setTeamPhotoUrl] = useState<string | null>(null);
   const [selectedVoto, setSelectedVoto] = useState<number>(submission?.voto ?? 15);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -1363,14 +1365,39 @@ export function PosterComparisonCard({
             <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
               <Camera className="size-3 text-red-500" /> Ricostruzione della Squadra
             </p>
-            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[260px] p-2 text-center">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[260px] p-2 text-center">
               {submission ? (
                 teamPhotoUrl ? (
-                  <img
-                    src={teamPhotoUrl}
-                    alt="Ricostruzione Squadra"
-                    className="h-full w-auto object-contain max-h-[280px] rounded-lg shadow-lg"
-                  />
+                  <>
+                    <img
+                      src={teamPhotoUrl}
+                      alt="Ricostruzione Squadra"
+                      className="h-full w-auto object-contain max-h-[280px] rounded-lg shadow-lg transition-transform duration-200"
+                      style={{
+                        transform: `${isFlipped ? "scaleX(-1)" : ""} rotate(${rotation}deg)`,
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                      <button
+                        type="button"
+                        title="Ribalta orizzontale (Specchia)"
+                        onClick={() => setIsFlipped(!isFlipped)}
+                        className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
+                          isFlipped ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                        }`}
+                      >
+                        <FlipHorizontal className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Ruota 90°"
+                        onClick={() => setRotation((r) => (r + 90) % 360)}
+                        className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                      >
+                        <RotateCw className="size-3.5" />
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Loader2 className="size-6 animate-spin text-primary" />
@@ -1448,6 +1475,10 @@ export function SocialSubmissionCard({
 }) {
   const [photo1Url, setPhoto1Url] = useState<string | null>(null);
   const [photo2Url, setPhoto2Url] = useState<string | null>(null);
+  const [flip1, setFlip1] = useState(false);
+  const [flip2, setFlip2] = useState(false);
+  const [rot1, setRot1] = useState(0);
+  const [rot2, setRot2] = useState(0);
   const [voto, setVoto] = useState<number>(submission?.admin_score ?? 20);
 
   useEffect(() => {
@@ -1523,9 +1554,38 @@ export function SocialSubmissionCard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <p className="text-xs font-bold text-muted-foreground uppercase text-center">Foto 1 - Sconosciuto #1</p>
-              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[220px] p-1.5">
+              <div className="relative overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[220px] p-1.5">
                 {photo1Url ? (
-                  <img src={photo1Url} alt="Foto 1" className="h-full w-full object-cover rounded-lg shadow" />
+                  <>
+                    <img
+                      src={photo1Url}
+                      alt="Foto 1"
+                      className="h-full w-full object-cover rounded-lg shadow transition-transform duration-200"
+                      style={{
+                        transform: `${flip1 ? "scaleX(-1)" : ""} rotate(${rot1}deg)`,
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                      <button
+                        type="button"
+                        title="Ribalta orizzontale"
+                        onClick={() => setFlip1(!flip1)}
+                        className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
+                          flip1 ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                        }`}
+                      >
+                        <FlipHorizontal className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Ruota 90°"
+                        onClick={() => setRot1((r) => (r + 90) % 360)}
+                        className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                      >
+                        <RotateCw className="size-3.5" />
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <Loader2 className="size-5 animate-spin text-zinc-500" />
                 )}
@@ -1534,9 +1594,38 @@ export function SocialSubmissionCard({
 
             <div className="space-y-1.5">
               <p className="text-xs font-bold text-muted-foreground uppercase text-center">Foto 2 - Sconosciuto #2</p>
-              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[220px] p-1.5">
+              <div className="relative overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[220px] p-1.5">
                 {photo2Url ? (
-                  <img src={photo2Url} alt="Foto 2" className="h-full w-full object-cover rounded-lg shadow" />
+                  <>
+                    <img
+                      src={photo2Url}
+                      alt="Foto 2"
+                      className="h-full w-full object-cover rounded-lg shadow transition-transform duration-200"
+                      style={{
+                        transform: `${flip2 ? "scaleX(-1)" : ""} rotate(${rot2}deg)`,
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                      <button
+                        type="button"
+                        title="Ribalta orizzontale"
+                        onClick={() => setFlip2(!flip2)}
+                        className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
+                          flip2 ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                        }`}
+                      >
+                        <FlipHorizontal className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Ruota 90°"
+                        onClick={() => setRot2((r) => (r + 90) % 360)}
+                        className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                      >
+                        <RotateCw className="size-3.5" />
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <Loader2 className="size-5 animate-spin text-zinc-500" />
                 )}

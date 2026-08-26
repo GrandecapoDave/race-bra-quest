@@ -30,6 +30,10 @@ export function SocialChallenge({
   const [flipH2, setFlipH2] = useState(false);
   const [rotation1, setRotation1] = useState(0);
   const [rotation2, setRotation2] = useState(0);
+  const [submittedFlip1, setSubmittedFlip1] = useState(false);
+  const [submittedFlip2, setSubmittedFlip2] = useState(false);
+  const [submittedRot1, setSubmittedRot1] = useState(0);
+  const [submittedRot2, setSubmittedRot2] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch team social submission status
@@ -235,16 +239,74 @@ export function SocialChallenge({
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-32 flex justify-center items-center">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img1Url ? (
-                <img src={img1Url} alt="Foto 1 approvata" className="h-full w-full object-cover" />
+                <>
+                  <img
+                    src={img1Url}
+                    alt="Foto 1 approvata"
+                    className="h-full w-full object-cover transition-transform duration-200"
+                    style={{
+                      transform: `${submittedFlip1 ? "scaleX(-1)" : ""} rotate(${submittedRot1}deg)`,
+                    }}
+                  />
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                    <button
+                      type="button"
+                      title="Ribalta orizzontale"
+                      onClick={() => setSubmittedFlip1(!submittedFlip1)}
+                      className={`p-1 rounded-md text-xs font-bold transition-colors ${
+                        submittedFlip1 ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                      }`}
+                    >
+                      <FlipHorizontal className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Ruota 90°"
+                      onClick={() => setSubmittedRot1((r) => (r + 90) % 360)}
+                      className="p-1 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                    >
+                      <RotateCw className="size-3" />
+                    </button>
+                  </div>
+                </>
               ) : (
                 <Loader2 className="size-4 animate-spin text-zinc-600" />
               )}
             </div>
-            <div className="overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-32 flex justify-center items-center">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img2Url ? (
-                <img src={img2Url} alt="Foto 2 approvata" className="h-full w-full object-cover" />
+                <>
+                  <img
+                    src={img2Url}
+                    alt="Foto 2 approvata"
+                    className="h-full w-full object-cover transition-transform duration-200"
+                    style={{
+                      transform: `${submittedFlip2 ? "scaleX(-1)" : ""} rotate(${submittedRot2}deg)`,
+                    }}
+                  />
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                    <button
+                      type="button"
+                      title="Ribalta orizzontale"
+                      onClick={() => setSubmittedFlip2(!submittedFlip2)}
+                      className={`p-1 rounded-md text-xs font-bold transition-colors ${
+                        submittedFlip2 ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                      }`}
+                    >
+                      <FlipHorizontal className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Ruota 90°"
+                      onClick={() => setSubmittedRot2((r) => (r + 90) % 360)}
+                      className="p-1 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                    >
+                      <RotateCw className="size-3" />
+                    </button>
+                  </div>
+                </>
               ) : (
                 <Loader2 className="size-4 animate-spin text-zinc-600" />
               )}
@@ -274,16 +336,74 @@ export function SocialChallenge({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-32 flex justify-center items-center">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img1Url ? (
-                <img src={img1Url} alt="Foto 1 inviata" className="h-full w-full object-cover" />
+                <>
+                  <img
+                    src={img1Url}
+                    alt="Foto 1 inviata"
+                    className="h-full w-full object-cover transition-transform duration-200"
+                    style={{
+                      transform: `${submittedFlip1 ? "scaleX(-1)" : ""} rotate(${submittedRot1}deg)`,
+                    }}
+                  />
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                    <button
+                      type="button"
+                      title="Ribalta orizzontale"
+                      onClick={() => setSubmittedFlip1(!submittedFlip1)}
+                      className={`p-1 rounded-md text-xs font-bold transition-colors ${
+                        submittedFlip1 ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                      }`}
+                    >
+                      <FlipHorizontal className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Ruota 90°"
+                      onClick={() => setSubmittedRot1((r) => (r + 90) % 360)}
+                      className="p-1 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                    >
+                      <RotateCw className="size-3" />
+                    </button>
+                  </div>
+                </>
               ) : (
                 <Loader2 className="size-4 animate-spin text-zinc-600" />
               )}
             </div>
-            <div className="overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-32 flex justify-center items-center">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img2Url ? (
-                <img src={img2Url} alt="Foto 2 inviata" className="h-full w-full object-cover" />
+                <>
+                  <img
+                    src={img2Url}
+                    alt="Foto 2 inviata"
+                    className="h-full w-full object-cover transition-transform duration-200"
+                    style={{
+                      transform: `${submittedFlip2 ? "scaleX(-1)" : ""} rotate(${submittedRot2}deg)`,
+                    }}
+                  />
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                    <button
+                      type="button"
+                      title="Ribalta orizzontale"
+                      onClick={() => setSubmittedFlip2(!submittedFlip2)}
+                      className={`p-1 rounded-md text-xs font-bold transition-colors ${
+                        submittedFlip2 ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                      }`}
+                    >
+                      <FlipHorizontal className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Ruota 90°"
+                      onClick={() => setSubmittedRot2((r) => (r + 90) % 360)}
+                      className="p-1 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                    >
+                      <RotateCw className="size-3" />
+                    </button>
+                  </div>
+                </>
               ) : (
                 <Loader2 className="size-4 animate-spin text-zinc-600" />
               )}

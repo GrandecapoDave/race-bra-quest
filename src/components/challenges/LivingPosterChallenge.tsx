@@ -25,6 +25,8 @@ export function LivingPosterChallenge({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [flipH, setFlipH] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [submittedFlipped, setSubmittedFlipped] = useState(false);
+  const [submittedRotation, setSubmittedRotation] = useState(0);
 
   // Fetch or assign poster for the team
   const posterQuery = useQuery({
@@ -263,13 +265,38 @@ export function LivingPosterChallenge({
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-bold text-zinc-500 uppercase text-center">La vostra ricostruzione</p>
-                <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center max-h-[220px]">
+                <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center max-h-[220px]">
                   {subPhotoUrl ? (
-                    <img
-                      src={subPhotoUrl}
-                      alt="Vostra ricostruzione"
-                      className="h-full w-auto object-contain"
-                    />
+                    <>
+                      <img
+                        src={subPhotoUrl}
+                        alt="Vostra ricostruzione"
+                        className="h-full w-auto object-contain transition-transform duration-200 max-h-[220px]"
+                        style={{
+                          transform: `${submittedFlipped ? "scaleX(-1)" : ""} rotate(${submittedRotation}deg)`,
+                        }}
+                      />
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                        <button
+                          type="button"
+                          title="Ribalta orizzontale (Specchia)"
+                          onClick={() => setSubmittedFlipped(!submittedFlipped)}
+                          className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
+                            submittedFlipped ? "bg-red-600 text-white" : "text-white hover:bg-white/20"
+                          }`}
+                        >
+                          <FlipHorizontal className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Ruota 90°"
+                          onClick={() => setSubmittedRotation((r) => (r + 90) % 360)}
+                          className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                        >
+                          <RotateCw className="size-3.5" />
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <div className="h-[220px] w-full animate-pulse bg-muted" />
                   )}
