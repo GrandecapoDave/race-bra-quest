@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LogOut,
@@ -31,7 +31,7 @@ import {
   ShieldAlert,
   FileText,
 } from "lucide-react";
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnline } from "@/hooks/useAuth";
@@ -394,6 +394,9 @@ function AppShellInner({
         (p.stato === "completed" || p.status === "completed")
     ) === true;
 
+  const location = useLocation();
+  const currentPath = location.pathname;
+
   // Query team's bonus_classifica transaction to check lock state
   const classificationTxQuery = useQuery({
     queryKey: ["team-classification-bonus", team.data?.id],
@@ -405,6 +408,8 @@ function AppShellInner({
         .select("id, stato, buyer_team_id:team_id, item_id:marketplace_item_id")
         .eq("team_id", team.data?.id)
         .eq("marketplace_item_id", "bonus_classifica")
+        .order("data_acquisto", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) return null;
       return data;
@@ -414,6 +419,21 @@ function AppShellInner({
   const classificationTx = classificationTxQuery.data;
   // Unlocked while: purchased but not yet opened (completed) OR currently being viewed (viewing)
   const isClassificationUnlocked = classificationTx && (classificationTx.stato === "completed" || classificationTx.stato === "viewing");
+
+  // Track route leaving /classifica: immediately consume the bonus if user moves to another page
+  const prevPathRef = useRef(currentPath);
+  useEffect(() => {
+    if (prevPathRef.current === "/classifica" && currentPath !== "/classifica" && classificationTx?.id) {
+      if (classificationTx.stato === "completed" || classificationTx.stato === "viewing") {
+        (supabase as any).rpc("consume_marketplace_transaction", {
+          p_transaction_id: classificationTx.id,
+        });
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+      }
+    }
+    prevPathRef.current = currentPath;
+  }, [currentPath, classificationTx?.id, classificationTx?.stato, queryClient]);
 
   // Query all transactions to count pending Passaparola requests for Admin badge
   const transactionsQuery = useQuery({

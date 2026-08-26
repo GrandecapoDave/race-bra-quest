@@ -22,8 +22,6 @@ export const Route = createFileRoute("/_authenticated/classifica")({
   component: ClassificaPage,
 });
 
-const activeClassificaViews = new Set<string>();
-
 function ClassificaPage() {
   const { user } = useSession();
   const navigate = useNavigate();
@@ -65,7 +63,6 @@ function ClassificaPage() {
 
   // ─── Core close function ─────────────────────────────────────────────────
   // Called by both the "CHIUDI CLASSIFICA" button and the useEffect cleanup.
-  // Uses consumedRef to ensure it only fires once per mount.
   const closeLeaderboardBonus = async (txId: string) => {
     if (consumedRef.current) return;
     consumedRef.current = true;
@@ -74,32 +71,42 @@ function ClassificaPage() {
       p_transaction_id: txId,
     });
 
-    // Invalidate sidebar badge and classifica queries
+    // Invalidate sidebar badge and classifica queries immediately
     queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
     queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
   };
 
-  // ─── Auto-consume on unmount (sidebar navigation, back, etc.) ─────────────
+  // ─── Auto-consume on unmount (navigating away, sidebar click, back button, etc.) ─────
   useEffect(() => {
-    if (tx?.id && tx.stato === "viewing") {
-      activeClassificaViews.add(tx.id);
-    }
     const currentTxId = tx?.id;
+    if (!currentTxId) return;
 
     return () => {
-      if (currentTxId) {
-        activeClassificaViews.delete(currentTxId);
-        setTimeout(() => {
-          if (!activeClassificaViews.has(currentTxId) && !consumedRef.current) {
-            (supabase as any).rpc("consume_marketplace_transaction", {
-              p_transaction_id: currentTxId,
-            });
-            consumedRef.current = true;
-          }
-        }, 100);
+      if (!consumedRef.current) {
+        consumedRef.current = true;
+        (supabase as any).rpc("consume_marketplace_transaction", {
+          p_transaction_id: currentTxId,
+        });
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
       }
     };
-  }, [tx?.id, tx?.stato]);
+  }, [tx?.id, queryClient]);
+
+  // ─── Auto-consume on window/tab close ─────────────────────────────────────
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (tx?.id && !consumedRef.current) {
+        (supabase as any).rpc("consume_marketplace_transaction", {
+          p_transaction_id: tx.id,
+        });
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [tx?.id]);
 
   // ─── Step: transition completed → viewing on first render ─────────────────
   useEffect(() => {
@@ -118,9 +125,7 @@ function ClassificaPage() {
         queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail", team?.id] });
       }
     })();
-  // Only run when a completed tx is first discovered
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tx?.id, tx?.stato]);
+  }, [tx?.id, tx?.stato, team?.id, queryClient]);
 
   // ─── Explicit close button ─────────────────────────────────────────────────
   const handleCloseClassifica = async () => {
