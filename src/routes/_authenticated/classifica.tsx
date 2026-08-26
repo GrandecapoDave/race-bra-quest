@@ -335,22 +335,6 @@ function ClassificaPage() {
             </div>
           </div>
         </div>
-
-        {/* Explicit close button */}
-        <button
-          onClick={handleCloseClassifica}
-          disabled={isClosing}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 text-white font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
-        >
-          {isClosing ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <>
-              <XCircle className="size-4" />
-              Chiudi Classifica
-            </>
-          )}
-        </button>
       </div>
     </AppShell>
   );
