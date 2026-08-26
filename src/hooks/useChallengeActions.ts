@@ -15,6 +15,7 @@ export function useCompleteChallenge() {
         points: number;
         bonus: number;
         stage_completed: boolean;
+        stage_reward?: number;
       };
     },
     retry: 2,
@@ -22,6 +23,9 @@ export function useCompleteChallenge() {
       if (result && !result.already) {
         toast.success(`Prova completata! +${result.points ?? 0} punti`);
         if (result.bonus && result.bonus > 0) toast.success(`Bonus arrivo tappa: +${result.bonus} punti`);
+        if (result.stage_completed && result.stage_reward && result.stage_reward > 0) {
+          toast.success(`🏁 Tappa Completata! Hai guadagnato +${result.stage_reward} Token! 🪙`);
+        }
       }
       await queryClient.invalidateQueries();
     },
