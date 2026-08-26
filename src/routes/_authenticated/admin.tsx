@@ -135,7 +135,7 @@ function AdminLayout() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("team_progress")
-        .select("id,team_id,challenge_id,stato,completata_at:completata_il,started_at:created_at");
+        .select("*");
       if (error) {
         console.warn("Error allProgress:", error);
         return [];

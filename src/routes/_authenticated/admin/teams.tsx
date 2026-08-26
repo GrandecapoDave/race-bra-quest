@@ -44,13 +44,8 @@ function AdminTeamsPage() {
     allAnswers,
     quizQuestions,
     allEmojiMovies,
-    selectedTeamBankState,
     selectedTeamId,
     setSelectedTeamId,
-    isProcessingBank,
-    handleForceCompleteBank,
-    handleResetBank,
-    handleEditBankAnswer
   } = useAdminContext();
 
   const queryClient = useQueryClient();
@@ -540,240 +535,199 @@ function AdminTeamsPage() {
             );
           })()}
 
-          {/* DETTAGLI SFIDA LA BANCA */}
-          {(() => {
-            const bankState = selectedTeamBankState.data;
-            if (!bankState || !bankState.progress) return null;
-
-            const isCompleted = bankState.progress.status === "COMPLETED";
-
-            let durationStr = "In corso...";
-            if (bankState.progress.created_at && bankState.progress.completed_at) {
-              const ms = new Date(bankState.progress.completed_at).getTime() - new Date(bankState.progress.created_at).getTime();
-              durationStr = formatDuration(Math.round(ms / 1000));
-            } else if (bankState.progress.created_at) {
-              const ms = Date.now() - new Date(bankState.progress.created_at).getTime();
-              durationStr = formatDuration(Math.round(ms / 1000));
-            }
-
-            // Final Word
-            const finalWordLetters = [1, 2, 3, 4].map((num) => {
-              return bankState.answers.find((a: any) => a.question_number === num)?.extracted_letter || "_";
-            });
-
-            return (
-              <div className="surface p-5 space-y-4 border border-zinc-800/80 bg-zinc-950/20 rounded-2xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/30 pb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                      <Sparkles className="size-5 text-primary" />
-                      <span>Dettaglio Prova: La Banca</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Stato Prova: <span className={`font-bold ${isCompleted ? "text-success" : "text-primary"}`}>{isCompleted ? "Completata" : "In Corso"}</span> · Tempo Impiegato: <span className="font-mono">{durationStr}</span> · Tentativi Totali: <span className="font-bold">{bankState.progress.attempts || 0}</span>
-                    </p>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <button
-                      onClick={() => handleForceCompleteBank(selectedTeamId)}
-                      disabled={isProcessingBank || isCompleted}
-                      className="px-3 py-1.5 bg-success/20 text-success border border-success/35 hover:bg-success/35 disabled:opacity-40 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Forza Completamento
-                    </button>
-                    <button
-                      onClick={() => handleResetBank(selectedTeamId)}
-                      disabled={isProcessingBank}
-                      className="px-3 py-1.5 bg-destructive/20 text-destructive border border-destructive/35 hover:bg-destructive/35 disabled:opacity-40 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Resetta Sfida
-                    </button>
-                  </div>
-                </div>
-
-                {/* Final word preview */}
-                <div className="bg-background/40 border border-border/30 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase">Lettere sbloccate:</p>
-                    <div className="flex gap-1.5 mt-1.5">
-                      {finalWordLetters.map((letter, idx) => (
-                        <span
-                          key={idx}
-                          className={`grid size-7 place-items-center rounded font-display text-sm font-black ${
-                            letter !== "_" ? "bg-primary text-white" : "bg-secondary text-muted-foreground"
-                          }`}
-                        >
-                          {letter}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {isCompleted && (
-                    <span className="bg-success/20 text-success text-xs font-black uppercase tracking-wider px-3 py-1 rounded flex items-center gap-1">
-                      <Sparkles className="size-3.5" /> Parola BPER Sbloccata!
-                    </span>
-                  )}
-                </div>
-
-                {/* Bank riddles details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {bankState.all_questions.map((q: any) => {
-                    const answerObj = bankState.answers.find((a: any) => a.question_number === q.question_number);
-                    const isSolved = Boolean(answerObj);
-
-                    return (
-                      <div
-                        key={q.question_number}
-                        className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2.5 ${
-                          isSolved ? "bg-green-950/10 border-green-900/30" : "bg-background/40 border-border/30"
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] font-bold text-muted-foreground font-mono">
-                            Enigma #{q.question_number} ({q.length} Lettere)
-                          </span>
-                          <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
-                            isSolved ? "bg-success/20 text-success" : "bg-secondary text-muted-foreground"
-                          }`}>
-                            {isSolved ? "Risolto" : "Da Risolvere"}
-                          </span>
-                        </div>
-
-                        <p className="text-xs font-semibold text-zinc-300">
-                          "{q.question_text}"
-                        </p>
-
-                        <div className="space-y-1.5 pt-1.5 border-t border-border/20">
-                          {isSolved ? (
-                            <>
-                              <p className="text-xs text-muted-foreground">
-                                Risposta data: <span className="font-mono font-bold text-success">"{answerObj?.answer}"</span>
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Lettera: <span className="font-bold text-foreground">{answerObj?.extracted_letter}</span>
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-xs text-zinc-500 italic">Nessuna risposta corretta inserita</p>
-                          )}
-                        </div>
-
-                        <div className="flex gap-1.5 pt-1">
-                          <button
-                            onClick={() => handleEditBankAnswer(selectedTeamId, q.question_number, true)}
-                            disabled={isProcessingBank || isSolved}
-                            className="px-2 py-1 text-[10px] bg-success/20 hover:bg-success/35 text-success border border-success/35 rounded font-bold flex-1 cursor-pointer"
-                          >
-                            Segna Corretto
-                          </button>
-                          <button
-                            onClick={() => handleEditBankAnswer(selectedTeamId, q.question_number, false)}
-                            disabled={isProcessingBank || !isSolved}
-                            className="px-2 py-1 text-[10px] bg-destructive/20 hover:bg-destructive/35 text-destructive border border-destructive/35 rounded font-bold flex-1 cursor-pointer"
-                          >
-                            Rimuovi Risposta
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
           {/* TIMELINE TABLE */}
-          <div className="surface p-5 space-y-4 overflow-x-auto">
-            <h3 className="text-lg font-bold uppercase tracking-wider text-muted-foreground">Storico Timeline Prove</h3>
-            <table className="w-full min-w-[750px] text-left border-collapse">
+          <div className="surface p-5 space-y-4 overflow-x-auto border border-zinc-800/80 bg-zinc-950/40 rounded-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/30 pb-3">
+              <div>
+                <h3 className="text-lg font-display font-black uppercase tracking-wider text-foreground">
+                  Storico Timeline Prove
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Riepilogo cronologico di tutte le prove, risposte, durate e punteggi assegnati alla squadra.
+                </p>
+              </div>
+            </div>
+
+            <table className="w-full min-w-[780px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/40 text-xs text-muted-foreground uppercase tracking-wider font-bold">
                   <th className="py-2.5 pr-4">Tappa</th>
-                  <th className="py-2.5 pr-4">Gioco/Prova</th>
+                  <th className="py-2.5 pr-4">Gioco / Prova</th>
                   <th className="py-2.5 pr-4">Stato</th>
-                  <th className="py-2.5 pr-4">Risposta Inviata</th>
-                  <th className="py-2.5 pr-4">Durata</th>
+                  <th className="py-2.5 pr-4">Risposta / Esito</th>
+                  <th className="py-2.5 pr-4">Durata / Orario</th>
                   <th className="py-2.5 pr-4">Punteggio</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/40 text-sm">
-                {(challenges.data ?? [])
-                  .sort((a: any, b: any) => {
-                    const stageA = ((stages.data ?? []) as any[]).find((s: any) => s.id === a.stage_id)?.ordine ?? 0;
-                    const stageB = ((stages.data ?? []) as any[]).find((s: any) => s.id === b.stage_id)?.ordine ?? 0;
-                    if (stageA !== stageB) return stageA - stageB;
-                    return a.ordine - b.ordine;
-                  })
-                  .map((c: any) => {
-                    const stageName = ((stages.data ?? []) as any[]).find((s: any) => s.id === c.stage_id)?.nome_tappa ?? "—";
-                    const prog = (allProgress.data ?? []).find((p: any) => p.team_id === selectedTeamId && p.challenge_id === c.id);
-                    const sub = (allSubmissions.data ?? []).find((s: any) => s.team_id === selectedTeamId && s.challenge_id === c.id);
-                    const score = (allScores.data ?? []).find((s: any) => s.team_id === selectedTeamId && s.challenge_id === c.id);
-                    const answers = (allAnswers.data ?? []).filter((ta: any) => ta.team_id === selectedTeamId && (c.tipo_sfida === "quiz" && (quizQuestions.data ?? []).some((q: any) => q.id === ta.question_id && q.challenge_id === c.id)));
+              <tbody className="divide-y divide-border/20 text-sm">
+                {(() => {
+                  const stagesList = (stages.data ?? []) as any[];
+                  const challengesList = (challenges.data ?? []) as any[];
 
-                    // Calculate duration
+                  const sortedChallenges = [...challengesList].sort((a: any, b: any) => {
+                    const stageA = stagesList.find((s: any) => s.id === a.stage_id);
+                    const stageB = stagesList.find((s: any) => s.id === b.stage_id);
+                    const stageOrderA = stageA?.numero_tappa ?? stageA?.ordine ?? 0;
+                    const stageOrderB = stageB?.numero_tappa ?? stageB?.ordine ?? 0;
+                    if (stageOrderA !== stageOrderB) return stageOrderA - stageOrderB;
+                    const chOrderA = a.ordine_sfida ?? a.ordine ?? a.order_index ?? 0;
+                    const chOrderB = b.ordine_sfida ?? b.ordine ?? b.order_index ?? 0;
+                    return chOrderA - chOrderB;
+                  });
+
+                  if (sortedChallenges.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={6} className="py-6 text-center text-xs text-muted-foreground">
+                          Nessuna prova configurata nel sistema.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return sortedChallenges.map((c: any) => {
+                    const stage = stagesList.find((s: any) => s.id === c.stage_id);
+                    const stageName = stage?.titolo || stage?.nome_tappa || (stage?.numero_tappa ? `Tappa ${stage.numero_tappa}` : "—");
+
+                    const prog = (allProgress.data ?? []).find(
+                      (p: any) => p.team_id === selectedTeamId && p.challenge_id === c.id
+                    );
+                    const sub = (allSubmissions.data ?? []).find(
+                      (s: any) => s.team_id === selectedTeamId && s.challenge_id === c.id
+                    );
+                    const score = (allScores.data ?? []).find(
+                      (s: any) => s.team_id === selectedTeamId && s.challenge_id === c.id
+                    );
+
+                    const chTitle = c.titolo || c.title || "Prova";
+                    const chType = c.tipo_sfida || c.type || "sfida";
+                    const maxPoints = c.punteggio_massimo ?? c.points ?? 15;
+
+                    const isCompleted = prog?.stato === "completed" || prog?.status === "completed" || Boolean(score && score.punti > 0);
+                    const isPending = prog?.stato === "pending_approval" || prog?.status === "pending_approval" || sub?.stato_approvazione === "pending";
+                    const isStarted = !isCompleted && !isPending && (prog?.stato === "started" || prog?.status === "started" || prog?.status === "in_progress");
+
+                    // Calculate duration & timestamps
+                    const startTime = prog?.started_at || prog?.created_at || prog?.iniziata_il;
+                    const endTime = prog?.completata_il || prog?.completed_at || prog?.completata_at || sub?.timestamp || sub?.created_at;
+
                     let durationStr = "—";
-                    if (prog?.started_at && prog?.completata_at) {
-                      const ms = new Date(prog.completata_at).getTime() - new Date(prog.started_at).getTime();
-                      durationStr = formatDuration(Math.round(ms / 1000));
+                    let completionTimeStr = "";
+                    if (startTime && endTime) {
+                      const ms = new Date(endTime).getTime() - new Date(startTime).getTime();
+                      durationStr = formatDuration(Math.max(0, Math.round(ms / 1000)));
+                      completionTimeStr = `alle ${new Date(endTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`;
+                    } else if (endTime) {
+                      durationStr = `alle ${new Date(endTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}`;
+                    } else if (startTime && isStarted) {
+                      const ms = Date.now() - new Date(startTime).getTime();
+                      durationStr = `${formatDuration(Math.max(0, Math.round(ms / 1000)))} (in corso)`;
+                    }
+
+                    // Answer formatting
+                    const quizAns = (allAnswers.data ?? []).filter(
+                      (ta: any) => ta.team_id === selectedTeamId && (quizQuestions.data ?? []).some((q: any) => q.id === ta.question_id && q.challenge_id === c.id)
+                    );
+                    const movieAns = (allEmojiMovies.data ?? []).filter(
+                      (m: any) => m.team_id === selectedTeamId
+                    );
+
+                    let answerDisplay: React.ReactNode = "—";
+                    if (sub?.file_upload || sub?.file_url) {
+                      answerDisplay = (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                          📷 Foto / File consegnato
+                        </span>
+                      );
+                    } else if (chType === "quiz" && quizAns.length > 0) {
+                      const correctCount = quizAns.filter((a: any) => a.correct).length;
+                      answerDisplay = (
+                        <span className="text-xs font-medium text-zinc-300">
+                          {correctCount} / {quizAns.length} risposte corrette
+                        </span>
+                      );
+                    } else if (chType === "emoji" && movieAns.length > 0) {
+                      const solvedMovies = movieAns.filter((m: any) => m.indovinato || m.is_correct).length;
+                      answerDisplay = (
+                        <span className="text-xs font-medium text-zinc-300">
+                          {solvedMovies} / 8 film indovinati
+                        </span>
+                      );
+                    } else if (sub?.risposta || sub?.risposta_testo || sub?.note) {
+                      answerDisplay = (
+                        <span className="text-xs font-medium text-zinc-300 truncate max-w-xs block" title={sub.risposta || sub.risposta_testo || sub.note}>
+                          "{sub.risposta || sub.risposta_testo || sub.note}"
+                        </span>
+                      );
+                    } else if (isCompleted) {
+                      answerDisplay = (
+                        <span className="text-xs text-zinc-400 font-semibold">
+                          Completata con successo
+                        </span>
+                      );
                     }
 
                     return (
-                      <tr key={c.id} className="hover:bg-muted/10">
-                        <td className="py-3 pr-4 font-semibold text-xs text-muted-foreground">{stageName}</td>
-                        <td className="py-3 pr-4">
-                          <p className="font-extrabold">{c.titolo}</p>
-                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">{c.tipo_sfida}</p>
+                      <tr key={c.id} className="hover:bg-muted/10 transition-colors">
+                        <td className="py-3 pr-4 font-bold text-xs text-muted-foreground">
+                          {stageName}
                         </td>
                         <td className="py-3 pr-4">
-                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${
-                            prog?.stato === "completed"
-                              ? "bg-success/20 text-success"
-                              : prog?.stato === "pending_approval"
-                              ? "bg-warning/20 text-warning"
-                              : prog?.stato === "started"
-                              ? "bg-primary/20 text-primary"
-                              : "bg-secondary text-muted-foreground"
-                          }`}>
-                            {prog?.stato === "completed"
+                          <p className="font-extrabold text-foreground">{chTitle}</p>
+                          <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 mt-0.5">
+                            {chType}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span
+                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${
+                              isCompleted
+                                ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/40"
+                                : isPending
+                                ? "bg-amber-950/40 text-amber-400 border-amber-800/40"
+                                : isStarted
+                                ? "bg-blue-950/40 text-blue-400 border-blue-800/40"
+                                : "bg-zinc-900/60 text-zinc-500 border-zinc-800/60"
+                            }`}
+                          >
+                            {isCompleted
                               ? "Completata"
-                              : prog?.stato === "pending_approval"
-                              ? "In Attesa"
-                              : prog?.stato === "started"
+                              : isPending
+                              ? "In Valutazione"
+                              : isStarted
                               ? "In Corso"
                               : "Non Iniziata"}
                           </span>
                         </td>
-                        <td className="py-3 pr-4 max-w-xs truncate">
-                          {sub?.file_upload ? (
-                            <a
-                              href={`/uploads/${sub.file_upload}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-primary hover:underline text-xs font-bold"
-                            >
-                              Vedi File allegato
-                            </a>
-                          ) : sub?.risposta ? (
-                            <span className="font-medium text-xs">{sub.risposta}</span>
-                          ) : answers.length > 0 ? (
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {answers.map((a: any) => {
-                                const qObj = (quizQuestions.data ?? []).find((q: any) => q.id === a.question_id);
-                                return `${qObj ? qObj.question.slice(0, 15) + "..." : "Domanda"}: Opzione ${a.selected_answer + 1}${a.correct ? " (V)" : " (X)"}`;
-                              }).join(", ")}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
+                        <td className="py-3 pr-4 max-w-xs">
+                          {answerDisplay}
+                        </td>
+                        <td className="py-3 pr-4 font-mono text-xs">
+                          <span className="text-foreground font-semibold">{durationStr}</span>
+                          {completionTimeStr && (
+                            <span className="text-[10px] text-zinc-500 block font-normal">{completionTimeStr}</span>
                           )}
                         </td>
-                        <td className="py-3 pr-4 font-mono text-xs">{durationStr}</td>
-                        <td className="py-3 pr-4 font-extrabold text-gold">
-                          {score ? `+${score.punti} PT` : "—"}
+                        <td className="py-3 pr-4">
+                          {score && score.punti !== undefined && score.punti !== null ? (
+                            <span className="font-mono font-black text-amber-400 text-sm">
+                              +{score.punti}{" "}
+                              <span className="text-[10px] text-zinc-500 font-normal">/ {maxPoints} PT</span>
+                            </span>
+                          ) : isCompleted ? (
+                            <span className="font-mono font-bold text-zinc-400 text-xs">
+                              0 <span className="text-[10px] text-zinc-500">/ {maxPoints} PT</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs text-zinc-600 font-mono">
+                              — <span className="text-[10px] text-zinc-700">/ {maxPoints} PT</span>
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
-                  })}
+                  });
+                })()}
               </tbody>
             </table>
           </div>
