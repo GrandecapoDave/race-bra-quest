@@ -413,18 +413,18 @@ function AdminResocontoPage() {
           {/* TABLE RANKING */}
           <div className="surface rounded-2xl border border-border/50 bg-zinc-950/40 overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[880px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border/40 bg-zinc-900/60 font-black text-muted-foreground uppercase text-[10px] tracking-wider">
-                    <th className="py-3.5 px-4 text-center w-16">Pos</th>
-                    <th className="py-3.5 px-4">Squadra</th>
-                    <th className="py-3.5 px-3 text-center">Prove</th>
-                    <th className="py-3.5 px-3 text-right">Punti Base</th>
-                    <th className="py-3.5 px-3 text-center">Tempo Totale</th>
-                    <th className="py-3.5 px-3 text-right">Bonus Tempo</th>
-                    <th className="py-3.5 px-3 text-center">Token Rimasti</th>
-                    <th className="py-3.5 px-3 text-right">Bonus Token</th>
-                    <th className="py-3.5 px-4 text-right">PUNTI FINALI</th>
+                    <th className="py-3.5 px-4 text-center w-16 whitespace-nowrap">Pos</th>
+                    <th className="py-3.5 px-4 min-w-[180px]">Squadra</th>
+                    <th className="py-3.5 px-3 text-center whitespace-nowrap">Prove</th>
+                    <th className="py-3.5 px-3 text-right whitespace-nowrap">Punti Base</th>
+                    <th className="py-3.5 px-3 text-center whitespace-nowrap">Tempo Totale</th>
+                    <th className="py-3.5 px-3 text-right whitespace-nowrap">Bonus Tempo</th>
+                    <th className="py-3.5 px-3 text-center whitespace-nowrap">Token Rimasti</th>
+                    <th className="py-3.5 px-3 text-right whitespace-nowrap">Bonus Token</th>
+                    <th className="py-3.5 px-4 text-right whitespace-nowrap min-w-[130px]">PUNTI FINALI</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">
@@ -454,7 +454,7 @@ function AdminResocontoPage() {
                         }`}
                       >
                         {/* POS */}
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <span
                             className={`inline-flex items-center justify-center size-7 rounded-xl font-black text-xs ${
                               isTop1
@@ -496,17 +496,17 @@ function AdminResocontoPage() {
                         </td>
 
                         {/* COMPLETED CHALLENGES */}
-                        <td className="py-3.5 px-3 text-center font-mono font-bold text-zinc-300">
+                        <td className="py-3.5 px-3 text-center font-mono font-bold text-zinc-300 whitespace-nowrap">
                           {t.completed_challenges ?? 0} / 15
                         </td>
 
                         {/* BASE SCORE */}
-                        <td className="py-3.5 px-3 text-right font-mono font-bold text-zinc-200">
+                        <td className="py-3.5 px-3 text-right font-mono font-bold text-zinc-200 whitespace-nowrap">
                           {basePts} PT
                         </td>
 
                         {/* TOTAL TIME */}
-                        <td className="py-3.5 px-3 text-center font-mono text-[11px] text-zinc-400">
+                        <td className="py-3.5 px-3 text-center font-mono text-[11px] text-zinc-400 whitespace-nowrap">
                           <div>{formatDuration(t.total_time_seconds ?? t.total_duration_seconds ?? 0)}</div>
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">
                             #{t.time_rank ?? pos} tempo
@@ -514,23 +514,23 @@ function AdminResocontoPage() {
                         </td>
 
                         {/* TIME BONUS */}
-                        <td className="py-3.5 px-3 text-right font-mono font-bold text-amber-400">
+                        <td className="py-3.5 px-3 text-right font-mono font-bold text-amber-400 whitespace-nowrap">
                           +{timeBonus} PT
                         </td>
 
                         {/* TOKENS */}
-                        <td className="py-3.5 px-3 text-center font-mono font-bold text-amber-300">
+                        <td className="py-3.5 px-3 text-center font-mono font-bold text-amber-300 whitespace-nowrap">
                           {t.token_balance ?? 50} 🪙
                         </td>
 
                         {/* TOKEN BONUS */}
-                        <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-400">
+                        <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">
                           +{tokenBonus} PT
                         </td>
 
                         {/* FINAL SCORE */}
-                        <td className="py-3.5 px-4 text-right">
-                          <span className="text-base font-display font-black text-primary px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <span className="inline-flex items-center justify-center font-display font-black text-sm md:text-base text-primary px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/25 whitespace-nowrap tabular-nums shadow-sm">
                             {finalScore} PT
                           </span>
                         </td>
