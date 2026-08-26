@@ -260,6 +260,8 @@ function PhotoCard({
   at: string;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -275,17 +277,52 @@ function PhotoCard({
   }, [path]);
 
   return (
-    <figure className="surface animate-pop-in overflow-hidden">
+    <figure className="surface animate-pop-in overflow-hidden rounded-xl border border-border/40 bg-zinc-950/40 relative group">
       {url ? (
-        <img src={url} alt="Foto ufficiale della squadra" className="h-36 w-full object-cover" />
+        <div className="relative h-40 w-full overflow-hidden bg-black/60 flex items-center justify-center">
+          <img
+            src={url}
+            alt="Foto ufficiale della squadra"
+            className="h-full w-full object-cover transition-transform duration-200"
+            style={{
+              transform: `${isFlipped ? "scaleX(-1)" : ""} rotate(${rotation}deg)`,
+            }}
+          />
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10 opacity-90 hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              title="Ribalta orizzontale (Specchia)"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFlipped(!isFlipped);
+              }}
+              className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
+                isFlipped ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+              }`}
+            >
+              <FlipHorizontal className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              title="Ruota 90°"
+              onClick={(e) => {
+                e.stopPropagation();
+                setRotation((r) => (r + 90) % 360);
+              }}
+              className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+            >
+              <RotateCw className="size-3.5" />
+            </button>
+          </div>
+        </div>
       ) : (
-        <div className="h-36 w-full animate-pulse bg-muted" />
+        <div className="h-40 w-full animate-pulse bg-muted" />
       )}
-      <figcaption className="space-y-0.5 p-2 text-[11px] text-muted-foreground">
+      <figcaption className="space-y-0.5 p-2.5 text-[11px] text-muted-foreground bg-zinc-900/60">
         <div>{new Date(at).toLocaleString("it-IT")}</div>
         {lat != null && lng != null && (
-          <div className="flex items-center gap-1">
-            <MapPin className="size-3" />
+          <div className="flex items-center gap-1 text-[10px]">
+            <MapPin className="size-3 text-primary" />
             {lat.toFixed(4)}, {lng.toFixed(4)}
           </div>
         )}

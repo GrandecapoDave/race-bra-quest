@@ -13,6 +13,8 @@ import {
   Camera,
   ShoppingBag,
   Sparkles,
+  FlipHorizontal,
+  RotateCw,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
@@ -938,6 +940,8 @@ export function ApprovalCard({
   isConfirming: boolean;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   const scoreEntry = (scores ?? []).find(
     (sc: any) => sc.team_id === sub.team_id && sc.challenge_id === sub.challenge_id
@@ -1010,11 +1014,36 @@ export function ApprovalCard({
         {sub.file_upload && (
           <div className="md:col-span-1">
             {url ? (
-              <img
-                src={url}
-                alt="Allegato prova"
-                className="w-full h-44 rounded-lg object-cover bg-muted border border-border/40 shadow-md"
-              />
+              <div className="relative rounded-lg overflow-hidden border border-border/40 shadow-md bg-muted">
+                <img
+                  src={url}
+                  alt="Allegato prova"
+                  className="w-full h-44 object-cover transition-transform duration-200"
+                  style={{
+                    transform: `${isFlipped ? "scaleX(-1)" : ""} rotate(${rotation}deg)`,
+                  }}
+                />
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                  <button
+                    type="button"
+                    title="Ribalta orizzontale (Specchia)"
+                    onClick={() => setIsFlipped(!isFlipped)}
+                    className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
+                      isFlipped ? "bg-primary text-primary-foreground" : "text-white hover:bg-white/20"
+                    }`}
+                  >
+                    <FlipHorizontal className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Ruota 90°"
+                    onClick={() => setRotation((r) => (r + 90) % 360)}
+                    className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                  >
+                    <RotateCw className="size-3.5" />
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="w-full h-44 animate-pulse rounded-lg bg-muted" />
             )}
