@@ -4653,93 +4653,117 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             db.game_settings[0].cornhole_special_bye_team_id = specialByeTeamId;
           }
 
-          // Filter out the special bye team from the random pool
-          const shufflePool = activeTeams.filter((t: any) => t.id !== specialByeTeamId);
-          for (let i = shufflePool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const temp = shufflePool[i];
-            shufflePool[i] = shufflePool[j];
-            shufflePool[j] = temp;
-          }
-
-          const sortedTeams = [];
-          if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
-            const specialByeTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
-            if (specialByeTeam) sortedTeams.push(specialByeTeam);
-          }
-          sortedTeams.push(...shufflePool);
-
-          const N = sortedTeams.length;
-          const virtualPoolSize = specialByeTeamId ? N + 1 : N;
-          const K = Math.pow(2, Math.ceil(Math.log2(virtualPoolSize)));
-          const numMatches = K / 2;
-          const totalByesInSystem = K - N;
-          const numTechnicalByes = specialByeTeamId ? Math.max(0, totalByesInSystem - 1) : totalByesInSystem;
-
+          const N = activeTeams.length;
+          const K = Math.pow(2, Math.floor(Math.log2(N)));
           const matchesToInsert: any[] = [];
-          const totalRounds = Math.log2(K);
 
-          for (let r = 0; r < totalRounds; r++) {
-            const matchesInRound = K / Math.pow(2, r + 1);
-            for (let m = 0; m < matchesInRound; m++) {
+          let pool = [...activeTeams];
+          for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = pool[i];
+            pool[i] = pool[j];
+            pool[j] = temp;
+          }
+
+          if (K === N) {
+            const totalRounds = Math.log2(K);
+            for (let r = 0; r < totalRounds; r++) {
+              const matchesInRound = K / Math.pow(2, r + 1);
+              for (let m = 0; m < matchesInRound; m++) {
+                matchesToInsert.push({
+                  id: "match_cornhole_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  stage_id: STAGE5_ID_CONST,
+                  challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+                  round: r,
+                  match_index: m,
+                  team1_id: null,
+                  team2_id: null,
+                  winner_id: null,
+                  status: "pending",
+                  completed_at: null,
+                  is_special_bye: false
+                });
+              }
+            }
+
+            let tIdx = 0;
+            for (let m = 0; m < K / 2; m++) {
+              const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
+              if (!match) continue;
+              match.team1_id = pool[tIdx++].id;
+              match.team2_id = pool[tIdx++].id;
+              match.status = "ready";
+            }
+          } else {
+            const numPrelim = N - K;
+            const totalRounds = Math.log2(K) + 1;
+
+            if (specialByeTeamId && pool.some((t: any) => t.id === specialByeTeamId)) {
+              pool = pool.filter((t: any) => t.id !== specialByeTeamId);
+            }
+
+            const prelimTeams = pool.slice(0, 2 * numPrelim);
+            const directTeams = [];
+            if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
+              const spTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
+              if (spTeam) directTeams.push(spTeam);
+            }
+            directTeams.push(...pool.slice(2 * numPrelim));
+
+            // Round 0
+            for (let m = 0; m < numPrelim; m++) {
               matchesToInsert.push({
-                id: "match_cornhole_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                id: "match_cornhole_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
                 stage_id: STAGE5_ID_CONST,
                 challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
-                round: r,
+                round: 0,
                 match_index: m,
-                team1_id: null,
-                team2_id: null,
+                team1_id: prelimTeams[2 * m].id,
+                team2_id: prelimTeams[2 * m + 1].id,
                 winner_id: null,
-                status: "pending",
+                status: "ready",
                 completed_at: null,
                 is_special_bye: false
               });
             }
-          }
 
-          let teamIdx = 0;
-          for (let m = 0; m < numMatches; m++) {
-            const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
-            if (!match) continue;
-
-            if (m === 0 && specialByeTeamId) {
-              match.team1_id = specialByeTeamId;
-              match.team2_id = null;
-              match.winner_id = specialByeTeamId;
-              match.status = "completed";
-              match.completed_at = new Date().toISOString();
-              match.is_special_bye = true;
-              teamIdx++;
-            } else if (m > 0 && m <= numTechnicalByes) {
-              match.team1_id = sortedTeams[teamIdx++].id;
-              match.team2_id = null;
-              match.winner_id = match.team1_id;
-              match.status = "completed";
-              match.completed_at = new Date().toISOString();
-            } else {
-              match.team1_id = sortedTeams[teamIdx++].id;
-              match.team2_id = sortedTeams[teamIdx++].id;
-              match.status = "ready";
+            // Subsequent rounds
+            for (let r = 1; r < totalRounds; r++) {
+              const matchesInRound = K / Math.pow(2, r);
+              for (let m = 0; m < matchesInRound; m++) {
+                matchesToInsert.push({
+                  id: "match_cornhole_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  stage_id: STAGE5_ID_CONST,
+                  challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+                  round: r,
+                  match_index: m,
+                  team1_id: null,
+                  team2_id: null,
+                  winner_id: null,
+                  status: "pending",
+                  completed_at: null,
+                  is_special_bye: false
+                });
+              }
             }
-          }
 
-          for (let r = 0; r < totalRounds - 1; r++) {
-            const currentRoundMatches = matchesToInsert.filter((x: any) => x.round === r);
-            for (const cm of currentRoundMatches) {
-              if (cm.status === "completed" && cm.winner_id) {
-                const nextMatchIdx = Math.floor(cm.match_index / 2);
-                const nextMatch = matchesToInsert.find((x: any) => x.round === r + 1 && x.match_index === nextMatchIdx);
-                if (nextMatch) {
-                  if (cm.match_index % 2 === 0) {
-                    nextMatch.team1_id = cm.winner_id;
-                  } else {
-                    nextMatch.team2_id = cm.winner_id;
-                  }
-                  if (nextMatch.team1_id && nextMatch.team2_id) {
-                    nextMatch.status = "ready";
-                  }
-                }
+            // Seed Round 1
+            let dtIdx = 0;
+            for (let m = 0; m < numPrelim; m++) {
+              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
+              if (match && directTeams[dtIdx]) {
+                match.team1_id = directTeams[dtIdx++].id;
+                match.team2_id = null;
+                match.status = "pending";
+                match.is_special_bye = match.team1_id === specialByeTeamId;
+              }
+            }
+            for (let m = numPrelim; m < K / 2; m++) {
+              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
+              if (match && directTeams[dtIdx] && directTeams[dtIdx + 1]) {
+                match.team1_id = directTeams[dtIdx++].id;
+                match.team2_id = directTeams[dtIdx++].id;
+                match.status = "ready";
               }
             }
           }
@@ -4779,26 +4803,37 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           match.status = "completed";
           match.completed_at = new Date().toISOString();
 
-          // Calculate total rounds to check if this is the final
           const challengeMatches = db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST);
           const maxRound = Math.max(...challengeMatches.map((m: any) => m.round));
+          const r0Matches = challengeMatches.filter((m: any) => m.round === 0);
 
           if (match.round < maxRound) {
-            // Propagate winner to next round
-            const nextRound = match.round + 1;
-            const nextMatchIdx = Math.floor(match.match_index / 2);
-            const nextMatch = db.cornhole_matches.find(
-              (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === nextRound && m.match_index === nextMatchIdx
-            );
-
-            if (nextMatch) {
-              if (match.match_index % 2 === 0) {
-                nextMatch.team1_id = p_winner_id;
-              } else {
+            if (match.round === 0 && r0Matches.length < 4) {
+              const nextMatch = db.cornhole_matches.find(
+                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === match.match_index
+              );
+              if (nextMatch) {
                 nextMatch.team2_id = p_winner_id;
+                if (nextMatch.team1_id && nextMatch.team2_id) {
+                  nextMatch.status = "ready";
+                }
               }
-              if (nextMatch.team1_id && nextMatch.team2_id) {
-                nextMatch.status = "ready";
+            } else {
+              const nextRound = match.round + 1;
+              const nextMatchIdx = Math.floor(match.match_index / 2);
+              const nextMatch = db.cornhole_matches.find(
+                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === nextRound && m.match_index === nextMatchIdx
+              );
+
+              if (nextMatch) {
+                if (match.match_index % 2 === 0) {
+                  nextMatch.team1_id = p_winner_id;
+                } else {
+                  nextMatch.team2_id = p_winner_id;
+                }
+                if (nextMatch.team1_id && nextMatch.team2_id) {
+                  nextMatch.status = "ready";
+                }
               }
             }
           } else {
@@ -5016,111 +5051,127 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             db.team_progress = db.team_progress.filter((tp: any) => tp.challenge_id !== BOXE_CHALLENGE_ID_CONST);
           }
 
-          // Generate tournament from active teams
           const activeTeams = db.teams.filter((t: any) => t.active !== false);
           if (activeTeams.length < 2) {
             return { data: null, error: { message: "Sono necessarie almeno 2 squadre attive per generare il torneo." } };
           }
 
-          const settings = db.game_settings?.[0];
-          const specialByeTeamId = settings?.boxe_special_bye_team_id || null;
-
-          // Filter out the special bye team from the random pool
-          const shufflePool = activeTeams.filter((t: any) => t.id !== specialByeTeamId);
-
-          // Fisher-Yates random shuffle algorithm
-          for (let i = shufflePool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const temp = shufflePool[i];
-            shufflePool[i] = shufflePool[j];
-            shufflePool[j] = temp;
+          const specialByeTeamId = args.p_special_bye_team_id || db.game_settings?.[0]?.boxe_special_bye_team_id || null;
+          if (db.game_settings?.[0]) {
+            db.game_settings[0].boxe_special_bye_team_id = specialByeTeamId;
           }
 
-          // Build the final sortedTeams list: Special bye is placed first if active
-          const sortedTeams = [];
-          if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
-            const specialByeTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
-            if (specialByeTeam) sortedTeams.push(specialByeTeam);
-          }
-          sortedTeams.push(...shufflePool);
-
-          const N = sortedTeams.length;
-          const virtualPoolSize = specialByeTeamId ? N + 1 : N;
-          const K = Math.pow(2, Math.ceil(Math.log2(virtualPoolSize)));
-          const numMatches = K / 2;
-
-          const totalByesInSystem = K - N;
-          const numTechnicalByes = specialByeTeamId ? Math.max(0, totalByesInSystem - 1) : totalByesInSystem;
-
+          const N = activeTeams.length;
+          const K = Math.pow(2, Math.floor(Math.log2(N)));
           const matchesToInsert: any[] = [];
-          const totalRounds = Math.log2(K);
 
-          for (let r = 0; r < totalRounds; r++) {
-            const matchesInRound = K / Math.pow(2, r + 1);
-            for (let m = 0; m < matchesInRound; m++) {
+          let pool = [...activeTeams];
+          for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = pool[i];
+            pool[i] = pool[j];
+            pool[j] = temp;
+          }
+
+          if (K === N) {
+            const totalRounds = Math.log2(K);
+            for (let r = 0; r < totalRounds; r++) {
+              const matchesInRound = K / Math.pow(2, r + 1);
+              for (let m = 0; m < matchesInRound; m++) {
+                matchesToInsert.push({
+                  id: "match_boxe_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  stage_id: STAGE5_ID_CONST,
+                  challenge_id: BOXE_CHALLENGE_ID_CONST,
+                  round: r,
+                  match_index: m,
+                  team1_id: null,
+                  team2_id: null,
+                  winner_id: null,
+                  status: "pending",
+                  completed_at: null,
+                  is_special_bye: false
+                });
+              }
+            }
+
+            let tIdx = 0;
+            for (let m = 0; m < K / 2; m++) {
+              const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
+              if (!match) continue;
+              match.team1_id = pool[tIdx++].id;
+              match.team2_id = pool[tIdx++].id;
+              match.status = "ready";
+            }
+          } else {
+            const numPrelim = N - K;
+            const totalRounds = Math.log2(K) + 1;
+
+            if (specialByeTeamId && pool.some((t: any) => t.id === specialByeTeamId)) {
+              pool = pool.filter((t: any) => t.id !== specialByeTeamId);
+            }
+
+            const prelimTeams = pool.slice(0, 2 * numPrelim);
+            const directTeams = [];
+            if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
+              const spTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
+              if (spTeam) directTeams.push(spTeam);
+            }
+            directTeams.push(...pool.slice(2 * numPrelim));
+
+            // Round 0
+            for (let m = 0; m < numPrelim; m++) {
               matchesToInsert.push({
-                id: "match_boxe_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                id: "match_boxe_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
                 stage_id: STAGE5_ID_CONST,
                 challenge_id: BOXE_CHALLENGE_ID_CONST,
-                round: r,
+                round: 0,
                 match_index: m,
-                team1_id: null,
-                team2_id: null,
+                team1_id: prelimTeams[2 * m].id,
+                team2_id: prelimTeams[2 * m + 1].id,
                 winner_id: null,
-                status: "pending",
+                status: "ready",
                 completed_at: null,
                 is_special_bye: false
               });
             }
-          }
 
-          // Populate Round 0
-          let teamIdx = 0;
-          for (let m = 0; m < numMatches; m++) {
-            const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
-            if (!match) continue;
-
-            if (m === 0 && specialByeTeamId) {
-              // Match 0 is dedicated to the Special Bye
-              match.team1_id = specialByeTeamId;
-              match.team2_id = null;
-              match.winner_id = specialByeTeamId;
-              match.status = "completed";
-              match.completed_at = new Date().toISOString();
-              match.is_special_bye = true;
-              teamIdx++;
-            } else if (m > 0 && m <= numTechnicalByes) {
-              // Technical Bye
-              match.team1_id = sortedTeams[teamIdx++].id;
-              match.team2_id = null;
-              match.winner_id = match.team1_id;
-              match.status = "completed";
-              match.completed_at = new Date().toISOString();
-            } else {
-              // Regular Match
-              match.team1_id = sortedTeams[teamIdx++].id;
-              match.team2_id = sortedTeams[teamIdx++].id;
-              match.status = "ready";
+            // Subsequent rounds
+            for (let r = 1; r < totalRounds; r++) {
+              const matchesInRound = K / Math.pow(2, r);
+              for (let m = 0; m < matchesInRound; m++) {
+                matchesToInsert.push({
+                  id: "match_boxe_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  stage_id: STAGE5_ID_CONST,
+                  challenge_id: BOXE_CHALLENGE_ID_CONST,
+                  round: r,
+                  match_index: m,
+                  team1_id: null,
+                  team2_id: null,
+                  winner_id: null,
+                  status: "pending",
+                  completed_at: null,
+                  is_special_bye: false
+                });
+              }
             }
-          }
 
-          // Propagate completed bye matches to Round 1
-          for (let r = 0; r < totalRounds - 1; r++) {
-            const currentRoundMatches = matchesToInsert.filter((x: any) => x.round === r);
-            for (const cm of currentRoundMatches) {
-              if (cm.status === "completed" && cm.winner_id) {
-                const nextMatchIdx = Math.floor(cm.match_index / 2);
-                const nextMatch = matchesToInsert.find((x: any) => x.round === r + 1 && x.match_index === nextMatchIdx);
-                if (nextMatch) {
-                  if (cm.match_index % 2 === 0) {
-                    nextMatch.team1_id = cm.winner_id;
-                  } else {
-                    nextMatch.team2_id = cm.winner_id;
-                  }
-                  if (nextMatch.team1_id && nextMatch.team2_id) {
-                    nextMatch.status = "ready";
-                  }
-                }
+            // Seed Round 1
+            let dtIdx = 0;
+            for (let m = 0; m < numPrelim; m++) {
+              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
+              if (match && directTeams[dtIdx]) {
+                match.team1_id = directTeams[dtIdx++].id;
+                match.team2_id = null;
+                match.status = "pending";
+                match.is_special_bye = match.team1_id === specialByeTeamId;
+              }
+            }
+            for (let m = numPrelim; m < K / 2; m++) {
+              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
+              if (match && directTeams[dtIdx] && directTeams[dtIdx + 1]) {
+                match.team1_id = directTeams[dtIdx++].id;
+                match.team2_id = directTeams[dtIdx++].id;
+                match.status = "ready";
               }
             }
           }
@@ -5143,34 +5194,45 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           const match = db.boxe_matches.find((m: any) => m.id === p_match_id);
           if (!match) return { data: null, error: { message: "Match non trovato." } };
 
-          if (match.team1_id !== p_winner_id && match.team2_id !== p_winner_id) {
-            return { data: null, error: { message: "La squadra vincitrice deve far parte del match." } };
+          if (match.status === "completed" && match.winner_id === p_winner_id) {
+            return { data: db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST), error: null };
           }
 
           match.winner_id = p_winner_id;
           match.status = "completed";
           match.completed_at = new Date().toISOString();
 
-          // Calculate total rounds to check if this is the final
           const challengeMatches = db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST);
           const maxRound = Math.max(...challengeMatches.map((m: any) => m.round));
+          const r0Matches = challengeMatches.filter((m: any) => m.round === 0);
 
           if (match.round < maxRound) {
-            // Propagate winner to next round
-            const nextRound = match.round + 1;
-            const nextMatchIdx = Math.floor(match.match_index / 2);
-            const nextMatch = db.boxe_matches.find(
-              (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === nextRound && m.match_index === nextMatchIdx
-            );
-
-            if (nextMatch) {
-              if (match.match_index % 2 === 0) {
-                nextMatch.team1_id = p_winner_id;
-              } else {
+            if (match.round === 0 && r0Matches.length < 4) {
+              const nextMatch = db.boxe_matches.find(
+                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === match.match_index
+              );
+              if (nextMatch) {
                 nextMatch.team2_id = p_winner_id;
+                if (nextMatch.team1_id && nextMatch.team2_id) {
+                  nextMatch.status = "ready";
+                }
               }
-              if (nextMatch.team1_id && nextMatch.team2_id) {
-                nextMatch.status = "ready";
+            } else {
+              const nextRound = match.round + 1;
+              const nextMatchIdx = Math.floor(match.match_index / 2);
+              const nextMatch = db.boxe_matches.find(
+                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === nextRound && m.match_index === nextMatchIdx
+              );
+
+              if (nextMatch) {
+                if (match.match_index % 2 === 0) {
+                  nextMatch.team1_id = p_winner_id;
+                } else {
+                  nextMatch.team2_id = p_winner_id;
+                }
+                if (nextMatch.team1_id && nextMatch.team2_id) {
+                  nextMatch.status = "ready";
+                }
               }
             }
           } else {
