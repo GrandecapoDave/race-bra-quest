@@ -4607,7 +4607,26 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           return { data: { success: true }, error: null };
         }
 
-        if (fnName === "get_cornhole_tournament") {
+        if (fnName === "reset_cornhole_tournament") {
+          const CORNHOLE_CHALLENGE_ID_CONST = "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0";
+          if (db.cornhole_matches) {
+            db.cornhole_matches = db.cornhole_matches.filter((m: any) => m.challenge_id !== CORNHOLE_CHALLENGE_ID_CONST);
+          }
+          if (db.scores) {
+            db.scores = db.scores.filter((s: any) => s.challenge_id !== CORNHOLE_CHALLENGE_ID_CONST);
+          }
+          if (db.team_progress) {
+            db.team_progress = db.team_progress.filter((tp: any) => tp.challenge_id !== CORNHOLE_CHALLENGE_ID_CONST);
+          }
+          if (db.game_settings?.[0]) {
+            db.game_settings[0].cornhole_special_bye_team_id = null;
+          }
+          logActivity(db, args.p_admin_id || "admin", "Torneo Cornhole resettato");
+          saveDb(db);
+          return { data: { success: true }, error: null };
+        }
+
+        if (fnName === "generate_cornhole_tournament") {
           const STAGE5_ID_CONST = "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c";
           const CORNHOLE_CHALLENGE_ID_CONST = "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0";
 
@@ -4615,117 +4634,127 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             db.cornhole_matches = [];
           }
 
-          const existingMatches = db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST);
-          if (existingMatches.length === 0) {
-            // Generate tournament from active teams
-            const activeTeams = db.teams.filter((t: any) => t.active !== false);
-            if (activeTeams.length === 0) {
-              return { data: null, error: { message: "Nessuna squadra attiva per generare il torneo." } };
+          // Reset existing
+          db.cornhole_matches = db.cornhole_matches.filter((m: any) => m.challenge_id !== CORNHOLE_CHALLENGE_ID_CONST);
+          if (db.scores) {
+            db.scores = db.scores.filter((s: any) => s.challenge_id !== CORNHOLE_CHALLENGE_ID_CONST);
+          }
+          if (db.team_progress) {
+            db.team_progress = db.team_progress.filter((tp: any) => tp.challenge_id !== CORNHOLE_CHALLENGE_ID_CONST);
+          }
+
+          const activeTeams = db.teams.filter((t: any) => t.active !== false);
+          if (activeTeams.length < 2) {
+            return { data: null, error: { message: "Sono necessarie almeno 2 squadre attive per generare il torneo." } };
+          }
+
+          const specialByeTeamId = args.p_special_bye_team_id || db.game_settings?.[0]?.cornhole_special_bye_team_id || null;
+          if (db.game_settings?.[0]) {
+            db.game_settings[0].cornhole_special_bye_team_id = specialByeTeamId;
+          }
+
+          // Filter out the special bye team from the random pool
+          const shufflePool = activeTeams.filter((t: any) => t.id !== specialByeTeamId);
+          for (let i = shufflePool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = shufflePool[i];
+            shufflePool[i] = shufflePool[j];
+            shufflePool[j] = temp;
+          }
+
+          const sortedTeams = [];
+          if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
+            const specialByeTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
+            if (specialByeTeam) sortedTeams.push(specialByeTeam);
+          }
+          sortedTeams.push(...shufflePool);
+
+          const N = sortedTeams.length;
+          const virtualPoolSize = specialByeTeamId ? N + 1 : N;
+          const K = Math.pow(2, Math.ceil(Math.log2(virtualPoolSize)));
+          const numMatches = K / 2;
+          const totalByesInSystem = K - N;
+          const numTechnicalByes = specialByeTeamId ? Math.max(0, totalByesInSystem - 1) : totalByesInSystem;
+
+          const matchesToInsert: any[] = [];
+          const totalRounds = Math.log2(K);
+
+          for (let r = 0; r < totalRounds; r++) {
+            const matchesInRound = K / Math.pow(2, r + 1);
+            for (let m = 0; m < matchesInRound; m++) {
+              matchesToInsert.push({
+                id: "match_cornhole_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                stage_id: STAGE5_ID_CONST,
+                challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+                round: r,
+                match_index: m,
+                team1_id: null,
+                team2_id: null,
+                winner_id: null,
+                status: "pending",
+                completed_at: null,
+                is_special_bye: false
+              });
             }
+          }
 
-            const settings = db.game_settings?.[0];
-            const specialByeTeamId = settings?.cornhole_special_bye_team_id || null;
+          let teamIdx = 0;
+          for (let m = 0; m < numMatches; m++) {
+            const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
+            if (!match) continue;
 
-            // Sort other teams alphabetically
-            const otherTeamsList = activeTeams
-              .filter((t: any) => t.id !== specialByeTeamId)
-              .sort((a: any, b: any) => a.nome_squadra.localeCompare(b.nome_squadra));
-
-            // Reconstruct the ordered list of teams: if there is a special bye, it goes first
-            const sortedTeams = [];
-            if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
-              const specialByeTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
-              if (specialByeTeam) sortedTeams.push(specialByeTeam);
+            if (m === 0 && specialByeTeamId) {
+              match.team1_id = specialByeTeamId;
+              match.team2_id = null;
+              match.winner_id = specialByeTeamId;
+              match.status = "completed";
+              match.completed_at = new Date().toISOString();
+              match.is_special_bye = true;
+              teamIdx++;
+            } else if (m > 0 && m <= numTechnicalByes) {
+              match.team1_id = sortedTeams[teamIdx++].id;
+              match.team2_id = null;
+              match.winner_id = match.team1_id;
+              match.status = "completed";
+              match.completed_at = new Date().toISOString();
+            } else {
+              match.team1_id = sortedTeams[teamIdx++].id;
+              match.team2_id = sortedTeams[teamIdx++].id;
+              match.status = "ready";
             }
-            sortedTeams.push(...otherTeamsList);
+          }
 
-            const N = sortedTeams.length;
-            // If there is a special bye, the virtual pool size for Round 0 pairing is N + 1 (since the special bye occupies 1 slot and does not pair)
-            const virtualPoolSize = specialByeTeamId ? N + 1 : N;
-            const K = Math.pow(2, Math.ceil(Math.log2(virtualPoolSize)));
-            const numMatches = K / 2;
-            
-            // Total byes in the system = K - N (includes 1 special bye + (K - N - 1) technical byes if K - N > 0)
-            const totalByesInSystem = K - N;
-            const numTechnicalByes = specialByeTeamId ? Math.max(0, totalByesInSystem - 1) : totalByesInSystem;
-
-            const matchesToInsert: any[] = [];
-            const totalRounds = Math.log2(K);
-
-            for (let r = 0; r < totalRounds; r++) {
-              const matchesInRound = K / Math.pow(2, r + 1);
-              for (let m = 0; m < matchesInRound; m++) {
-                matchesToInsert.push({
-                  id: "match_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
-                  stage_id: STAGE5_ID_CONST,
-                  challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
-                  round: r,
-                  match_index: m,
-                  team1_id: null,
-                  team2_id: null,
-                  winner_id: null,
-                  status: "pending",
-                  completed_at: null,
-                  is_special_bye: false
-                });
-              }
-            }
-
-            // Populate Round 0
-            let teamIdx = 0;
-            for (let m = 0; m < numMatches; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
-              if (!match) continue;
-
-              if (m === 0 && specialByeTeamId) {
-                // Match 0 is dedicated to the Special Bye
-                match.team1_id = specialByeTeamId;
-                match.team2_id = null;
-                match.winner_id = specialByeTeamId;
-                match.status = "completed";
-                match.completed_at = new Date().toISOString();
-                match.is_special_bye = true;
-                teamIdx++; // skip special bye team in sortedTeams
-              } else if (m > 0 && m <= numTechnicalByes) {
-                // Technical Bye
-                match.team1_id = sortedTeams[teamIdx++].id;
-                match.team2_id = null;
-                match.winner_id = match.team1_id;
-                match.status = "completed";
-                match.completed_at = new Date().toISOString();
-              } else {
-                // Regular Match
-                match.team1_id = sortedTeams[teamIdx++].id;
-                match.team2_id = sortedTeams[teamIdx++].id;
-                match.status = "ready";
-              }
-            }
-
-            // Propagate completed bye matches to Round 1
-            for (let r = 0; r < totalRounds - 1; r++) {
-              const currentRoundMatches = matchesToInsert.filter((x: any) => x.round === r);
-              for (const cm of currentRoundMatches) {
-                if (cm.status === "completed" && cm.winner_id) {
-                  const nextMatchIdx = Math.floor(cm.match_index / 2);
-                  const nextMatch = matchesToInsert.find((x: any) => x.round === r + 1 && x.match_index === nextMatchIdx);
-                  if (nextMatch) {
-                    if (cm.match_index % 2 === 0) {
-                      nextMatch.team1_id = cm.winner_id;
-                    } else {
-                      nextMatch.team2_id = cm.winner_id;
-                    }
-                    if (nextMatch.team1_id && nextMatch.team2_id) {
-                      nextMatch.status = "ready";
-                    }
+          for (let r = 0; r < totalRounds - 1; r++) {
+            const currentRoundMatches = matchesToInsert.filter((x: any) => x.round === r);
+            for (const cm of currentRoundMatches) {
+              if (cm.status === "completed" && cm.winner_id) {
+                const nextMatchIdx = Math.floor(cm.match_index / 2);
+                const nextMatch = matchesToInsert.find((x: any) => x.round === r + 1 && x.match_index === nextMatchIdx);
+                if (nextMatch) {
+                  if (cm.match_index % 2 === 0) {
+                    nextMatch.team1_id = cm.winner_id;
+                  } else {
+                    nextMatch.team2_id = cm.winner_id;
+                  }
+                  if (nextMatch.team1_id && nextMatch.team2_id) {
+                    nextMatch.status = "ready";
                   }
                 }
               }
             }
-
-            db.cornhole_matches.push(...matchesToInsert);
-            saveDb(db);
           }
 
+          db.cornhole_matches.push(...matchesToInsert);
+          logActivity(db, args.p_admin_id || "admin", "Regia ha generato il tabellone del Torneo Cornhole");
+          saveDb(db);
+          return { data: matchesToInsert, error: null };
+        }
+
+        if (fnName === "get_cornhole_tournament") {
+          const CORNHOLE_CHALLENGE_ID_CONST = "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0";
+          if (!db.cornhole_matches) {
+            db.cornhole_matches = [];
+          }
           const matches = db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST);
           return { data: matches, error: null };
         }
@@ -4942,24 +4971,35 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           return { data: { success: true }, error: null };
         }
 
-        if (fnName === "get_boxe_tournament") {
-          const STAGE5_ID_CONST = "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c";
+        if (fnName === "reset_boxe_tournament") {
           const BOXE_CHALLENGE_ID_CONST = "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0";
+          if (db.boxe_matches) {
+            db.boxe_matches = db.boxe_matches.filter((m: any) => m.challenge_id !== BOXE_CHALLENGE_ID_CONST);
+          }
+          if (db.scores) {
+            db.scores = db.scores.filter((s: any) => s.challenge_id !== BOXE_CHALLENGE_ID_CONST);
+          }
+          if (db.team_progress) {
+            db.team_progress = db.team_progress.filter((tp: any) => tp.challenge_id !== BOXE_CHALLENGE_ID_CONST);
+          }
+          if (db.game_settings?.[0]) {
+            db.game_settings[0].boxe_special_bye_team_id = null;
+          }
+          logActivity(db, args.p_admin_id || "admin", "Torneo Boxe resettato");
+          saveDb(db);
+          return { data: { success: true }, error: null };
+        }
 
+        if (fnName === "get_boxe_tournament") {
+          const BOXE_CHALLENGE_ID_CONST = "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0";
           if (!db.boxe_matches) {
             db.boxe_matches = [];
           }
-
           const existingMatches = db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST);
           return { data: existingMatches, error: null };
         }
 
         if (fnName === "generate_boxe_tournament") {
-          const { p_admin_id } = args;
-          const ADMIN_ID = "11111111-1111-1111-1111-111111111111";
-          const isAdminUser = p_admin_id === ADMIN_ID || db.user_roles?.some((ur: any) => ur.user_id === p_admin_id && ur.role === "admin");
-          if (!isAdminUser) return { data: null, error: { message: "Non autorizzato" } };
-
           const STAGE5_ID_CONST = "5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c";
           const BOXE_CHALLENGE_ID_CONST = "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0";
 
@@ -4967,15 +5007,19 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             db.boxe_matches = [];
           }
 
-          const existingMatches = db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST);
-          if (existingMatches.length > 0) {
-            return { data: null, error: { message: "Il torneo è già stato generato." } };
+          // Reset existing
+          db.boxe_matches = db.boxe_matches.filter((m: any) => m.challenge_id !== BOXE_CHALLENGE_ID_CONST);
+          if (db.scores) {
+            db.scores = db.scores.filter((s: any) => s.challenge_id !== BOXE_CHALLENGE_ID_CONST);
+          }
+          if (db.team_progress) {
+            db.team_progress = db.team_progress.filter((tp: any) => tp.challenge_id !== BOXE_CHALLENGE_ID_CONST);
           }
 
           // Generate tournament from active teams
           const activeTeams = db.teams.filter((t: any) => t.active !== false);
-          if (activeTeams.length === 0) {
-            return { data: null, error: { message: "Nessuna squadra attiva per generare il torneo." } };
+          if (activeTeams.length < 2) {
+            return { data: null, error: { message: "Sono necessarie almeno 2 squadre attive per generare il torneo." } };
           }
 
           const settings = db.game_settings?.[0];
@@ -5082,7 +5126,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           }
 
           db.boxe_matches.push(...matchesToInsert);
-          logActivity(db, p_admin_id, `Regia ha generato il tabellone del Torneo Boxe`);
+          logActivity(db, args.p_admin_id || "admin", `Regia ha generato il tabellone del Torneo Boxe`);
           saveDb(db);
           return { data: matchesToInsert, error: null };
         }

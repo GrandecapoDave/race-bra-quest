@@ -141,6 +141,56 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
     }
   });
 
+  // 5. Reset tournament mutation
+  const resetTournamentMutation = useMutation({
+    mutationFn: async () => {
+      const adminId = isAdmin ? "11111111-1111-1111-1111-111111111111" : currentUserId;
+      const { data, error } = await supabase.rpc("reset_cornhole_tournament", {
+        p_admin_id: adminId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Torneo Cornhole resettato con successo!");
+      queryClient.invalidateQueries({ queryKey: ["cornhole_tournament"] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["scores"] });
+      queryClient.invalidateQueries({ queryKey: ["progress"] });
+      refetchMatches();
+      refetchSettings();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Errore durante il reset del torneo.");
+    }
+  });
+
+  // 6. Generate tournament mutation
+  const generateTournamentMutation = useMutation({
+    mutationFn: async () => {
+      const adminId = isAdmin ? "11111111-1111-1111-1111-111111111111" : currentUserId;
+      const targetTeamId = selectedSpecialByeTeamId === "none" ? null : selectedSpecialByeTeamId;
+      const { data, error } = await supabase.rpc("generate_cornhole_tournament", {
+        p_admin_id: adminId,
+        p_special_bye_team_id: targetTeamId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Torneo Cornhole generato e accoppiamenti salvati!");
+      queryClient.invalidateQueries({ queryKey: ["cornhole_tournament"] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["scores"] });
+      queryClient.invalidateQueries({ queryKey: ["progress"] });
+      refetchMatches();
+      refetchSettings();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Errore durante la generazione del torneo.");
+    }
+  });
+
   // Resolve team name helper
   const getTeamName = (id: string | null) => {
     if (!id) return "—";
@@ -231,169 +281,215 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
       {/* Regia Controls - Only visible to ADMIN */}
       {isAdmin && (
         <div className="surface border border-primary/20 bg-primary/5 rounded-3xl p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-border/10 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/10 pb-3">
             <h3 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
               <Swords className="size-4 animate-pulse" /> Console Arbitro Regia
             </h3>
-            {lastCompletedMatch && (
-              <button
-                onClick={async () => {
-                  if (window.confirm(`Annullare il risultato dell'ultimo match disputato (${getTeamName(lastCompletedMatch.team1_id)} vs ${getTeamName(lastCompletedMatch.team2_id)})?`)) {
-                    setRollingBackMatchId(lastCompletedMatch.id);
-                    await rollbackMutation.mutateAsync(lastCompletedMatch.id);
-                  }
-                }}
-                disabled={rollbackMutation.isPending}
-                className="text-xs font-bold text-destructive hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
-              >
-                {rollbackMutation.isPending && rollingBackMatchId === lastCompletedMatch.id ? (
-                  <Loader2 className="size-3 animate-spin" />
-                ) : (
-                  <Undo className="size-3" />
-                )}
-                Annulla Ultimo Risultato
-              </button>
-            )}
-          </div>
-
-          {/* ⚡ VANTAGGIO TAPPA 4 */}
-          <div className="bg-zinc-950/40 border border-[#f59e0b]/20 p-5 rounded-2xl space-y-4">
-            <div>
-              <h4 className="text-xs font-black uppercase text-[#f59e0b] tracking-wider flex items-center gap-2">
-                ⚡ Vantaggio Tappa 4
-              </h4>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                La squadra arrivata prima nella Sfida 4.3 può saltare il primo turno del torneo di Cornhole e accedere direttamente al turno successivo.
-              </p>
-            </div>
-
-            {cornholeSettings?.first_place_stage4_3 && (
-              <div className="bg-[#f59e0b]/5 border border-[#f59e0b]/20 px-3 py-2 rounded-xl text-center">
-                <p className="text-[10px] text-muted-foreground font-semibold">
-                  💡 SUGGERIMENTO: Il 1° classificato della Sfida 4.3 è{" "}
-                  <span className="text-[#f59e0b] font-black">{getTeamName(cornholeSettings.first_place_stage4_3)}</span>
-                </p>
-              </div>
-            )}
-
-            {cornholeSettings?.started ? (
-              <div className="bg-muted/10 border border-border/40 p-3.5 rounded-xl text-center">
-                <p className="text-xs font-bold text-muted-foreground uppercase">
-                  🔒 VANTAGGIO BLOCCATO
-                </p>
-                <p className="text-[10px] text-muted-foreground/80 mt-0.5">
-                  Il torneo è già iniziato. Assegnatario attuale:{" "}
-                  <span className="text-foreground font-black">
-                    {cornholeSettings?.special_bye_team_id ? getTeamName(cornholeSettings.special_bye_team_id) : "Nessuno"}
-                  </span>
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block mb-1">
-                    Seleziona squadra per il BYE:
-                  </label>
-                  <select
-                    value={selectedSpecialByeTeamId}
-                    onChange={(e) => setSelectedSpecialByeTeamId(e.target.value)}
-                    disabled={setSpecialByeMutation.isPending}
-                    className="w-full bg-zinc-900 border border-border/80 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-[#f59e0b]/30"
-                  >
-                    <option value="none">Nessun Vantaggio</option>
-                    {allTeams
-                      ?.filter((t: any) => t.active !== false)
-                      .sort((a: any, b: any) => a.nome_squadra.localeCompare(b.nome_squadra))
-                      .map((t: any) => (
-                        <option key={t.id} value={t.id}>
-                          {t.nome_squadra}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+            <div className="flex items-center gap-3">
+              {lastCompletedMatch && !isTournamentCompleted && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const targetTeamId = selectedSpecialByeTeamId === "none" ? null : selectedSpecialByeTeamId;
-                    setSpecialByeMutation.mutate(targetTeamId);
+                  onClick={async () => {
+                    if (window.confirm(`Annullare il risultato dell'ultimo match disputato (${getTeamName(lastCompletedMatch.team1_id)} vs ${getTeamName(lastCompletedMatch.team2_id)})?`)) {
+                      setRollingBackMatchId(lastCompletedMatch.id);
+                      await rollbackMutation.mutateAsync(lastCompletedMatch.id);
+                    }
                   }}
-                  disabled={setSpecialByeMutation.isPending}
-                  className="px-4 py-2.5 sm:mt-5 bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:from-[#d97706] text-zinc-950 font-black rounded-xl text-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                  disabled={rollbackMutation.isPending}
+                  className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer disabled:opacity-50"
                 >
-                  {setSpecialByeMutation.isPending ? (
-                    <Loader2 className="size-3.5 animate-spin" />
+                  {rollbackMutation.isPending && rollingBackMatchId === lastCompletedMatch.id ? (
+                    <Loader2 className="size-3 animate-spin" />
                   ) : (
-                    "CONFERMA BYE"
+                    <Undo className="size-3" />
+                  )}
+                  Annulla Ultimo Risultato
+                </button>
+              )}
+
+              {/* 🔄 PULSANTE RESET TORNEO */}
+              <button
+                type="button"
+                onClick={async () => {
+                  if (window.confirm("⚠️ Sei sicuro di voler resettare il Torneo Cornhole? Tutti i match e i punteggi assegnati a questa sfida verranno azzerati.")) {
+                    await resetTournamentMutation.mutateAsync();
+                  }
+                }}
+                disabled={resetTournamentMutation.isPending}
+                className="px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {resetTournamentMutation.isPending ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <span>🔄 Reset Torneo</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* ⚡ VANTAGGIO TAPPA 4 & CONFIGURAZIONE / AVVIO */}
+          {sortedMatches.length === 0 ? (
+            <div className="space-y-6">
+              <div className="bg-zinc-950/40 border border-[#f59e0b]/20 p-5 rounded-2xl space-y-4">
+                <div>
+                  <h4 className="text-xs font-black uppercase text-[#f59e0b] tracking-wider flex items-center gap-2">
+                    ⚡ Vantaggio Tappa 4
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    La squadra arrivata prima nella Sfida 4.3 può saltare il primo turno del torneo di Cornhole e accedere direttamente al turno successivo.
+                  </p>
+                </div>
+
+                {cornholeSettings?.first_place_stage4_3 && (
+                  <div className="bg-[#f59e0b]/5 border border-[#f59e0b]/20 px-3 py-2 rounded-xl text-center">
+                    <p className="text-[10px] text-muted-foreground font-semibold">
+                      💡 SUGGERIMENTO: Il 1° classificato della Sfida 4.3 è{" "}
+                      <span className="text-[#f59e0b] font-black">{getTeamName(cornholeSettings.first_place_stage4_3)}</span>
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block mb-1">
+                      Seleziona squadra per il BYE:
+                    </label>
+                    <select
+                      value={selectedSpecialByeTeamId}
+                      onChange={(e) => setSelectedSpecialByeTeamId(e.target.value)}
+                      className="w-full bg-zinc-900 border border-border/80 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-[#f59e0b]/30"
+                    >
+                      <option value="none">Nessun Vantaggio</option>
+                      {allTeams
+                        ?.filter((t: any) => t.active !== false)
+                        .sort((a: any, b: any) => a.nome_squadra.localeCompare(b.nome_squadra))
+                        .map((t: any) => (
+                          <option key={t.id} value={t.id}>
+                            {t.nome_squadra}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* 🎲 PULSANTE GENERA ACCOPPIAMENTI & AVVIA TORNEO */}
+              <div className="text-center bg-zinc-950/20 p-6 rounded-2xl border border-border/20 space-y-3">
+                <p className="text-xs text-muted-foreground font-semibold">
+                  Squadre partecipanti attive: <span className="text-foreground font-black">{allTeams?.filter((t: any) => t.active !== false).length}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm("Sei sicuro di voler generare gli accoppiamenti e avviare il Torneo Cornhole?")) {
+                      await generateTournamentMutation.mutateAsync();
+                    }
+                  }}
+                  disabled={generateTournamentMutation.isPending}
+                  className="w-full max-w-sm py-4 px-6 bg-gradient-to-r from-primary to-primary-hover hover:scale-[1.02] text-zinc-950 font-black text-sm rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
+                >
+                  {generateTournamentMutation.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    "🎲 GENERA ACCOPPIAMENTI & AVVIA TORNEO"
                   )}
                 </button>
               </div>
-            )}
-          </div>
-
-          {isTournamentCompleted ? (
-            <div className="text-center py-4 space-y-2">
-              <p className="text-sm font-black text-success uppercase">🏆 Il torneo è terminato!</p>
-              <p className="text-xs text-muted-foreground">Tutti i punti sono stati accreditati correttamente.</p>
-            </div>
-          ) : activeMatches.length > 0 ? (
-            <div className="grid gap-6">
-              {activeMatches.map((match) => (
-                <div
-                  key={match.id}
-                  className="bg-zinc-950/60 border border-border/40 p-5 rounded-2xl space-y-4 text-center"
-                >
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    {getRoundLabel(match.round)} — Match {match.match_index + 1}
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-                    {/* Team 1 Button */}
-                    <div className="flex-1 w-full">
-                      <button
-                        onClick={async () => {
-                          setSubmittingMatchId(match.id);
-                          await submitWinnerMutation.mutateAsync({ matchId: match.id, winnerId: match.team1_id });
-                        }}
-                        disabled={submitWinnerMutation.isPending}
-                        className="w-full py-4 px-5 bg-gradient-to-r from-blue-900/40 to-blue-700/20 hover:from-blue-800/60 border border-blue-500/30 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-blue-950/20"
-                      >
-                        🏆 {getTeamName(match.team1_id)} VINCE
-                      </button>
-                    </div>
-
-                    <span className="text-xs font-black uppercase tracking-widest text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20 shrink-0">
-                      VS
-                    </span>
-
-                    {/* Team 2 Button */}
-                    <div className="flex-1 w-full">
-                      <button
-                        onClick={async () => {
-                          setSubmittingMatchId(match.id);
-                          await submitWinnerMutation.mutateAsync({ matchId: match.id, winnerId: match.team2_id });
-                        }}
-                        disabled={submitWinnerMutation.isPending}
-                        className="w-full py-4 px-5 bg-gradient-to-r from-orange-900/40 to-orange-700/20 hover:from-orange-800/60 border border-orange-500/30 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-950/20"
-                      >
-                        🏆 {getTeamName(match.team2_id)} VINCE
-                      </button>
-                    </div>
-                  </div>
-                  {submitWinnerMutation.isPending && submittingMatchId === match.id && (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-primary font-bold">
-                      <Loader2 className="size-3.5 animate-spin" /> Salvataggio verdetto...
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           ) : (
-            <div className="text-center py-4">
-              <p className="text-xs text-muted-foreground font-bold">
-                In attesa che si completino i match del turno precedente per attivare i successivi.
-              </p>
-            </div>
+            <>
+              {isTournamentCompleted ? (
+                <div className="text-center py-6 space-y-3 bg-zinc-950/40 border border-success/30 rounded-2xl p-6">
+                  <p className="text-base font-black text-success uppercase">🏆 Il torneo Cornhole è terminato!</p>
+                  <p className="text-xs text-muted-foreground">Tutti i punti sono stati accreditati correttamente nella classifica.</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm("Vuoi azzerare il torneo per ripeterlo da capo?")) {
+                        await resetTournamentMutation.mutateAsync();
+                      }
+                    }}
+                    disabled={resetTournamentMutation.isPending}
+                    className="mt-3 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-border text-foreground font-bold rounded-xl text-xs cursor-pointer inline-flex items-center gap-2"
+                  >
+                    {resetTournamentMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : "🔄 Riavvia / Reset Torneo"}
+                  </button>
+                </div>
+              ) : activeMatches.length > 0 ? (
+                <div className="grid gap-6">
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Seleziona il vincitore del match corrente:
+                    </span>
+                  </div>
+                  {activeMatches.map((match) => (
+                    <div
+                      key={match.id}
+                      className="bg-zinc-950/60 border border-border/40 p-5 rounded-2xl space-y-4 text-center"
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        {getRoundLabel(match.round)} — Match {match.match_index + 1}
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+                        {/* Team 1 Button */}
+                        <div className="flex-1 w-full">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setSubmittingMatchId(match.id);
+                              await submitWinnerMutation.mutateAsync({ matchId: match.id, winnerId: match.team1_id });
+                            }}
+                            disabled={submitWinnerMutation.isPending}
+                            className="w-full py-4 px-5 bg-gradient-to-r from-blue-900/40 to-blue-700/20 hover:from-blue-800/60 border border-blue-500/30 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-blue-950/20"
+                          >
+                            🏆 {getTeamName(match.team1_id)} VINCE
+                          </button>
+                        </div>
+
+                        <span className="text-xs font-black uppercase tracking-widest text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20 shrink-0">
+                          VS
+                        </span>
+
+                        {/* Team 2 Button */}
+                        <div className="flex-1 w-full">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setSubmittingMatchId(match.id);
+                              await submitWinnerMutation.mutateAsync({ matchId: match.id, winnerId: match.team2_id });
+                            }}
+                            disabled={submitWinnerMutation.isPending}
+                            className="w-full py-4 px-5 bg-gradient-to-r from-orange-900/40 to-orange-700/20 hover:from-orange-800/60 border border-orange-500/30 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-950/20"
+                          >
+                            🏆 {getTeamName(match.team2_id)} VINCE
+                          </button>
+                        </div>
+                      </div>
+                      {submitWinnerMutation.isPending && submittingMatchId === match.id && (
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-primary font-bold">
+                          <Loader2 className="size-3.5 animate-spin" /> Salvataggio verdetto...
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </>
           )}
+        </div>
+      )}
+
+      {/* Se non sei admin e il torneo non è ancora generato */}
+      {!isAdmin && sortedMatches.length === 0 && (
+        <div className="surface p-8 rounded-2xl border border-border/40 text-center space-y-3">
+          <Loader2 className="size-8 animate-spin text-primary mx-auto" />
+          <h3 className="text-sm font-black uppercase tracking-wider text-foreground">
+            In attesa del sorteggio
+          </h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            La Regia sta configurando il torneo. Gli accoppiamenti verranno generati casualmente e saranno visibili a breve.
+          </p>
         </div>
       )}
 
