@@ -24,18 +24,14 @@ function Landing() {
   return (
     <main className="hero-gradient min-h-screen">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-5 py-16">
-        <span className="animate-float-badge accent-gradient w-fit rounded-full px-3 py-1 text-xs font-extrabold tracking-widest text-accent-foreground uppercase">
-          Edizione Bra · Tappa 1 aperta
-        </span>
-        <h1 className="mt-6 text-6xl leading-none sm:text-8xl">
+        <h1 className="text-6xl leading-none sm:text-8xl">
           Pechino Express
           <span className="block bg-[image:var(--gradient-primary)] bg-clip-text text-transparent">
             Bra
           </span>
         </h1>
-        <p className="mt-5 max-w-lg text-lg text-muted-foreground">
-          La gara urbana gamificata tra le vie di Bra. Crea la squadra, supera checkpoint e
-          minigiochi, scatta la foto ufficiale e domina la classifica live.
+        <p className="mt-5 max-w-lg text-xl sm:text-2xl font-bold text-white/95 tracking-wide">
+          Corri, Sfida, Conquista
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
