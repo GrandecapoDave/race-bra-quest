@@ -111,9 +111,9 @@ export function TeamSetupChallenge({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Errore"),
   });
 
-  // Autosave: any edit to an existing team is persisted to the database.
+  // Autosave: any edit to an existing team is persisted to the database only if challenge is not completed.
   useEffect(() => {
-    if (!team) return;
+    if (!team || completed) return;
     if (firstRender.current) {
       firstRender.current = false;
       return;
@@ -140,10 +140,10 @@ export function TeamSetupChallenge({
       queryClient.invalidateQueries({ queryKey: allTeamsQuery.queryKey });
     }, 800);
     return () => clearTimeout(timeout);
-  }, [name, motto, color, avatar, team, queryClient]);
+  }, [name, motto, color, avatar, team, completed, queryClient]);
 
   async function addMember() {
-    if (!team || memberName.trim().length < 2) return;
+    if (!team || completed || memberName.trim().length < 2) return;
     const { error } = await supabase
       .from("team_members")
       .insert({ team_id: team.id, name: memberName.trim().slice(0, 60) });
@@ -157,6 +157,13 @@ export function TeamSetupChallenge({
 
   return (
     <div className="space-y-5">
+      {completed && (
+        <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-xs font-bold text-success animate-pop-in">
+          <Lock className="size-4 shrink-0" />
+          <span>Configurazione squadra salvata e bloccata per la durata della gara.</span>
+        </div>
+      )}
+
       <div className="grid gap-3">
         <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
           Nome squadra
@@ -164,9 +171,10 @@ export function TeamSetupChallenge({
         <input
           value={name}
           maxLength={40}
+          disabled={completed}
           onChange={(e) => setName(e.target.value)}
           placeholder="Es. I Lupi del Roero"
-          className="rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-ring"
+          className="rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
         />
         <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
           Motto
@@ -174,9 +182,10 @@ export function TeamSetupChallenge({
         <input
           value={motto}
           maxLength={120}
+          disabled={completed}
           onChange={(e) => setMotto(e.target.value)}
           placeholder="Es. Corriamo con il cuore"
-          className="rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-ring"
+          className="rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
@@ -192,14 +201,18 @@ export function TeamSetupChallenge({
             return (
               <button
                 key={a}
-                onClick={() => !isTaken && setAvatar(a)}
-                title={isTaken ? `Già scelto da: ${owner}` : undefined}
-                style={isTaken ? { cursor: "not-allowed", pointerEvents: "all" } : undefined}
+                disabled={completed || isTaken}
+                onClick={() => !completed && !isTaken && setAvatar(a)}
+                title={completed ? "Prova completata (modifiche bloccate)" : isTaken ? `Già scelto da: ${owner}` : undefined}
+                style={{
+                  cursor: completed ? "not-allowed" : isTaken ? "not-allowed" : "pointer",
+                  pointerEvents: "all",
+                }}
                 className={[
                   "relative grid size-12 place-items-center rounded-xl border text-2xl transition-all",
                   isMine
                     ? "border-primary bg-primary/15 scale-105 shadow-md shadow-primary/20"
-                    : isTaken
+                    : isTaken || completed
                     ? "border-border/30 bg-secondary/40 opacity-40 grayscale"
                     : "border-border bg-secondary hover:scale-105 hover:border-primary/50",
                 ].join(" ")}
@@ -228,11 +241,12 @@ export function TeamSetupChallenge({
             return (
               <button
                 key={c}
-                onClick={() => !isTaken && setColor(c)}
-                title={isTaken ? `Già scelto da: ${owner}` : c}
+                disabled={completed || isTaken}
+                onClick={() => !completed && !isTaken && setColor(c)}
+                title={completed ? "Prova completata (modifiche bloccate)" : isTaken ? `Già scelto da: ${owner}` : c}
                 style={{
                   backgroundColor: c,
-                  cursor: isTaken ? "not-allowed" : "pointer",
+                  cursor: completed ? "not-allowed" : isTaken ? "not-allowed" : "pointer",
                   pointerEvents: "all",
                   outline: isMine ? `3px solid white` : "none",
                   outlineOffset: "2px",
@@ -241,13 +255,13 @@ export function TeamSetupChallenge({
                   "relative size-10 rounded-full border-2 transition-all",
                   isMine
                     ? "border-white scale-110 shadow-lg"
-                    : isTaken
+                    : isTaken || completed
                     ? "border-transparent opacity-30 grayscale"
                     : "border-transparent hover:scale-110 hover:border-white/50",
                 ].join(" ")}
                 aria-label={`Colore ${c}${isTaken ? ` (scelto da ${owner})` : ""}`}
               >
-                {isTaken && (
+                {(isTaken || (completed && !isMine)) && (
                   <span className="absolute inset-0 flex items-center justify-center rounded-full">
                     <Lock className="size-3 text-white/70 drop-shadow" />
                   </span>
@@ -270,25 +284,27 @@ export function TeamSetupChallenge({
               </li>
             ))}
           </ul>
-          <div className="mt-2 flex gap-2">
-            <input
-              value={memberName}
-              maxLength={60}
-              onChange={(e) => setMemberName(e.target.value)}
-              placeholder="Aggiungi membro"
-              className="flex-1 rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-            <button
-              onClick={addMember}
-              className="rounded-xl border border-border bg-secondary px-4 text-sm font-bold"
-            >
-              Aggiungi
-            </button>
-          </div>
+          {!completed && (
+            <div className="mt-2 flex gap-2">
+              <input
+                value={memberName}
+                maxLength={60}
+                onChange={(e) => setMemberName(e.target.value)}
+                placeholder="Aggiungi membro"
+                className="flex-1 rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+              <button
+                onClick={addMember}
+                className="rounded-xl border border-border bg-secondary px-4 text-sm font-bold"
+              >
+                Aggiungi
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {savedAt && (
+      {!completed && savedAt && (
         <p className="flex items-center gap-1.5 text-xs text-success">
           <Save className="size-3.5" /> Salvato automaticamente alle {savedAt}
         </p>
