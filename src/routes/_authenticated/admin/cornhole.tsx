@@ -46,17 +46,12 @@ function AdminCornholePage() {
 
   const isCompleted = progressList && progressList.length > 0 && progressList.every((p: any) => p.stato === "completed");
 
-  const handleSaveAndClose = async () => {
-    setIsClosing(true);
+  const handleTournamentRefresh = async () => {
     try {
-      toast.success("Torneo Cornhole salvato e concluso con successo!");
       await queryClient.invalidateQueries();
       await refetchProgress();
-      navigate({ to: "/admin" });
     } catch (e: any) {
-      toast.error(e.message || "Errore durante la chiusura.");
-    } finally {
-      setIsClosing(false);
+      console.error(e);
     }
   };
 
@@ -79,21 +74,29 @@ function AdminCornholePage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <div className="border-b border-border/10 pb-4">
-        <h1 className="text-2xl font-display font-black uppercase tracking-wider text-foreground">
-          Gestione Torneo Cornhole
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Regia console per la Tappa 5 - Sfida 5.1
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/10 pb-4">
+        <div>
+          <h1 className="text-2xl font-display font-black uppercase tracking-wider text-foreground">
+            Gestione Torneo Cornhole
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Regia console per la Tappa 5 - Sfida 5.1
+          </p>
+        </div>
+        <button
+          onClick={() => navigate({ to: "/admin" })}
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground border border-white/10 transition-colors"
+        >
+          ← Torna alla Panoramica
+        </button>
       </div>
 
       <CornholeChallenge
         challenge={challenge}
         team={null}
         completed={isCompleted}
-        onComplete={handleSaveAndClose}
-        completing={isClosing}
+        onComplete={handleTournamentRefresh}
+        completing={false}
       />
     </div>
   );
