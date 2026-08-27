@@ -4654,10 +4654,10 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           }
 
           const N = activeTeams.length;
-          const K = 16;
-          const totalRounds = 4; // Ottavi (0), Quarti (1), Semi (2), Finale (3)
-          const numMatches = 8;
-          const numByes = K - N; // For 9 teams: 16 - 9 = 7 BYEs
+          const K = Math.max(4, Math.pow(2, Math.ceil(Math.log2(N))));
+          const totalRounds = Math.log2(K);
+          const numMatches = K / 2;
+          const numByes = K - N;
           const matchesToInsert: any[] = [];
 
           for (let r = 0; r < totalRounds; r++) {
@@ -5011,10 +5011,10 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           }
 
           const N = activeTeams.length;
-          const K = 16;
-          const totalRounds = 4; // Ottavi (0), Quarti (1), Semi (2), Finale (3)
-          const numMatches = 8;
-          const numByes = K - N; // For 9 teams: 16 - 9 = 7 BYEs
+          const K = Math.max(4, Math.pow(2, Math.ceil(Math.log2(N))));
+          const totalRounds = Math.log2(K);
+          const numMatches = K / 2;
+          const numByes = K - N;
           const matchesToInsert: any[] = [];
 
           for (let r = 0; r < totalRounds; r++) {

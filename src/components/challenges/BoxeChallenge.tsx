@@ -239,6 +239,7 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
     if (r === maxRound - 1) return "Semifinali";
     if (r === maxRound - 2) return "Quarti di Finale";
     if (r === maxRound - 3) return "Ottavi di Finale";
+    if (r === maxRound - 4) return "Sedicesimi di Finale";
     return `Round ${r + 1}`;
   };
 
