@@ -386,7 +386,7 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
                     }
                   }}
                   disabled={generateTournamentMutation.isPending}
-                  className="w-full max-w-sm py-4 px-6 bg-gradient-to-r from-primary to-primary-hover hover:scale-[1.02] text-zinc-950 font-black text-sm rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
+                  className="primary-gradient glow w-full max-w-sm py-4 px-6 text-primary-foreground font-black text-sm rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
                 >
                   {generateTournamentMutation.isPending ? (
                     <Loader2 className="size-4 animate-spin" />

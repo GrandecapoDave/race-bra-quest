@@ -386,9 +386,9 @@ export default function JackpotChallenge({ challengeId, teamId, onComplete }: Ja
                 <button
                   type="button"
                   onClick={() => setShowConfirm(true)}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-hover hover:scale-[1.01] active:scale-95 text-zinc-950 font-black text-sm rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="primary-gradient glow w-full py-4 px-6 text-primary-foreground font-black text-sm rounded-2xl shadow-lg transition-transform hover:scale-[1.01] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="size-4 text-zinc-950" /> 🎰 GIOCA ORA
+                  <Sparkles className="size-4 text-primary-foreground" /> 🎰 GIOCA ORA
                 </button>
               </div>
             ) : (
@@ -448,7 +448,7 @@ export default function JackpotChallenge({ challengeId, teamId, onComplete }: Ja
                 type="button"
                 onClick={() => playMutation.mutate(puntata)}
                 disabled={playMutation.isPending}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-primary to-primary-hover text-zinc-950 font-black text-xs rounded-xl active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 primary-gradient glow text-primary-foreground font-black text-xs rounded-xl active:scale-95 transition-transform cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {playMutation.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
