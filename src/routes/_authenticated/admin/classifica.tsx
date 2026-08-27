@@ -104,15 +104,15 @@ function AdminLiveLeaderboardPage() {
             <table className="w-full text-xs text-left">
               <thead className="bg-muted/10 text-muted-foreground uppercase text-[9px] tracking-wider border-b border-border/30">
                 <tr>
-                  <th className="px-4 py-3 text-center w-16">Pos</th>
-                  <th className="px-4 py-3">Squadra</th>
-                  <th className="px-4 py-3 text-center">Prove Completate</th>
-                  <th className="px-4 py-3 text-center">Punti Sfide</th>
-                  <th className="px-4 py-3 text-center">Punti Cattiveria</th>
-                  <th className="px-4 py-3 text-center">Modificatori</th>
-                  <th className="px-4 py-3 text-center">Punteggio Totale</th>
-                  <th className="px-4 py-3 text-center">Tempo di Percorrenza</th>
-                  <th className="px-4 py-3 text-center w-36">Stato</th>
+                  <th className="px-4 py-3 text-center w-16 whitespace-nowrap">Pos</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Squadra</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap">Prove Completate</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap">Punti Sfide</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap min-w-[120px]">Punti Cattiveria</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap">Modificatori</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap">Punteggio Totale</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap">Tempo di Percorrenza</th>
+                  <th className="px-4 py-3 text-center w-36 whitespace-nowrap">Stato</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/25">
@@ -202,15 +202,20 @@ function AdminLiveLeaderboardPage() {
                         {row.challenges_points ?? 0} PT
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`px-2 py-0.5 rounded font-black text-xs ${
-                          (row.cattiveria_points ?? 0) > 0
-                            ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                            : (row.cattiveria_points ?? 0) < 0
-                            ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                            : "bg-zinc-800 text-zinc-400 border border-zinc-700/30"
-                        }`}>
-                          {row.cattiveria_points > 0 ? `+${row.cattiveria_points}` : row.cattiveria_points ?? 0} 😈
-                        </span>
+                        <div className="flex items-center justify-center">
+                          <span
+                            className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg font-black text-xs whitespace-nowrap shadow-sm ${
+                              (row.cattiveria_points ?? 0) > 0
+                                ? "bg-purple-500/20 text-purple-400 border border-purple-500/40"
+                                : (row.cattiveria_points ?? 0) < 0
+                                ? "bg-red-500/20 text-red-400 border border-red-500/40"
+                                : "bg-zinc-800/80 text-zinc-400 border border-zinc-700/40"
+                            }`}
+                          >
+                            <span>{row.cattiveria_points > 0 ? `+${row.cattiveria_points}` : row.cattiveria_points ?? 0}</span>
+                            <span className="text-sm leading-none select-none">😈</span>
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-4 text-center font-bold text-muted-foreground">
                         {row.modifier_points > 0 ? `+${row.modifier_points}` : row.modifier_points ?? 0} PT
