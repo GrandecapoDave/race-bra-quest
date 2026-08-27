@@ -239,11 +239,14 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
   });
 
   const getRoundLabel = (r: number) => {
-    if (r === maxRound) return "Finale";
-    if (r === maxRound - 1) return "Semifinali";
-    if (r === maxRound - 2) return "Quarti di Finale";
-    if (r === maxRound - 3) return "Ottavi di Finale";
-    if (r === maxRound - 4) return "Sedicesimi di Finale";
+    const hasPrelim = rounds[0] && rounds[1] && rounds[0].length < rounds[1].length;
+    if (hasPrelim && r === 0) return "Turno Preliminare";
+    const stepsFromFinal = maxRound - r;
+    if (stepsFromFinal === 0) return "Finale";
+    if (stepsFromFinal === 1) return "Semifinali";
+    if (stepsFromFinal === 2) return "Quarti di Finale";
+    if (stepsFromFinal === 3) return "Ottavi di Finale";
+    if (stepsFromFinal === 4) return "Sedicesimi di Finale";
     return `Round ${r + 1}`;
   };
 
@@ -673,8 +676,8 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
                               : "text-foreground"
                           }`}
                         >
-                          <span className="truncate max-w-[130px]">
-                            {match.team2_id ? getTeamName(match.team2_id) : match.round === 0 ? "BYE" : "?"}
+                          <span className={`truncate max-w-[130px] ${!match.team2_id ? "italic text-muted-foreground/60" : ""}`}>
+                            {match.team2_id ? getTeamName(match.team2_id) : match.round > 0 ? "In attesa..." : "?"}
                           </span>
                           {isT2Winner && <span className="text-[10px] font-bold text-success">✓</span>}
                         </div>
