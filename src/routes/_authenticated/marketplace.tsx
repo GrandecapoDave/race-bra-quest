@@ -461,8 +461,8 @@ function MarketplacePage() {
         if (data && data.outcome) {
           setWheelOutcome(data.outcome);
           setWheelRotation(0);
-          isSpinning && setIsSpinning(false);
-          showPrize && setShowPrize(false);
+          if (isSpinning) setIsSpinning(false);
+          if (showPrize) setShowPrize(false);
           setIsWheelOpen(true);
         } else {
           toast.error("Errore durante l'estrazione del premio.");

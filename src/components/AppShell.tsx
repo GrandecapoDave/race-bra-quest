@@ -31,7 +31,7 @@ import {
   ShieldAlert,
   FileText,
 } from "lucide-react";
-import { ReactNode, useState, useEffect, useRef } from "react";
+import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnline } from "@/hooks/useAuth";
@@ -143,7 +143,7 @@ function AppShellInner({
   // Manual Refresh state & handlers (especially useful when installed as mobile PWA/standalone)
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleManualRefresh = async () => {
+  const handleManualRefresh = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
@@ -157,7 +157,7 @@ function AppShellInner({
         setIsRefreshing(false);
       }, 500);
     }
-  };
+  }, [isRefreshing, queryClient]);
 
   const handleHardRefresh = () => {
     toast.info("Ricaricamento completo...");
@@ -205,7 +205,7 @@ function AppShellInner({
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, []);
+  }, [handleManualRefresh]);
 
   // Query database state to determine if Marketplace is unlocked and active
   const team = useQuery({ ...myTeamQuery, enabled: !isAdmin, refetchInterval: 3000 });

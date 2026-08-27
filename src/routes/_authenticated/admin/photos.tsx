@@ -22,25 +22,24 @@ function AdminPhotosPage() {
   const [selectedStageId, setSelectedStageId] = useState<string>("all");
   const [selectedChallengeId, setSelectedChallengeId] = useState<string>("all");
 
-  const rawSubmissions = (allSubmissions.data ?? []) as any[];
   const stagesList = (stages.data ?? []) as any[];
-  const challengesList = (challenges.data ?? []) as any[];
 
-  // Filter only photo-capable submissions (tipo_sfida in ('photo', 'living_poster') or has file_upload)
   const allPhotoSubmissions = useMemo(() => {
+    const rawSubmissions = (allSubmissions.data ?? []) as any[];
     return rawSubmissions.filter((s: any) => {
       const type = s.challenges?.tipo_sfida;
       return type === "photo" || type === "living_poster" || Boolean(s.file_upload);
     });
-  }, [rawSubmissions]);
+  }, [allSubmissions.data]);
 
   // Derived available challenges based on selected stage
   const availableChallenges = useMemo(() => {
+    const challengesList = (challenges.data ?? []) as any[];
     if (selectedStageId === "all") {
       return challengesList.filter((c: any) => c.tipo_sfida === "photo" || c.tipo_sfida === "living_poster");
     }
     return challengesList.filter((c: any) => c.stage_id === selectedStageId && (c.tipo_sfida === "photo" || c.tipo_sfida === "living_poster"));
-  }, [challengesList, selectedStageId]);
+  }, [challenges.data, selectedStageId]);
 
   // Filtered submissions based on status, stage, challenge
   const filteredSubmissions = useMemo(() => {

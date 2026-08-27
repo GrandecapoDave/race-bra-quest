@@ -194,7 +194,7 @@ function AdminTeamsPage() {
         ? [(allTeams.data ?? []).find((t: any) => t.id === teamId)].filter(Boolean)
         : (allTeams.data ?? []).filter((t: any) => t.active);
 
-      let errors: string[] = [];
+      const errors: string[] = [];
       for (const team of teamsToUpdate) {
         const { error } = await supabase.rpc("admin_adjust_team_tokens", {
           p_team_id: team.id,
