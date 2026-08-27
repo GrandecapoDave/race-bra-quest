@@ -238,7 +238,7 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
     if (r === maxRound) return "Finale";
     if (r === maxRound - 1) return "Semifinali";
     if (r === maxRound - 2) return "Quarti di Finale";
-    if (r === maxRound - 3) return "Turno Preliminare";
+    if (r === maxRound - 3) return "Ottavi di Finale";
     return `Round ${r + 1}`;
   };
 
@@ -828,7 +828,7 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
                           }`}
                         >
                           <span className="truncate max-w-[130px]">
-                            {match.team2_id ? getTeamName(match.team2_id) : "?"}
+                            {match.team2_id ? getTeamName(match.team2_id) : match.round === 0 ? "BYE" : "?"}
                           </span>
                           {isT2Winner && <span className="text-[10px] font-bold text-success">✓</span>}
                         </div>
