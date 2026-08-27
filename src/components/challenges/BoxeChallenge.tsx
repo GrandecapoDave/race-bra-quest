@@ -235,8 +235,6 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
   });
 
   const getRoundLabel = (r: number) => {
-    const hasPrelim = rounds[0] && rounds[1] && rounds[0].length < rounds[1].length;
-    if (hasPrelim && r === 0) return "Turno Preliminare";
     const stepsFromFinal = maxRound - r;
     if (stepsFromFinal === 0) return "Finale";
     if (stepsFromFinal === 1) return "Semifinali";

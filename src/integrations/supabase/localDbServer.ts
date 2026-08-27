@@ -4654,8 +4654,6 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           }
 
           const N = activeTeams.length;
-          const K_main = Math.pow(2, Math.floor(Math.log2(N)));
-          const P = N - K_main;
           const matchesToInsert: any[] = [];
 
           let pool = [...activeTeams];
@@ -4666,60 +4664,20 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             pool[j] = temp;
           }
 
-          if (P === 0) {
-            const totalRounds = Math.log2(K_main);
-            for (let r = 0; r < totalRounds; r++) {
-              const matchesInRound = K_main / Math.pow(2, r + 1);
-              for (let m = 0; m < matchesInRound; m++) {
-                matchesToInsert.push({
-                  id: "match_cornhole_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
-                  stage_id: STAGE5_ID_CONST,
-                  challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
-                  round: r,
-                  match_index: m,
-                  team1_id: null,
-                  team2_id: null,
-                  winner_id: null,
-                  status: "pending",
-                  completed_at: null,
-                  is_special_bye: false
-                });
-              }
-            }
+          if (specialByeTeamId && pool.some((t: any) => t.id === specialByeTeamId)) {
+            pool = pool.filter((t: any) => t.id !== specialByeTeamId);
+            const r0Matches = Math.floor(pool.length / 2);
 
             let tIdx = 0;
-            for (let m = 0; m < K_main / 2; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
-              if (!match) continue;
-              match.team1_id = pool[tIdx++].id;
-              match.team2_id = pool[tIdx++].id;
-              match.status = "ready";
-            }
-          } else {
-            const totalRounds = 1 + Math.log2(K_main);
-
-            if (specialByeTeamId && pool.some((t: any) => t.id === specialByeTeamId)) {
-              pool = pool.filter((t: any) => t.id !== specialByeTeamId);
-            }
-
-            const prelimTeams = pool.slice(0, 2 * P);
-            const directTeams = [];
-            if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
-              const spTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
-              if (spTeam) directTeams.push(spTeam);
-            }
-            directTeams.push(...pool.slice(2 * P));
-
-            // Round 0: P matches
-            for (let m = 0; m < P; m++) {
+            for (let m = 0; m < r0Matches; m++) {
               matchesToInsert.push({
                 id: "match_cornhole_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
                 stage_id: STAGE5_ID_CONST,
                 challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
                 round: 0,
                 match_index: m,
-                team1_id: prelimTeams[2 * m].id,
-                team2_id: prelimTeams[2 * m + 1].id,
+                team1_id: pool[tIdx++].id,
+                team2_id: pool[tIdx++].id,
                 winner_id: null,
                 status: "ready",
                 completed_at: null,
@@ -4727,45 +4685,111 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               });
             }
 
-            // Subsequent rounds
-            for (let r = 1; r < totalRounds; r++) {
-              const matchesInRound = K_main / Math.pow(2, r);
-              for (let m = 0; m < matchesInRound; m++) {
+            matchesToInsert.push({
+              id: "match_cornhole_1_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 1,
+              match_index: 0,
+              team1_id: specialByeTeamId,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: true
+            });
+
+            matchesToInsert.push({
+              id: "match_cornhole_1_1_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 1,
+              match_index: 1,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
+              id: "match_cornhole_2_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+          } else {
+            const r0Matches = Math.ceil(N / 2);
+            let tIdx = 0;
+            for (let m = 0; m < r0Matches; m++) {
+              if (tIdx + 1 < N) {
                 matchesToInsert.push({
-                  id: "match_cornhole_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  id: "match_cornhole_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
                   stage_id: STAGE5_ID_CONST,
                   challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
-                  round: r,
+                  round: 0,
                   match_index: m,
-                  team1_id: null,
-                  team2_id: null,
+                  team1_id: pool[tIdx++].id,
+                  team2_id: pool[tIdx++].id,
                   winner_id: null,
-                  status: "pending",
+                  status: "ready",
                   completed_at: null,
+                  is_special_bye: false
+                });
+              } else {
+                matchesToInsert.push({
+                  id: "match_cornhole_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  stage_id: STAGE5_ID_CONST,
+                  challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+                  round: 0,
+                  match_index: m,
+                  team1_id: pool[tIdx++].id,
+                  team2_id: null,
+                  winner_id: pool[tIdx - 1].id,
+                  status: "completed",
+                  completed_at: new Date().toISOString(),
                   is_special_bye: false
                 });
               }
             }
 
-            // Seed Round 1
-            let dtIdx = 0;
-            for (let m = 0; m < P; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
-              if (match && directTeams[dtIdx]) {
-                match.team1_id = directTeams[dtIdx++].id;
-                match.team2_id = null;
-                match.status = "pending";
-                match.is_special_bye = match.team1_id === specialByeTeamId;
-              }
+            for (let m = 0; m < 2; m++) {
+              matchesToInsert.push({
+                id: "match_cornhole_1_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                stage_id: STAGE5_ID_CONST,
+                challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+                round: 1,
+                match_index: m,
+                team1_id: null,
+                team2_id: null,
+                winner_id: null,
+                status: "pending",
+                completed_at: null,
+                is_special_bye: false
+              });
             }
-            for (let m = P; m < K_main / 2; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
-              if (match && directTeams[dtIdx] && directTeams[dtIdx + 1]) {
-                match.team1_id = directTeams[dtIdx++].id;
-                match.team2_id = directTeams[dtIdx++].id;
-                match.status = "ready";
-              }
-            }
+
+            matchesToInsert.push({
+              id: "match_cornhole_2_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
           }
 
           db.cornhole_matches.push(...matchesToInsert);
@@ -4805,36 +4829,42 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
 
           const challengeMatches = db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST);
           const maxRound = Math.max(...challengeMatches.map((m: any) => m.round));
-          const r0Matches = challengeMatches.filter((m: any) => m.round === 0);
-          const r1Matches = challengeMatches.filter((m: any) => m.round === 1);
 
           if (match.round < maxRound) {
-            if (match.round === 0 && r0Matches.length < r1Matches.length) {
-              const nextMatch = db.cornhole_matches.find(
-                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === match.match_index
-              );
-              if (nextMatch) {
-                nextMatch.team2_id = p_winner_id;
-                if (nextMatch.team1_id && nextMatch.team2_id) {
-                  nextMatch.status = "ready";
-                }
+            if (match.round === 0) {
+              if (match.match_index === 0) {
+                const nextMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              } else if (match.match_index === 1) {
+                const nextMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 1
+                );
+                if (nextMatch) nextMatch.team1_id = p_winner_id;
+              } else if (match.match_index === 2) {
+                const nextMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 1
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              } else if (match.match_index === 3) {
+                const nextMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              }
+
+              for (const nm of db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1)) {
+                if (nm.team1_id && nm.team2_id) nm.status = "ready";
               }
             } else {
-              const nextRound = match.round + 1;
-              const nextMatchIdx = Math.floor(match.match_index / 2);
               const nextMatch = db.cornhole_matches.find(
-                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === nextRound && m.match_index === nextMatchIdx
+                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
               );
-
               if (nextMatch) {
-                if (match.match_index % 2 === 0) {
-                  nextMatch.team1_id = p_winner_id;
-                } else {
-                  nextMatch.team2_id = p_winner_id;
-                }
-                if (nextMatch.team1_id && nextMatch.team2_id) {
-                  nextMatch.status = "ready";
-                }
+                if (match.match_index === 0) nextMatch.team1_id = p_winner_id;
+                else nextMatch.team2_id = p_winner_id;
+                if (nextMatch.team1_id && nextMatch.team2_id) nextMatch.status = "ready";
               }
             }
           } else {
@@ -5063,8 +5093,6 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           }
 
           const N = activeTeams.length;
-          const K_main = Math.pow(2, Math.floor(Math.log2(N)));
-          const P = N - K_main;
           const matchesToInsert: any[] = [];
 
           let pool = [...activeTeams];
@@ -5075,60 +5103,20 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             pool[j] = temp;
           }
 
-          if (P === 0) {
-            const totalRounds = Math.log2(K_main);
-            for (let r = 0; r < totalRounds; r++) {
-              const matchesInRound = K_main / Math.pow(2, r + 1);
-              for (let m = 0; m < matchesInRound; m++) {
-                matchesToInsert.push({
-                  id: "match_boxe_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
-                  stage_id: STAGE5_ID_CONST,
-                  challenge_id: BOXE_CHALLENGE_ID_CONST,
-                  round: r,
-                  match_index: m,
-                  team1_id: null,
-                  team2_id: null,
-                  winner_id: null,
-                  status: "pending",
-                  completed_at: null,
-                  is_special_bye: false
-                });
-              }
-            }
+          if (specialByeTeamId && pool.some((t: any) => t.id === specialByeTeamId)) {
+            pool = pool.filter((t: any) => t.id !== specialByeTeamId);
+            const r0Matches = Math.floor(pool.length / 2);
 
             let tIdx = 0;
-            for (let m = 0; m < K_main / 2; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 0 && x.match_index === m);
-              if (!match) continue;
-              match.team1_id = pool[tIdx++].id;
-              match.team2_id = pool[tIdx++].id;
-              match.status = "ready";
-            }
-          } else {
-            const totalRounds = 1 + Math.log2(K_main);
-
-            if (specialByeTeamId && pool.some((t: any) => t.id === specialByeTeamId)) {
-              pool = pool.filter((t: any) => t.id !== specialByeTeamId);
-            }
-
-            const prelimTeams = pool.slice(0, 2 * P);
-            const directTeams = [];
-            if (specialByeTeamId && activeTeams.some((t: any) => t.id === specialByeTeamId)) {
-              const spTeam = activeTeams.find((t: any) => t.id === specialByeTeamId);
-              if (spTeam) directTeams.push(spTeam);
-            }
-            directTeams.push(...pool.slice(2 * P));
-
-            // Round 0: P matches
-            for (let m = 0; m < P; m++) {
+            for (let m = 0; m < r0Matches; m++) {
               matchesToInsert.push({
                 id: "match_boxe_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
                 stage_id: STAGE5_ID_CONST,
                 challenge_id: BOXE_CHALLENGE_ID_CONST,
                 round: 0,
                 match_index: m,
-                team1_id: prelimTeams[2 * m].id,
-                team2_id: prelimTeams[2 * m + 1].id,
+                team1_id: pool[tIdx++].id,
+                team2_id: pool[tIdx++].id,
                 winner_id: null,
                 status: "ready",
                 completed_at: null,
@@ -5136,45 +5124,111 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               });
             }
 
-            // Subsequent rounds
-            for (let r = 1; r < totalRounds; r++) {
-              const matchesInRound = K_main / Math.pow(2, r);
-              for (let m = 0; m < matchesInRound; m++) {
+            matchesToInsert.push({
+              id: "match_boxe_1_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 1,
+              match_index: 0,
+              team1_id: specialByeTeamId,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: true
+            });
+
+            matchesToInsert.push({
+              id: "match_boxe_1_1_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 1,
+              match_index: 1,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
+              id: "match_boxe_2_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+          } else {
+            const r0Matches = Math.ceil(N / 2);
+            let tIdx = 0;
+            for (let m = 0; m < r0Matches; m++) {
+              if (tIdx + 1 < N) {
                 matchesToInsert.push({
-                  id: "match_boxe_" + r + "_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  id: "match_boxe_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
                   stage_id: STAGE5_ID_CONST,
                   challenge_id: BOXE_CHALLENGE_ID_CONST,
-                  round: r,
+                  round: 0,
                   match_index: m,
-                  team1_id: null,
-                  team2_id: null,
+                  team1_id: pool[tIdx++].id,
+                  team2_id: pool[tIdx++].id,
                   winner_id: null,
-                  status: "pending",
+                  status: "ready",
                   completed_at: null,
+                  is_special_bye: false
+                });
+              } else {
+                matchesToInsert.push({
+                  id: "match_boxe_0_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                  stage_id: STAGE5_ID_CONST,
+                  challenge_id: BOXE_CHALLENGE_ID_CONST,
+                  round: 0,
+                  match_index: m,
+                  team1_id: pool[tIdx++].id,
+                  team2_id: null,
+                  winner_id: pool[tIdx - 1].id,
+                  status: "completed",
+                  completed_at: new Date().toISOString(),
                   is_special_bye: false
                 });
               }
             }
 
-            // Seed Round 1
-            let dtIdx = 0;
-            for (let m = 0; m < P; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
-              if (match && directTeams[dtIdx]) {
-                match.team1_id = directTeams[dtIdx++].id;
-                match.team2_id = null;
-                match.status = "pending";
-                match.is_special_bye = match.team1_id === specialByeTeamId;
-              }
+            for (let m = 0; m < 2; m++) {
+              matchesToInsert.push({
+                id: "match_boxe_1_" + m + "_" + Math.random().toString(36).substr(2, 9),
+                stage_id: STAGE5_ID_CONST,
+                challenge_id: BOXE_CHALLENGE_ID_CONST,
+                round: 1,
+                match_index: m,
+                team1_id: null,
+                team2_id: null,
+                winner_id: null,
+                status: "pending",
+                completed_at: null,
+                is_special_bye: false
+              });
             }
-            for (let m = P; m < K_main / 2; m++) {
-              const match = matchesToInsert.find((x: any) => x.round === 1 && x.match_index === m);
-              if (match && directTeams[dtIdx] && directTeams[dtIdx + 1]) {
-                match.team1_id = directTeams[dtIdx++].id;
-                match.team2_id = directTeams[dtIdx++].id;
-                match.status = "ready";
-              }
-            }
+
+            matchesToInsert.push({
+              id: "match_boxe_2_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
           }
 
           db.boxe_matches.push(...matchesToInsert);
@@ -5205,36 +5259,42 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
 
           const challengeMatches = db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST);
           const maxRound = Math.max(...challengeMatches.map((m: any) => m.round));
-          const r0Matches = challengeMatches.filter((m: any) => m.round === 0);
-          const r1Matches = challengeMatches.filter((m: any) => m.round === 1);
 
           if (match.round < maxRound) {
-            if (match.round === 0 && r0Matches.length < r1Matches.length) {
-              const nextMatch = db.boxe_matches.find(
-                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === match.match_index
-              );
-              if (nextMatch) {
-                nextMatch.team2_id = p_winner_id;
-                if (nextMatch.team1_id && nextMatch.team2_id) {
-                  nextMatch.status = "ready";
-                }
+            if (match.round === 0) {
+              if (match.match_index === 0) {
+                const nextMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              } else if (match.match_index === 1) {
+                const nextMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 1
+                );
+                if (nextMatch) nextMatch.team1_id = p_winner_id;
+              } else if (match.match_index === 2) {
+                const nextMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 1
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              } else if (match.match_index === 3) {
+                const nextMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              }
+
+              for (const nm of db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1)) {
+                if (nm.team1_id && nm.team2_id) nm.status = "ready";
               }
             } else {
-              const nextRound = match.round + 1;
-              const nextMatchIdx = Math.floor(match.match_index / 2);
               const nextMatch = db.boxe_matches.find(
-                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === nextRound && m.match_index === nextMatchIdx
+                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
               );
-
               if (nextMatch) {
-                if (match.match_index % 2 === 0) {
-                  nextMatch.team1_id = p_winner_id;
-                } else {
-                  nextMatch.team2_id = p_winner_id;
-                }
-                if (nextMatch.team1_id && nextMatch.team2_id) {
-                  nextMatch.status = "ready";
-                }
+                if (match.match_index === 0) nextMatch.team1_id = p_winner_id;
+                else nextMatch.team2_id = p_winner_id;
+                if (nextMatch.team1_id && nextMatch.team2_id) nextMatch.status = "ready";
               }
             }
           } else {
