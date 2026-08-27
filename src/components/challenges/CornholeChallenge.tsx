@@ -239,12 +239,10 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
   });
 
   const getRoundLabel = (r: number) => {
-    const stepsFromFinal = maxRound - r;
-    if (stepsFromFinal === 0) return "Finale";
-    if (stepsFromFinal === 1) return "Semifinali";
-    if (stepsFromFinal === 2) return "Quarti di Finale";
-    if (stepsFromFinal === 3) return "Ottavi di Finale";
-    if (stepsFromFinal === 4) return "Sedicesimi di Finale";
+    if (r === maxRound) return "Finale";
+    if (r === 0) return "Quarti di Finale";
+    if (r === 1) return "Semifinali";
+    if (r === 2) return maxRound === 3 ? "Semifinale" : "Semifinali";
     return `Round ${r + 1}`;
   };
 

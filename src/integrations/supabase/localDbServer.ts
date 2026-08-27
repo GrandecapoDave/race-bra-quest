@@ -4714,10 +4714,38 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             });
 
             matchesToInsert.push({
+              id: "match_cornhole_1_2_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 1,
+              match_index: 2,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
               id: "match_cornhole_2_0_" + Math.random().toString(36).substr(2, 9),
               stage_id: STAGE5_ID_CONST,
               challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
               round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
+              id: "match_cornhole_3_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 3,
               match_index: 0,
               team1_id: null,
               team2_id: null,
@@ -4761,7 +4789,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               }
             }
 
-            for (let m = 0; m < 2; m++) {
+            for (let m = 0; m < 3; m++) {
               matchesToInsert.push({
                 id: "match_cornhole_1_" + m + "_" + Math.random().toString(36).substr(2, 9),
                 stage_id: STAGE5_ID_CONST,
@@ -4782,6 +4810,20 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               stage_id: STAGE5_ID_CONST,
               challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
               round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
+              id: "match_cornhole_3_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: CORNHOLE_CHALLENGE_ID_CONST,
+              round: 3,
               match_index: 0,
               team1_id: null,
               team2_id: null,
@@ -4849,22 +4891,46 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
                 if (nextMatch) nextMatch.team2_id = p_winner_id;
               } else if (match.match_index === 3) {
                 const nextMatch = db.cornhole_matches.find(
-                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 2
                 );
-                if (nextMatch) nextMatch.team2_id = p_winner_id;
+                if (nextMatch) {
+                  nextMatch.team1_id = p_winner_id;
+                  nextMatch.winner_id = p_winner_id;
+                  nextMatch.status = "completed";
+                  nextMatch.completed_at = new Date().toISOString();
+                }
+                const finaleMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 3 && m.match_index === 0
+                );
+                if (finaleMatch) finaleMatch.team2_id = p_winner_id;
               }
 
               for (const nm of db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 1)) {
                 if (nm.team1_id && nm.team2_id) nm.status = "ready";
               }
-            } else {
-              const nextMatch = db.cornhole_matches.find(
-                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+            } else if (match.round === 1) {
+              if (match.match_index === 0) {
+                const nextMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team1_id = p_winner_id;
+              } else if (match.match_index === 1) {
+                const nextMatch = db.cornhole_matches.find(
+                  (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              }
+
+              for (const nm of db.cornhole_matches.filter((m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 2)) {
+                if (nm.team1_id && nm.team2_id) nm.status = "ready";
+              }
+            } else if (match.round === 2) {
+              const finaleMatch = db.cornhole_matches.find(
+                (m: any) => m.challenge_id === CORNHOLE_CHALLENGE_ID_CONST && m.round === 3 && m.match_index === 0
               );
-              if (nextMatch) {
-                if (match.match_index === 0) nextMatch.team1_id = p_winner_id;
-                else nextMatch.team2_id = p_winner_id;
-                if (nextMatch.team1_id && nextMatch.team2_id) nextMatch.status = "ready";
+              if (finaleMatch) {
+                finaleMatch.team1_id = p_winner_id;
+                if (finaleMatch.team1_id && finaleMatch.team2_id) finaleMatch.status = "ready";
               }
             }
           } else {
@@ -5153,10 +5219,38 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             });
 
             matchesToInsert.push({
+              id: "match_boxe_1_2_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 1,
+              match_index: 2,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
               id: "match_boxe_2_0_" + Math.random().toString(36).substr(2, 9),
               stage_id: STAGE5_ID_CONST,
               challenge_id: BOXE_CHALLENGE_ID_CONST,
               round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
+              id: "match_boxe_3_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 3,
               match_index: 0,
               team1_id: null,
               team2_id: null,
@@ -5200,7 +5294,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               }
             }
 
-            for (let m = 0; m < 2; m++) {
+            for (let m = 0; m < 3; m++) {
               matchesToInsert.push({
                 id: "match_boxe_1_" + m + "_" + Math.random().toString(36).substr(2, 9),
                 stage_id: STAGE5_ID_CONST,
@@ -5221,6 +5315,20 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               stage_id: STAGE5_ID_CONST,
               challenge_id: BOXE_CHALLENGE_ID_CONST,
               round: 2,
+              match_index: 0,
+              team1_id: null,
+              team2_id: null,
+              winner_id: null,
+              status: "pending",
+              completed_at: null,
+              is_special_bye: false
+            });
+
+            matchesToInsert.push({
+              id: "match_boxe_3_0_" + Math.random().toString(36).substr(2, 9),
+              stage_id: STAGE5_ID_CONST,
+              challenge_id: BOXE_CHALLENGE_ID_CONST,
+              round: 3,
               match_index: 0,
               team1_id: null,
               team2_id: null,
@@ -5279,22 +5387,46 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
                 if (nextMatch) nextMatch.team2_id = p_winner_id;
               } else if (match.match_index === 3) {
                 const nextMatch = db.boxe_matches.find(
-                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1 && m.match_index === 2
                 );
-                if (nextMatch) nextMatch.team2_id = p_winner_id;
+                if (nextMatch) {
+                  nextMatch.team1_id = p_winner_id;
+                  nextMatch.winner_id = p_winner_id;
+                  nextMatch.status = "completed";
+                  nextMatch.completed_at = new Date().toISOString();
+                }
+                const finaleMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 3 && m.match_index === 0
+                );
+                if (finaleMatch) finaleMatch.team2_id = p_winner_id;
               }
 
               for (const nm of db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 1)) {
                 if (nm.team1_id && nm.team2_id) nm.status = "ready";
               }
-            } else {
-              const nextMatch = db.boxe_matches.find(
-                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+            } else if (match.round === 1) {
+              if (match.match_index === 0) {
+                const nextMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team1_id = p_winner_id;
+              } else if (match.match_index === 1) {
+                const nextMatch = db.boxe_matches.find(
+                  (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2 && m.match_index === 0
+                );
+                if (nextMatch) nextMatch.team2_id = p_winner_id;
+              }
+
+              for (const nm of db.boxe_matches.filter((m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 2)) {
+                if (nm.team1_id && nm.team2_id) nm.status = "ready";
+              }
+            } else if (match.round === 2) {
+              const finaleMatch = db.boxe_matches.find(
+                (m: any) => m.challenge_id === BOXE_CHALLENGE_ID_CONST && m.round === 3 && m.match_index === 0
               );
-              if (nextMatch) {
-                if (match.match_index === 0) nextMatch.team1_id = p_winner_id;
-                else nextMatch.team2_id = p_winner_id;
-                if (nextMatch.team1_id && nextMatch.team2_id) nextMatch.status = "ready";
+              if (finaleMatch) {
+                finaleMatch.team1_id = p_winner_id;
+                if (finaleMatch.team1_id && finaleMatch.team2_id) finaleMatch.status = "ready";
               }
             }
           } else {
