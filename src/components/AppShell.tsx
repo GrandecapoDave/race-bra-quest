@@ -463,54 +463,75 @@ function AppShellInner({
     navigate({ to: "/auth", replace: true });
   }
 
-  const items = isAdmin
-    ? [
+  const adminGroups = [
+    {
+      title: "Monitoraggio",
+      items: [
         { to: "/admin/overview", label: "Panoramica", icon: LayoutDashboard },
         { to: "/admin/classifica", label: "Classifica Live", icon: Trophy },
-        { to: "/admin/resoconto", label: "Resoconto Gara", icon: FileText },
         { to: "/admin/teams", label: "Gestione Squadre", icon: Users },
+        { to: "/admin/analytics", label: "Analisi Gara", icon: BarChart3 },
+        { to: "/admin/resoconto", label: "Resoconto Gara", icon: FileText },
+      ],
+    },
+    {
+      title: "Verifiche Media",
+      items: [
         { to: "/admin/photos", label: "Foto Ricevute", icon: Camera },
         { to: "/admin/posters", label: "Locandine Viventi", icon: Film },
         { to: "/admin/social", label: "Missioni Social", icon: Share2 },
+      ],
+    },
+    {
+      title: "Sfide Speciali",
+      items: [
         { to: "/admin/secret-code", label: "Codice Segreto", icon: Lock },
         { to: "/admin/enigmi", label: "Enigmi", icon: Puzzle },
-        { to: "/admin/cornhole", label: "Sfida 5.1 — Cornhole", icon: Swords },
-        { to: "/admin/boxe", label: "Sfida 5.2 — Boxe", icon: Swords },
-        { to: "/admin/jackpot", label: "Sfida 5.3 — Jackpot", icon: Sparkles },
+        { to: "/admin/cornhole", label: "Cornhole (5.1)", icon: Swords },
+        { to: "/admin/boxe", label: "Boxe (5.2)", icon: Swords },
+        { to: "/admin/jackpot", label: "Jackpot (5.3)", icon: Sparkles },
+      ],
+    },
+    {
+      title: "Marketplace & Malus",
+      items: [
         { to: "/admin/marketplace", label: "Marketplace", icon: ShoppingBag },
-        { to: "/admin/passaparola", label: "Passaparola", icon: PhoneCall },
-        { to: "/admin/partenze", label: "Partenze Anticipate", icon: Zap },
+        { to: "/admin/passaparola", label: "Passaparola", icon: PhoneCall, badge: pendingPassaparolaCount },
+        { to: "/admin/partenze", label: "Partenze", icon: Zap },
         { to: "/admin/penalita", label: "Penalità Punti", icon: Skull },
-        { to: "/admin/tassa", label: "Tassa di Passaggio", icon: RefreshCw },
-        {
-          to: "/admin/settings",
-          label: "Configurazione Gara",
-          icon: Settings,
-        },
-        { to: "/admin/analytics", label: "Analisi Gara", icon: BarChart3 },
-      ]
-    : [
-        { to: "/dashboard", label: "Squadra", icon: LayoutDashboard },
-        ...(hasCompletedTappa1
-          ? [
-              {
-                to: "/marketplace",
-                label: "Marketplace",
-                icon: isMarketplaceActive ? ShoppingBag : Lock,
-              },
-            ]
-          : []),
-        { to: "/classifica", label: isClassificationUnlocked ? "Classifica" : "Classifica 🔒", icon: Trophy },
-        ...(isReportPublished
-          ? [
-              {
-                to: "/resoconto",
-                label: "Resoconto Finale",
-                icon: FileText,
-              },
-            ]
-          : []),
-      ];
+        { to: "/admin/tassa", label: "Tassa Passaggio", icon: RefreshCw },
+      ],
+    },
+    {
+      title: "Regia & Config",
+      items: [
+        { to: "/admin/settings", label: "Configurazione", icon: Settings },
+      ],
+    },
+  ];
+
+  const teamNavItems = [
+    { to: "/dashboard", label: "Squadra", icon: LayoutDashboard },
+    ...(hasCompletedTappa1
+      ? [
+          {
+            to: "/marketplace",
+            label: "Marketplace",
+            icon: isMarketplaceActive ? ShoppingBag : Lock,
+          },
+        ]
+      : []),
+    { to: "/classifica", label: isClassificationUnlocked ? "Classifica" : "Classifica 🔒", icon: Trophy },
+    ...(isReportPublished
+      ? [
+          {
+            to: "/resoconto",
+            label: "Resoconto Finale",
+            icon: FileText,
+          },
+        ]
+      : []),
+  ];
 
   const summaryItems = [
     { to: "/tappe", label: "Tappe", icon: Map },
@@ -554,94 +575,119 @@ function AppShellInner({
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-1">
-          {/* ── Primary nav group ── */}
-          <SidebarGroup className="p-0">
-            <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/35 group-data-[collapsible=icon]:hidden select-none">
-              {isAdmin ? "Regia" : "Gara"}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                {items.map((item) => (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton asChild tooltip={item.label}>
-                      <Link
-                        to={item.to}
-                        onClick={async () => {
-                          closeMobileMenu();
-                          if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
-                            await (supabase as any).rpc("consume_marketplace_transaction", {
-                              p_transaction_id: classificationTx.id,
-                            });
-                            queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
-                            queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
-                          }
-                        }}
-                        activeProps={{ className: activeLinkClass }}
-                        className={inactiveLinkClass}
-                      >
-                        {/* Icon — always rendered, never clipped */}
-                        <item.icon
-                          className="size-[17px] shrink-0"
-                          strokeWidth={1.8}
-                        />
-                        {/* Label — truly removed from layout when collapsed */}
-                        <span className="truncate group-data-[collapsible=icon]:hidden">
-                          {item.label}
-                        </span>
-                        {item.label === "Passaparola" && pendingPassaparolaCount > 0 && (
-                          <span className="ml-auto flex size-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-black text-black shrink-0 group-data-[collapsible=icon]:hidden animate-pulse">
-                            {pendingPassaparolaCount}
-                          </span>
-                        )}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          {isAdmin ? (
+            /* ── Admin categorized navigation ── */
+            adminGroups.map((group, gIdx) => (
+              <SidebarGroup key={group.title} className={gIdx > 0 ? "mt-3 p-0" : "p-0"}>
+                {gIdx > 0 && <div className="mx-2 mb-2 h-px bg-white/[0.06]" />}
+                <SidebarGroupLabel className="mb-1 px-2 py-1 text-[9px] font-black tracking-[0.2em] uppercase text-orange-400/80 group-data-[collapsible=icon]:hidden select-none">
+                  {group.title}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0.5">
+                    {group.items.map((item: any) => (
+                      <SidebarMenuItem key={item.to}>
+                        <SidebarMenuButton asChild tooltip={item.label}>
+                          <Link
+                            to={item.to}
+                            onClick={closeMobileMenu}
+                            activeProps={{ className: activeLinkClass }}
+                            className={inactiveLinkClass}
+                          >
+                            <item.icon className="size-[17px] shrink-0" strokeWidth={1.8} />
+                            <span className="truncate group-data-[collapsible=icon]:hidden text-xs">
+                              {item.label}
+                            </span>
+                            {item.badge && item.badge > 0 ? (
+                              <span className="ml-auto flex size-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-black text-black shrink-0 group-data-[collapsible=icon]:hidden animate-pulse">
+                                {item.badge}
+                              </span>
+                            ) : null}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))
+          ) : (
+            <>
+              {/* ── Primary nav group — teams ── */}
+              <SidebarGroup className="p-0">
+                <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/35 group-data-[collapsible=icon]:hidden select-none">
+                  Gara
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0.5">
+                    {teamNavItems.map((item) => (
+                      <SidebarMenuItem key={item.to}>
+                        <SidebarMenuButton asChild tooltip={item.label}>
+                          <Link
+                            to={item.to}
+                            onClick={async () => {
+                              closeMobileMenu();
+                              if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
+                                await (supabase as any).rpc("consume_marketplace_transaction", {
+                                  p_transaction_id: classificationTx.id,
+                                });
+                                queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+                                queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+                              }
+                            }}
+                            activeProps={{ className: activeLinkClass }}
+                            className={inactiveLinkClass}
+                          >
+                            <item.icon className="size-[17px] shrink-0" strokeWidth={1.8} />
+                            <span className="truncate group-data-[collapsible=icon]:hidden">
+                              {item.label}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
 
-          {/* ── Summary nav group — teams only ── */}
-          {!isAdmin && (
-            <SidebarGroup className="mt-4 p-0">
-              <div className="mx-2 mb-3 h-px bg-white/[0.07]" />
-              <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/35 group-data-[collapsible=icon]:hidden select-none">
-                Riepilogo
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  {summaryItems.map((item) => (
-                    <SidebarMenuItem key={item.to}>
-                      <SidebarMenuButton asChild tooltip={item.label}>
-                        <Link
-                          to={item.to}
-                          onClick={async () => {
-                            closeMobileMenu();
-                            if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
-                              await (supabase as any).rpc("consume_marketplace_transaction", {
-                                p_transaction_id: classificationTx.id,
-                              });
-                              queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
-                              queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
-                            }
-                          }}
-                          activeProps={{ className: activeLinkClass }}
-                          className={inactiveLinkClass}
-                        >
-                          <item.icon
-                            className="size-[17px] shrink-0"
-                            strokeWidth={1.8}
-                          />
-                          <span className="truncate group-data-[collapsible=icon]:hidden">
-                            {item.label}
-                          </span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+              {/* ── Summary nav group — teams only ── */}
+              <SidebarGroup className="mt-4 p-0">
+                <div className="mx-2 mb-3 h-px bg-white/[0.07]" />
+                <SidebarGroupLabel className="mb-1 px-2 py-1.5 text-[9px] font-bold tracking-[0.22em] uppercase text-white/35 group-data-[collapsible=icon]:hidden select-none">
+                  Riepilogo
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0.5">
+                    {summaryItems.map((item) => (
+                      <SidebarMenuItem key={item.to}>
+                        <SidebarMenuButton asChild tooltip={item.label}>
+                          <Link
+                            to={item.to}
+                            onClick={async () => {
+                              closeMobileMenu();
+                              if (currentPath === "/classifica" && item.to !== "/classifica" && classificationTx?.id) {
+                                await (supabase as any).rpc("consume_marketplace_transaction", {
+                                  p_transaction_id: classificationTx.id,
+                                });
+                                queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+                                queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
+                              }
+                            }}
+                            activeProps={{ className: activeLinkClass }}
+                            className={inactiveLinkClass}
+                          >
+                            <item.icon className="size-[17px] shrink-0" strokeWidth={1.8} />
+                            <span className="truncate group-data-[collapsible=icon]:hidden">
+                              {item.label}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </>
           )}
         </SidebarContent>
 

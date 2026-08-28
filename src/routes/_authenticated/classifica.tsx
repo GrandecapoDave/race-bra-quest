@@ -259,16 +259,16 @@ function ClassificaPage() {
 
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="size-14 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 flex items-center justify-center mx-auto animate-pulse">
-            <Trophy className="size-7" />
+          <div className="size-16 rounded-2xl gold-gradient text-white flex items-center justify-center mx-auto shadow-lg shadow-amber-500/25 animate-pop-in">
+            <Trophy className="size-8" />
           </div>
-          <h1 className="text-3xl font-display font-black uppercase tracking-wider text-foreground">
+          <h1 className="text-3xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground">
             Classifica Generale
           </h1>
           {timestamp && (
-            <p className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 bg-zinc-900/60 py-1.5 px-3 rounded-full border border-zinc-800/80 w-fit mx-auto">
-              <Clock className="size-3.5 text-orange-400" />
-              Snapshot rilevato alle{" "}
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest flex items-center justify-center gap-1.5 bg-secondary/80 py-1.5 px-3.5 rounded-full border border-border/50 w-fit mx-auto shadow-inner">
+              <Clock className="size-3.5 text-primary" />
+              Snapshot live delle{" "}
               {new Date(timestamp).toLocaleTimeString("it-IT", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -278,11 +278,47 @@ function ClassificaPage() {
           )}
         </div>
 
-        {/* Snapshot list */}
-        <div className="surface border rounded-3xl bg-[#070d1e]/40 p-5 shadow-2xl relative overflow-hidden space-y-3">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
+        {/* TOP 3 PODIUM (Se ci sono almeno 3 squadre) */}
+        {displayRows.length >= 3 && (
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end pt-2 pb-2">
+            {/* 2° Posto (Argento) */}
+            <div className="podium-card-2 rounded-2xl p-3 sm:p-4 text-center flex flex-col items-center order-1">
+              <span className="text-2xl sm:text-3xl">🥈</span>
+              <span className="text-[10px] font-black uppercase text-slate-300 mt-1 truncate max-w-full">
+                {displayRows[1]?.name || displayRows[1]?.nome_squadra}
+              </span>
+              <span className="text-sm sm:text-base font-black font-mono text-foreground mt-0.5">
+                {displayRows[1]?.total_points} PT
+              </span>
+            </div>
 
-          <div className="divide-y divide-border/10">
+            {/* 1° Posto (Oro - Più alto) */}
+            <div className="podium-card-1 rounded-2xl p-4 sm:p-5 text-center flex flex-col items-center order-2 pb-6 shadow-xl">
+              <span className="text-3xl sm:text-4xl animate-bounce">🥇</span>
+              <span className="text-xs font-black uppercase text-amber-300 mt-1 truncate max-w-full">
+                {displayRows[0]?.name || displayRows[0]?.nome_squadra}
+              </span>
+              <span className="text-base sm:text-lg font-black font-mono text-amber-400 mt-0.5 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+                {displayRows[0]?.total_points} PT
+              </span>
+            </div>
+
+            {/* 3° Posto (Bronzo) */}
+            <div className="podium-card-3 rounded-2xl p-3 sm:p-4 text-center flex flex-col items-center order-3">
+              <span className="text-2xl sm:text-3xl">🥉</span>
+              <span className="text-[10px] font-black uppercase text-amber-600 mt-1 truncate max-w-full">
+                {displayRows[2]?.name || displayRows[2]?.nome_squadra}
+              </span>
+              <span className="text-sm sm:text-base font-black font-mono text-foreground mt-0.5">
+                {displayRows[2]?.total_points} PT
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Snapshot list */}
+        <div className="hud-panel p-4 sm:p-5 space-y-3">
+          <div className="divide-y divide-border/20">
             {displayRows.map((row: any, index: number) => {
               const position = index + 1;
               const isCurrentTeam = row.team_id === team?.id;
@@ -292,32 +328,35 @@ function ClassificaPage() {
               return (
                 <div
                   key={row.team_id}
-                  className={`flex items-center justify-between py-3.5 px-2 transition-all rounded-xl ${
-                    isCurrentTeam ? "bg-white/5 border border-white/10 font-bold" : "hover:bg-zinc-900/30"
+                  className={`flex items-center justify-between py-3 px-3 transition-all rounded-xl ${
+                    isCurrentTeam
+                      ? "hud-panel-glow border-primary/50 bg-primary/10 shadow-lg shadow-primary/10 scale-[1.02] my-1.5"
+                      : "hover:bg-secondary/40"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 text-center text-sm font-black text-zinc-400">{medal}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm shrink-0" style={{ color: row.color }}>
-                        ●
-                      </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-7 text-center text-sm font-black text-muted-foreground shrink-0">{medal}</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="size-3 rounded-full shrink-0 shadow-sm"
+                        style={{ backgroundColor: row.color || "#f97316" }}
+                      />
                       <span
-                        className={`text-xs uppercase font-extrabold ${
-                          isCurrentTeam ? "text-white" : "text-zinc-300"
+                        className={`text-xs sm:text-sm uppercase font-black truncate ${
+                          isCurrentTeam ? "text-primary" : "text-foreground"
                         }`}
                       >
                         {row.name || row.nome_squadra}
-                        {isCurrentTeam && (
-                          <span className="ml-1.5 text-[8px] bg-orange-500 text-black px-1 py-0.5 rounded font-black tracking-wide">
-                            TU
-                          </span>
-                        )}
                       </span>
+                      {isCurrentTeam && (
+                        <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-full font-black tracking-wide shrink-0">
+                          LA TUA SQUADRA
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs font-black text-foreground font-mono">
+                  <div className="text-right shrink-0 pl-2">
+                    <span className="text-xs sm:text-sm font-black text-foreground font-mono">
                       {row.total_points} PT
                     </span>
                   </div>
@@ -326,12 +365,10 @@ function ClassificaPage() {
             })}
           </div>
 
-          <div className="bg-yellow-950/10 border border-yellow-500/10 p-3 rounded-2xl text-[10px] text-zinc-500 flex items-start gap-2 leading-relaxed">
-            <AlertTriangle className="size-4 text-yellow-500 shrink-0 mt-0.5" />
+          <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-xl text-[11px] text-amber-200/90 flex items-start gap-2.5 leading-relaxed mt-4">
+            <AlertTriangle className="size-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <strong>ATTENZIONE:</strong> Questa classifica mostra la situazione esatta al momento
-              dell'attivazione del Bonus. Navigare verso un'altra sezione o chiudere questa
-              pagina <strong>consumerà definitivamente il Bonus</strong>.
+              <strong>ATTENZIONE:</strong> Questa classifica mostra la situazione esatta al momento dell'attivazione del Bonus. Uscire da questa schermata o premere "Chiudi Classifica" <strong>consumerà definitivamente il Bonus</strong>.
             </div>
           </div>
         </div>

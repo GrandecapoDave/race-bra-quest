@@ -369,139 +369,126 @@ function Dashboard() {
           </div>
         )}
 
-        {/* TEAM HEADER CARD */}
+        {/* TEAM COCKPIT HERO (UI/UX Pro Max Edition) */}
         <section
-          className="surface animate-pop-in relative overflow-hidden p-4 sm:p-6 bg-card/45 backdrop-blur-md transition-all duration-300 w-full min-w-0 box-border"
+          className="hud-panel-glow animate-pop-in relative overflow-hidden p-5 sm:p-7 transition-all duration-300 w-full min-w-0 box-border"
           style={{
-            borderColor: team.data?.color ? `${team.data.color}44` : undefined,
-            borderLeft: team.data?.color ? `4px solid ${team.data.color}` : undefined,
+            borderColor: team.data?.color ? `${team.data.color}66` : undefined,
           }}
         >
-          {/* BADGES CONTAINER */}
-          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || activeShield || activePartenza || usedPartenza) && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-3 sm:absolute sm:top-4 sm:right-4 sm:mb-0 sm:flex-col sm:items-end z-10">
+          {/* BADGES CONTAINER (Floating top-right) */}
+          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || activeShield || activePassaparola || pendingPassaparola || activePartenza || usedPartenza) && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-3 sm:absolute sm:top-5 sm:right-5 sm:mb-0 sm:flex-col sm:items-end z-10">
               {activeEnigma && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
                   <span>🧩 ENIGMA EXTRA</span>
                 </div>
               )}
-              {solvedEnigma && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
-                  <span>🧩 ENIGMA RISOLTO</span>
-                </div>
-              )}
               {activeRuota && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
                   <span>🎡 RUOTA SFORTUNATA</span>
                 </div>
               )}
-              {solvedRuota && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
-                  <span>🎡 RUOTA COMPLETATA</span>
-                </div>
-              )}
               {isTeamFrozen && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
                   <span>❄️ CONGELATO</span>
                 </div>
               )}
               {activeShield && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                  <Shield className="size-3 text-blue-400 stroke-[3]" />
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                  <Shield className="size-3 text-blue-300 stroke-[3]" />
                   <span>SCUDO ATTIVO</span>
                 </div>
               )}
               {activePassaparola && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
                   <PhoneCall className="size-3 stroke-[3]" />
                   <span>PASSAPAROLA DISP.</span>
                 </div>
               )}
-              {pendingPassaparola && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                  <Clock className="size-3 animate-spin" />
-                  <span>ATTESA REGIA</span>
-                </div>
-              )}
-              {activePartenza && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                  <Zap className="size-3 stroke-[3]" />
-                  <span>−2:00 DISP.</span>
-                </div>
-              )}
-              {usedPartenza && (
-                <div className="flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-zinc-900/60 border border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-sm">
-                  <Zap className="size-3 opacity-50" />
-                  <span>−2:00 USATO</span>
-                </div>
-              )}
             </div>
           )}
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+
+          {/* TEAM PROFILE ROW */}
+          <div className="flex items-center gap-3.5 sm:gap-5 min-w-0">
             <div
-              className="grid size-14 sm:size-16 shrink-0 place-items-center rounded-2xl text-3xl sm:text-4xl shadow-md"
+              className="grid size-16 sm:size-20 shrink-0 place-items-center rounded-2xl text-3xl sm:text-4xl shadow-xl border-2"
               style={{ 
-                backgroundColor: (team.data?.color ?? "#f97316") + "22",
-                border: `1px solid ${(team.data?.color ?? "#f97316")}44`
+                backgroundColor: (team.data?.color ?? "#f97316") + "26",
+                borderColor: team.data?.color ?? "#f97316",
+                boxShadow: `0 0 20px -3px ${(team.data?.color ?? "#f97316")}55`
               }}
             >
               {team.data?.avatar_url ?? "🏳️"}
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide leading-tight">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-md">
+                  {position === 1 ? "🥇 In Testa" : position === 2 ? "🥈 2° Posto" : position === 3 ? "🥉 3° Posto" : position > 0 ? `#${position} in Classifica` : "Gara"}
+                </span>
+              </div>
+              <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground mt-1 drop-shadow-sm">
                 {team.data?.name ?? "Nessuna squadra"}
               </h1>
-              <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold mt-0.5">
-                {team.data?.motto ?? "Crea una squadra per iniziare la gara"}
+              <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold">
+                {team.data?.motto ?? "In corsa per la vittoria"}
               </p>
             </div>
           </div>
 
-          {/* STATS GRID */}
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-            <Stat
-              icon={<Trophy className="size-4 text-gold" />}
-              label="Posizione"
-              value={position > 0 ? `#${position}` : "—"}
-            />
-            <Stat
-              icon={<Sparkles className="size-4 text-primary" />}
-              label="Punti"
-              value={String(myScore?.total_points ?? 0)}
-            />
-            <div className="rounded-xl bg-background/35 border border-border/30 p-3 sm:p-3.5 shadow-sm hover:border-primary/20 hover:bg-background/50 transition-all duration-300 flex flex-col justify-between">
-              <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold tracking-wider text-muted-foreground uppercase">
+          {/* GAME METERS / GAUGES (Punti, Token, Tempo) */}
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+            {/* PUNTI */}
+            <div className="rounded-xl bg-secondary/60 border border-border/50 p-3 sm:p-4 text-center flex flex-col justify-between shadow-inner">
+              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+                <Sparkles className="size-3.5 text-primary" />
+                <span>Punti</span>
+              </div>
+              <div className="font-display text-2xl sm:text-4xl font-black text-foreground mt-0.5 tracking-tight">
+                {myScore?.total_points ?? 0}
+              </div>
+            </div>
+
+            {/* TOKEN */}
+            <div className="rounded-xl bg-secondary/60 border border-border/50 p-3 sm:p-4 text-center flex flex-col justify-between shadow-inner">
+              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+                <Coins className="size-3.5 text-amber-400" />
+                <span>Token</span>
+              </div>
+              <div className="font-display text-2xl sm:text-4xl font-black text-amber-400 mt-0.5 tracking-tight drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+                {team.data?.token_balance ?? 50}
+              </div>
+            </div>
+
+            {/* TEMPO */}
+            <div className="rounded-xl bg-secondary/60 border border-border/50 p-3 sm:p-4 text-center flex flex-col justify-between shadow-inner">
+              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">
                 <Timer className="size-3.5 text-accent" />
                 <span>Tempo</span>
               </div>
-              <div className="font-display text-2xl sm:text-3xl font-bold mt-1 text-foreground tracking-wide leading-none">
+              <div className="font-display text-2xl sm:text-4xl font-black text-foreground mt-0.5 tracking-tight">
                 {totalElapsed !== null ? formatDuration(totalElapsed) : "--:--"}
               </div>
             </div>
-            <Stat
-              icon={<Coins className="size-4 text-orange-500" />}
-              label="Token"
-              value={String(team.data?.token_balance ?? 50)}
-            />
           </div>
 
-          {/* PROGRESS */}
-          <div className="mt-6 pt-5 border-t border-border/40">
-            <div className="flex justify-between text-xs font-bold text-muted-foreground">
-              <span className="uppercase tracking-wider text-[10px]">Progresso Gara</span>
-              <span>
-                {completedCount}/{allChallenges.length} prove
+          {/* OVERALL RACE PROGRESS */}
+          <div className="mt-5 pt-4 border-t border-border/40">
+            <div className="flex justify-between items-center text-xs font-black text-muted-foreground">
+              <span className="uppercase tracking-widest text-[10px]">Avanzamento Tappe</span>
+              <span className="text-foreground">
+                {completedCount}/{allChallenges.length} prove ({Math.round(percent)}%)
               </span>
             </div>
-            <ProgressBar value={percent} className="mt-2" />
+            <ProgressBar value={percent} className="mt-2 h-3" />
           </div>
         </section>
 
         {/* PASSAPAROLA ACTIVE / PENDING / ANSWERED BANNER */}
         {activePassaparola && (
-          <div className="surface p-4.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/5 animate-fade-in">
+          <div className="hud-panel p-4.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+              <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
                 <PhoneCall className="size-5" />
               </div>
               <div className="space-y-0.5">
@@ -515,16 +502,16 @@ function Dashboard() {
             </div>
             <button
               onClick={() => setUsePassaparolaTx(activePassaparola)}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-orange-500 text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
             >
-              <PhoneCall className="size-3.5" />
+              <PhoneCall className="size-4" />
               <span>Fai la Domanda</span>
             </button>
           </div>
         )}
 
         {pendingPassaparola && (
-          <div className="surface p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
+          <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
                 <Clock className="size-3.5" />
@@ -539,7 +526,7 @@ function Dashboard() {
         )}
 
         {answeredPassaparola && (
-          <div className="surface p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
+          <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
                 <PhoneCall className="size-3.5 text-emerald-400" />
@@ -559,39 +546,56 @@ function Dashboard() {
           </div>
         )}
 
-        {/* PROVA CORRENTE (QUEST) */}
+        {/* MEGA-CARD: MISSIONE ATTIVA / PROVA CORRENTE (Ergonomica a 58px) */}
         <section className="space-y-2.5">
-          <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wider text-muted-foreground/80 pl-1">
-            Prova corrente
-          </h2>
-          {nextChallenge && currentStage ? (
-            <Link
-              to="/challenge/$challengeId"
-              params={{ challengeId: nextChallenge.id }}
-              className="surface border-primary/40 bg-gradient-to-r from-card to-background/25 hover:border-primary/70 transition-all duration-300 active:scale-[0.99] flex items-center justify-between gap-4 p-5 hover:shadow-lg hover:shadow-primary/5 group"
-            >
-              <div className="space-y-1">
-                <span className="text-[10px] font-extrabold tracking-widest text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">
-                  {currentStage.title}
-                </span>
-                <p className="text-xl font-extrabold text-foreground group-hover:text-primary transition-colors pt-1">
-                  {nextChallenge.title}
-                </p>
-                <p className="text-xs text-muted-foreground font-semibold">
-                  {nextChallenge.type === "jackpot" ? "Scommessa Bonus (Facoltativa)" : `${nextChallenge.points} punti in palio`}
-                </p>
-              </div>
-              <span className="primary-gradient grid size-12 shrink-0 place-items-center rounded-full text-primary-foreground shadow-md transition-transform group-hover:scale-110 group-hover:animate-pulse">
-                {nextChallenge.type === "jackpot" ? "🎰" : <Flag className="size-5" />}
+          <div className="flex items-center justify-between pl-1">
+            <h2 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+              <span className="inline-block size-2 rounded-full bg-primary animate-ping" />
+              Missione Attiva
+            </h2>
+            {nextChallenge && (
+              <span className="text-[11px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25">
+                +{nextChallenge.points} Punti
               </span>
-            </Link>
-          ) : (
-            <div className="surface p-5 flex items-center gap-3 bg-card/20 border-success/35">
-              <div className="size-8 rounded-full bg-success/20 flex items-center justify-center text-success shrink-0">
-                <Check className="size-4" />
+            )}
+          </div>
+
+          {nextChallenge && currentStage ? (
+            <div className="hud-panel-glow p-5 sm:p-6 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1 min-w-0">
+                  <span className="text-[10px] font-black tracking-widest text-accent uppercase bg-accent/15 px-2 py-0.5 rounded border border-accent/30">
+                    {currentStage.title}
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-foreground pt-1 tracking-tight leading-tight">
+                    {nextChallenge.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-semibold">
+                    {nextChallenge.description || (nextChallenge.type === "jackpot" ? "Scommessa Bonus (Facoltativa)" : "Completa la prova per sbloccare il prossimo checkpoint.")}
+                  </p>
+                </div>
+                <span className="primary-gradient grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg shadow-primary/30">
+                  {nextChallenge.type === "jackpot" ? "🎰" : <Flag className="size-6" />}
+                </span>
               </div>
-              <p className="text-sm font-semibold text-success/90">
-                Tutte le prove disponibili sono state completate. Complimenti!
+
+              {/* GIANT THUMB-FRIENDLY CTA (58px) */}
+              <Link
+                to="/challenge/$challengeId"
+                params={{ challengeId: nextChallenge.id }}
+                className="w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-black text-base uppercase tracking-wider shadow-lg shadow-primary/30 hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer"
+              >
+                <span>VAI ALLA PROVA</span>
+                <ChevronRight className="size-5 stroke-[3]" />
+              </Link>
+            </div>
+          ) : (
+            <div className="hud-panel p-6 flex items-center gap-3.5 bg-emerald-950/20 border-emerald-500/30">
+              <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30">
+                <Check className="size-5 stroke-[3]" />
+              </div>
+              <p className="text-sm font-bold text-emerald-300">
+                Tutte le prove disponibili sono state completate. Ottimo lavoro!
               </p>
             </div>
           )}
@@ -614,9 +618,9 @@ function Dashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Bonus Acquistati */}
-              <div className="surface p-4.5 rounded-2xl bg-zinc-950/20 border-zinc-800 space-y-2 flex flex-col justify-between">
+              <div className="hud-panel p-4 rounded-2xl space-y-2 flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-emerald-400 block">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 block">
                     🎁 Bonus Acquistati
                   </span>
                   <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
@@ -628,9 +632,9 @@ function Dashboard() {
                         const name = item?.nome || b.item_id;
                         const cost = b.costo ?? b.costo_token ?? (item as any)?.costo ?? 0;
                         return (
-                          <div key={b.id} className="text-xs font-bold text-foreground bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80 flex items-center justify-between gap-1">
+                          <div key={b.id} className="text-xs font-bold text-foreground bg-secondary/70 px-2.5 py-1.5 rounded-lg border border-border/50 flex items-center justify-between gap-1">
                             <span className="truncate">{name}</span>
-                            <span className="text-[10px] text-emerald-400 font-extrabold shrink-0">-{cost} 🪙</span>
+                            <span className="text-[10px] text-emerald-400 font-black shrink-0">-{cost} 🪙</span>
                           </div>
                         );
                       })
@@ -640,9 +644,9 @@ function Dashboard() {
               </div>
 
               {/* Malus Inviati */}
-              <div className="surface p-4.5 rounded-2xl bg-zinc-950/20 border-zinc-800 space-y-2 flex flex-col justify-between">
+              <div className="hud-panel p-4 rounded-2xl space-y-2 flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-rose-400 block">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-rose-400 block">
                     ⚔️ Malus Inviati
                   </span>
                   <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
@@ -655,12 +659,12 @@ function Dashboard() {
                         const target = allTeams.find((t) => t.id === m.target_team_id)?.nome_squadra || "Sconosciuta";
                         const cost = m.costo ?? m.costo_token ?? (item as any)?.costo ?? 0;
                         return (
-                          <div key={m.id} className="text-[11px] font-bold text-foreground bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80 flex flex-col gap-0.5 min-w-0">
+                          <div key={m.id} className="text-[11px] font-bold text-foreground bg-secondary/70 px-2.5 py-1.5 rounded-lg border border-border/50 flex flex-col gap-0.5 min-w-0">
                             <div className="flex items-center justify-between gap-1">
                               <span className="truncate">{name}</span>
-                              <span className="text-[10px] text-rose-400 font-extrabold shrink-0">-{cost} 🪙</span>
+                              <span className="text-[10px] text-rose-400 font-black shrink-0">-{cost} 🪙</span>
                             </div>
-                            <span className="text-[9px] text-rose-500 font-extrabold truncate">→ {target}</span>
+                            <span className="text-[9px] text-rose-400/90 font-extrabold truncate">→ {target}</span>
                           </div>
                         );
                       })
@@ -670,9 +674,9 @@ function Dashboard() {
               </div>
 
               {/* Malus Ricevuti */}
-              <div className="surface p-4.5 rounded-2xl bg-zinc-950/20 border-zinc-800 space-y-2 flex flex-col justify-between">
+              <div className="hud-panel p-4 rounded-2xl space-y-2 flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-amber-500 block">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 block">
                     ⚠️ Malus Ricevuti
                   </span>
                   <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
@@ -684,12 +688,12 @@ function Dashboard() {
                         const buyer = allTeams.find((t) => t.id === (m.buyer_team_id || m.team_id))?.nome_squadra || "Sconosciuta";
                         const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
                         return (
-                          <div key={m.id} className="text-[11px] font-bold text-foreground bg-zinc-900/40 px-2 py-1.5 rounded-lg border border-zinc-800/80 flex flex-col gap-0.5 min-w-0">
+                          <div key={m.id} className="text-[11px] font-bold text-foreground bg-secondary/70 px-2.5 py-1.5 rounded-lg border border-border/50 flex flex-col gap-0.5 min-w-0">
                             <div className="flex items-center justify-between gap-1">
                               <span className="truncate">{name}</span>
-                              {isBlocked && <span className="text-[9px] text-emerald-400 font-extrabold shrink-0">🛡️ Bloccato</span>}
+                              {isBlocked && <span className="text-[9px] text-emerald-400 font-black shrink-0">🛡️ Bloccato</span>}
                             </div>
-                            <span className="text-[9px] text-amber-500 font-extrabold truncate">← {buyer}</span>
+                            <span className="text-[9px] text-amber-400 font-extrabold truncate">← {buyer}</span>
                           </div>
                         );
                       })
@@ -703,8 +707,8 @@ function Dashboard() {
 
         {/* TAPPE LIST */}
         <section className="space-y-3">
-          <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wider text-muted-foreground/80 pl-1">
-            Tappe
+          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground pl-1">
+            Tappe di Gara
           </h2>
           <div className="space-y-3">
             {(stages.data ?? []).map((stage) => {
@@ -719,33 +723,33 @@ function Dashboard() {
                   key={stage.id}
                   to="/stage/$stageId"
                   params={{ stageId: stage.id }}
-                  className={`surface block p-4.5 transition-all duration-200 hover:scale-[1.006] active:scale-[0.99] group ${
-                    isStageDone ? "border-success/30 bg-success/5" : "hover:border-accent/40"
+                  className={`hud-panel block p-4.5 transition-all duration-200 active:scale-[0.98] group ${
+                    isStageDone ? "border-emerald-500/40 bg-emerald-950/15" : "hover:border-primary/50"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="space-y-1 min-w-0">
-                      <p className={`text-[9px] font-extrabold tracking-widest uppercase ${
-                        isStageDone ? "text-success" : "text-accent"
+                      <p className={`text-[9px] font-black tracking-widest uppercase ${
+                        isStageDone ? "text-emerald-400" : "text-primary"
                       }`}>
                         Tappa {stage.order_index}
                       </p>
-                      <p className="text-lg font-extrabold text-foreground truncate group-hover:text-accent transition-colors">
+                      <p className="text-base sm:text-lg font-black text-foreground truncate group-hover:text-primary transition-colors">
                         {stage.title}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        isStageDone ? "bg-success/20 text-success" : "bg-secondary/80 text-muted-foreground"
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${
+                        isStageDone ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : "bg-secondary text-muted-foreground border-border/50"
                       }`}>
                         {done}/{sc.length} prove
                       </span>
-                      <ChevronRight className="size-4 text-muted-foreground group-hover:text-accent transition-transform group-hover:translate-x-0.5" />
+                      <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
                     </div>
                   </div>
                   <ProgressBar 
                     value={sc.length ? (done / sc.length) * 100 : 0} 
-                    className={`mt-3.5 h-1.5 ${isStageDone ? "bg-success/15" : ""}`}
+                    className={`mt-3 h-2 ${isStageDone ? "bg-emerald-500/20" : ""}`}
                   />
                 </Link>
               );

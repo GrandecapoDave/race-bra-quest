@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, createContext, useContext } from "react";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -804,64 +804,148 @@ function AdminLayout() {
     return a.totalDurationSeconds - b.totalDurationSeconds;
   });
 
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  const adminNavCategories = [
+    {
+      name: "Monitoraggio",
+      links: [
+        { to: "/admin/overview", label: "Panoramica" },
+        { to: "/admin/classifica", label: "Classifica" },
+        { to: "/admin/teams", label: "Squadre" },
+        { to: "/admin/analytics", label: "Analisi" },
+        { to: "/admin/resoconto", label: "Resoconto" },
+      ],
+    },
+    {
+      name: "Verifiche Media",
+      links: [
+        { to: "/admin/photos", label: "Foto", badge: pendingApprovalsCount },
+        { to: "/admin/posters", label: "Locandine" },
+        { to: "/admin/social", label: "Social" },
+      ],
+    },
+    {
+      name: "Sfide Speciali",
+      links: [
+        { to: "/admin/secret-code", label: "Codice" },
+        { to: "/admin/enigmi", label: "Enigmi" },
+        { to: "/admin/cornhole", label: "Cornhole" },
+        { to: "/admin/boxe", label: "Boxe" },
+        { to: "/admin/jackpot", label: "Jackpot" },
+      ],
+    },
+    {
+      name: "Marketplace & Malus",
+      links: [
+        { to: "/admin/marketplace", label: "Mercato" },
+        { to: "/admin/passaparola", label: "Passaparola" },
+        { to: "/admin/partenze", label: "Partenze" },
+        { to: "/admin/penalita", label: "Penalità" },
+        { to: "/admin/tassa", label: "Tassa" },
+      ],
+    },
+    {
+      name: "Regia",
+      links: [
+        { to: "/admin/settings", label: "Configurazione" },
+      ],
+    },
+  ];
+
   return (
     <AppShell isAdmin>
-      <div className="space-y-6">
-        {/* HEADER SUPERIORE - STATO GARA */}
-        <div className="surface p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-border/40 bg-zinc-950/70 backdrop-blur-md no-print">
-          <div className="flex items-center gap-4">
-            <div className="size-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
-              <Clock className="size-6 text-primary animate-pulse" />
+      <div className="space-y-4 md:space-y-6">
+        {/* HEADER SUPERIORE - STATO GARA (HUD Compatto & Mobile-Friendly) */}
+        <div className="hud-panel p-4 md:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-border/50 no-print">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-xl primary-gradient flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
+                <Clock className="size-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-display font-black tracking-wider text-foreground">REGIA GARA</h2>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block size-2 rounded-full ${
+                    gameStatus === "Gara attiva" 
+                      ? "bg-emerald-400 animate-pulse" 
+                      : gameStatus === "Gara terminata" 
+                      ? "bg-red-400" 
+                      : "bg-amber-400"
+                  }`} />
+                  <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">{gameStatus}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-display font-black tracking-wider text-foreground">PECHINO EXPRESS BRA</h2>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Console Regia Live</p>
+
+            {/* Quick Status Pill for Mobile */}
+            <div className="md:hidden flex items-center gap-2 bg-secondary/80 px-3 py-1.5 rounded-xl border border-border/40">
+              <span className="text-xs font-mono font-black text-primary">{raceTime}</span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 md:gap-8">
+          <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 md:gap-6 border-t md:border-t-0 pt-3 md:pt-0 border-border/30">
             {/* STATO GARA SELECTOR */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Stato Gara</span>
-              <div className="flex items-center gap-1.5">
-                <span className={`size-2.5 rounded-full ${
-                  gameStatus === "Gara attiva" 
-                    ? "bg-success animate-ping" 
-                    : gameStatus === "Gara terminata" 
-                    ? "bg-destructive" 
-                    : "bg-warning"
-                }`} />
-                <select
-                  value={gameStatus}
-                  onChange={(e) => handleUpdateGameStatus(e.target.value)}
-                  className="bg-transparent text-sm font-bold text-foreground border-none outline-none cursor-pointer focus:ring-0 p-0"
-                >
-                  <option value="Gara non iniziata" className="bg-zinc-900 text-foreground">Non Iniziata</option>
-                  <option value="Gara attiva" className="bg-zinc-900 text-foreground">Gara Attiva</option>
-                  <option value="Gara terminata" className="bg-zinc-900 text-foreground">Gara Terminata</option>
-                </select>
-              </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Cambia Stato</span>
+              <select
+                value={gameStatus}
+                onChange={(e) => handleUpdateGameStatus(e.target.value)}
+                className="bg-secondary text-xs font-bold text-foreground rounded-lg px-2 py-1.5 border border-border/60 outline-none cursor-pointer"
+              >
+                <option value="Gara non iniziata" className="bg-zinc-900 text-foreground">Non Iniziata</option>
+                <option value="Gara attiva" className="bg-zinc-900 text-foreground">Gara Attiva</option>
+                <option value="Gara terminata" className="bg-zinc-900 text-foreground">Gara Terminata</option>
+              </select>
             </div>
 
             {/* QUICK STATS */}
-            <div className="flex gap-6 border-l border-border/40 pl-6">
-              <div className="text-center md:text-left">
-                <p className="text-[10px] uppercase text-muted-foreground font-semibold">Squadre Totali</p>
-                <p className="text-lg font-black text-foreground">{totalTeamsCount}</p>
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="text-center bg-secondary/40 px-3 py-1 rounded-lg border border-border/30">
+                <p className="text-[9px] uppercase text-muted-foreground font-bold">Squadre</p>
+                <p className="text-sm font-black text-foreground">{activeTeamsCount}/{totalTeamsCount}</p>
               </div>
-              <div className="text-center md:text-left">
-                <p className="text-[10px] uppercase text-muted-foreground font-semibold">Attive</p>
-                <p className="text-lg font-black text-success">{activeTeamsCount}</p>
+              <div className="text-center bg-secondary/40 px-3 py-1 rounded-lg border border-border/30">
+                <p className="text-[9px] uppercase text-muted-foreground font-bold">In Attesa</p>
+                <p className={`text-sm font-black ${pendingApprovalsCount > 0 ? "text-amber-400 animate-pulse" : "text-muted-foreground"}`}>
+                  {pendingApprovalsCount}
+                </p>
               </div>
-              <div className="text-center md:text-left">
-                <p className="text-[10px] uppercase text-muted-foreground font-semibold">Da Approvare</p>
-                <p className="text-lg font-black text-warning">{pendingApprovalsCount}</p>
-              </div>
-              <div className="text-center md:text-left">
-                <p className="text-[10px] uppercase text-muted-foreground font-semibold">Tempo Gara</p>
-                <p className="text-lg font-mono font-black text-primary">{raceTime}</p>
+              <div className="hidden md:block text-center bg-secondary/40 px-3 py-1 rounded-lg border border-border/30">
+                <p className="text-[9px] uppercase text-muted-foreground font-bold">Tempo</p>
+                <p className="text-sm font-mono font-black text-primary">{raceTime}</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* SWIPEABLE CATEGORIZED NAVIGATION BAR (Ergonomico su Mobile) */}
+        <div className="w-full overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 min-w-max pb-1">
+            {adminNavCategories.flatMap((cat) =>
+              cat.links.map((link) => {
+                const isActive = currentPath === link.to;
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all touch-active whitespace-nowrap ${
+                      isActive
+                        ? "primary-gradient text-white shadow-md shadow-primary/25 scale-[1.02]"
+                        : "bg-card/70 hover:bg-card border border-border/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span>{link.label}</span>
+                    {link.badge && link.badge > 0 ? (
+                      <span className="flex size-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                        {link.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
 
