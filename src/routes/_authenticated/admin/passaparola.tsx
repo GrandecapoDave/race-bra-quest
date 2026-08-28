@@ -116,8 +116,7 @@ function AdminPassaparolaPage() {
   };
 
   return (
-    <AppShell isAdmin={true}>
-      <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
         {/* Title Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
@@ -339,8 +338,6 @@ function AdminPassaparolaPage() {
                       {/* Internal Notes Display */}
                       {tr.nota_interna && (
                         <div className="bg-zinc-950/20 p-3 rounded-xl border border-dashed border-zinc-800 text-[11px] text-zinc-500 leading-normal pl-8 relative">
-                          <Shield className="size-3.5 text-zinc-600 absolute left-3 top-3.5" />
-                          <strong>Nota interna Regia:</strong> {tr.nota_interna}
                         </div>
                       )}
                     </div>
@@ -351,6 +348,5 @@ function AdminPassaparolaPage() {
           )}
         </div>
       </div>
-    </AppShell>
-  );
+    );
 }

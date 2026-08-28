@@ -59,8 +59,7 @@ function TassaAdmin() {
   const isLoading = teamsQuery.isLoading || txQuery.isLoading;
 
   return (
-    <AppShell isAdmin={true}>
-      <div className="space-y-6 max-w-6xl mx-auto pb-10">
+    <div className="space-y-6 max-w-6xl mx-auto pb-10">
         {/* Header */}
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-display font-black uppercase tracking-wider text-foreground flex items-center gap-3">
@@ -209,8 +208,7 @@ function TassaAdmin() {
           )}
         </div>
       </div>
-    </AppShell>
-  );
+    );
 }
 
 // Inline CheckCircle component helper

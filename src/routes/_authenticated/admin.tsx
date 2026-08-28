@@ -40,6 +40,8 @@ function AdminLayout() {
   const { user } = useSession();
   const isAdmin = useIsAdmin(user);
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const currentPath = location.pathname;
   
   const stages = useQuery(stagesQuery);
   const challenges = useQuery(challengesQuery);
@@ -803,9 +805,6 @@ function AdminLayout() {
     }
     return a.totalDurationSeconds - b.totalDurationSeconds;
   });
-
-  const location = useLocation();
-  const currentPath = location.pathname;
 
   const adminNavCategories = [
     {

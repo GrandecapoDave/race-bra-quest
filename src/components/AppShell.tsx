@@ -113,6 +113,8 @@ function AppShellInner({
 }) {
   const { toggleSidebar, setOpenMobile, isMobile, state } = useSidebar();
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
   const queryClient = useQueryClient();
   const online = useOnline();
 
@@ -393,10 +395,6 @@ function AppShellInner({
         p.challenge_id === "0147e750-f0a3-4b72-8e76-a003fe2ef143" &&
         (p.stato === "completed" || p.status === "completed")
     ) === true;
-
-  const location = useLocation();
-  const currentPath = location.pathname;
-
   // Query team's bonus_classifica transaction to check lock state
   const classificationTxQuery = useQuery({
     queryKey: ["team-classification-bonus", team.data?.id],
