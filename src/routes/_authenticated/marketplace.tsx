@@ -658,39 +658,49 @@ function MarketplacePage() {
           </div>
         )}
 
-        {/* CATEGORY FILTER PILLS (Mobile-First UI/UX Pro Max) */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+        {/* CATEGORY FILTER PILLS (Sticky Floating Bar) */}
+        <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md py-2.5 -mx-3 px-3 sm:-mx-4 sm:px-4 border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-lg">
           <button
-            onClick={() => { triggerHaptic("light"); setCategoryFilter("ALL"); }}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+            type="button"
+            onClick={() => setCategoryFilter("ALL")}
+            className={`min-h-[44px] px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
               categoryFilter === "ALL"
-                ? "bg-primary text-black shadow-md shadow-primary/30 scale-[1.02]"
-                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-2 ring-primary/40 scale-[1.02]"
+                : "bg-zinc-900/90 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
             }`}
           >
-            Tutti ({bonusItems.length + malusItems.length})
+            <span>Tutti</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/25 font-bold">
+              {bonusItems.length + malusItems.length}
+            </span>
           </button>
           <button
-            onClick={() => { triggerHaptic("light"); setCategoryFilter("BONUS"); }}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+            type="button"
+            onClick={() => setCategoryFilter("BONUS")}
+            className={`min-h-[44px] px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
               categoryFilter === "BONUS"
-                ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/30 scale-[1.02]"
-                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-emerald-400"
+                ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-500/40 scale-[1.02]"
+                : "bg-zinc-900/90 border border-zinc-800 text-emerald-400/90 hover:text-emerald-300 hover:bg-zinc-800"
             }`}
           >
             <span>🟢 Bonus</span>
-            <span className="text-[10px] opacity-75">({bonusItems.length})</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/25 font-bold">
+              {bonusItems.length}
+            </span>
           </button>
           <button
-            onClick={() => { triggerHaptic("light"); setCategoryFilter("MALUS"); }}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+            type="button"
+            onClick={() => setCategoryFilter("MALUS")}
+            className={`min-h-[44px] px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
               categoryFilter === "MALUS"
-                ? "bg-rose-500 text-black shadow-md shadow-rose-500/30 scale-[1.02]"
-                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-rose-400"
+                ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 ring-2 ring-rose-500/40 scale-[1.02]"
+                : "bg-zinc-900/90 border border-zinc-800 text-rose-400/90 hover:text-rose-300 hover:bg-zinc-800"
             }`}
           >
             <span>🔴 Malus</span>
-            <span className="text-[10px] opacity-75">({malusItems.length})</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/25 font-bold">
+              {malusItems.length}
+            </span>
           </button>
         </div>
 

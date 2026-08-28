@@ -15,13 +15,15 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
   const scoreEvents = useQuery({
     ...scoreEventsQuery(teamId),
     enabled: Boolean(teamId),
-    refetchInterval: 3000,
+    refetchInterval: 2000,
+    staleTime: 0,
   });
 
   const tokenTransactions = useQuery({
     queryKey: ["team-admin-token-adjustments", teamId],
     enabled: Boolean(teamId),
-    refetchInterval: 3000,
+    refetchInterval: 2000,
+    staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
@@ -34,6 +36,43 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
       return data || [];
     },
   });
+
+  // Realtime subscription for instant updates on admin points or token changes
+  useEffect(() => {
+    if (!teamId) return;
+
+    const channel = supabase
+      .channel(`admin-decision-alerts-${teamId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "scores",
+          filter: `team_id=eq.${teamId}`,
+        },
+        () => {
+          scoreEvents.refetch();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "marketplace_transactions",
+          filter: `team_id=eq.${teamId}`,
+        },
+        () => {
+          tokenTransactions.refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [teamId]);
 
   const [dismissedIds, setDismissedIds] = useState<string[]>(() => {
     if (typeof window !== "undefined") {

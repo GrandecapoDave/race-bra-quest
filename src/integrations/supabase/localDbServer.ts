@@ -3768,6 +3768,18 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               motivazione: `Risposta esatta enigma ${p_question_number} - La Banca`,
               created_at: new Date().toISOString(),
             });
+          } else if (!isCorrect) {
+            // Deduct 5 points on wrong answer
+            db.scores.push({
+              id: uuid(),
+              team_id: currentUserId,
+              challenge_id: challengeId,
+              punti: -5,
+              tipo_modificatore: "penalty",
+              motivazione: `Errore enigma ${p_question_number} - La Banca (-5 PT)`,
+              created_at: new Date().toISOString(),
+            });
+          }
 
             // Check if all 4 are completed
             const correctAnswers = db.team_challenge_answers.filter(

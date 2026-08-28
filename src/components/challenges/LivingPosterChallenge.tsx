@@ -232,14 +232,14 @@ export function LivingPosterChallenge({
       {poster && (
         <section className="space-y-4 text-center">
           <div className="inline-block bg-zinc-900 text-zinc-400 text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-zinc-800">
-            Locandina Assegnata
+            Locandina Assegnata: <span className="text-white font-black">{poster.titolo}</span>
           </div>
 
-          <div className="flex justify-center max-w-sm mx-auto overflow-hidden rounded-xl border border-red-950/60 shadow-2xl bg-zinc-900">
+          <div className="flex justify-center max-w-md mx-auto rounded-2xl border border-red-950/60 shadow-2xl bg-zinc-950 p-2">
             <img
               src={`/POSTER/${poster.file_name}`}
               alt="Locandina Assegnata"
-              className="w-full h-auto object-contain max-h-[420px]"
+              className="w-auto max-w-full max-h-[70vh] sm:max-h-[550px] object-contain rounded-xl mx-auto shadow-lg"
             />
           </div>
         </section>
@@ -255,23 +255,23 @@ export function LivingPosterChallenge({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <p className="text-xs font-bold text-zinc-500 uppercase text-center">Locandina Originale</p>
-                <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center max-h-[220px]">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950 flex justify-center p-2 min-h-[280px]">
                   <img
                     src={`/POSTER/${poster?.file_name}`}
                     alt="Locandina Originale"
-                    className="h-full w-auto object-contain"
+                    className="w-auto max-w-full max-h-[380px] object-contain rounded-lg mx-auto"
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-bold text-zinc-500 uppercase text-center">La vostra ricostruzione</p>
-                <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center max-h-[220px]">
+                <div className="relative rounded-xl border border-zinc-800 bg-zinc-950 flex justify-center p-2 min-h-[280px]">
                   {subPhotoUrl ? (
                     <>
                       <img
                         src={subPhotoUrl}
                         alt="Vostra ricostruzione"
-                        className="h-full w-auto object-contain transition-transform duration-200 max-h-[220px]"
+                        className="w-auto max-w-full max-h-[380px] object-contain rounded-lg mx-auto transition-transform duration-200"
                         style={{
                           transform: `${submittedFlipped ? "scaleX(-1)" : ""} rotate(${submittedRotation}deg)`,
                         }}

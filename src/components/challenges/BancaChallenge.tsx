@@ -96,7 +96,8 @@ export function BancaChallenge({
           toast.success("Complimenti! Hai risolto tutti gli enigmi de La Banca!");
         }
       } else {
-        toast.error("Risposta errata, riprova!");
+        toast.error("❌ Risposta errata! Penalità: -5 Punti.");
+        await queryClient.invalidateQueries();
       }
     } catch (err: any) {
       toast.error(err.message || "Errore imprevisto");

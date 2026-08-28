@@ -1414,7 +1414,7 @@ export function PosterComparisonCard({
             <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
               <Film className="size-3 text-red-500" /> Locandina Originale Assegnata
             </p>
-            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[260px] p-2 text-center">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[340px] p-2 text-center">
               {originalPosterUrl ? (
                 <img
                   src={originalPosterUrl}
@@ -1426,7 +1426,7 @@ export function PosterComparisonCard({
                       target.src = target.src.replace("/POSTER/", "/poster/");
                     }
                   }}
-                  className="h-full w-auto object-contain max-h-[280px] rounded-lg shadow-lg"
+                  className="w-auto max-w-full max-h-[420px] object-contain rounded-lg shadow-lg mx-auto"
                 />
               ) : (
                 <div className="space-y-1 p-4">
@@ -1443,14 +1443,14 @@ export function PosterComparisonCard({
             <p className="text-xs font-bold text-muted-foreground uppercase text-center flex items-center justify-center gap-1">
               <Camera className="size-3 text-red-500" /> Ricostruzione della Squadra
             </p>
-            <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[260px] p-2 text-center">
+            <div className="relative rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[340px] p-2 text-center">
               {submission ? (
                 teamPhotoUrl ? (
                   <>
                     <img
                       src={teamPhotoUrl}
                       alt="Ricostruzione Squadra"
-                      className="h-full w-auto object-contain max-h-[280px] rounded-lg shadow-lg transition-transform duration-200"
+                      className="w-auto max-w-full max-h-[420px] object-contain rounded-lg shadow-lg transition-transform duration-200 mx-auto"
                       style={{
                         transform: `${isFlipped ? "scaleX(-1)" : ""} rotate(${rotation}deg)`,
                       }}

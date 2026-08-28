@@ -159,22 +159,36 @@ function AdminTeamsPage() {
       const { data: userData } = await supabase.auth.getUser();
       const adminId = userData.user?.id || "11111111-1111-1111-1111-111111111111";
 
-      const { data, error } = await supabase.rpc("admin_adjust_team_score", {
-        p_team_id: targetId,
-        p_punti: pointsNum,
-        p_motivo: adjReason.trim(),
-        p_admin_id: adminId,
-      });
+      let error: any = null;
+      if (pointsNum >= 0) {
+        const res = await supabase.rpc("admin_add_points", {
+          p_team_id: targetId,
+          p_stage_id: null,
+          p_points: pointsNum,
+          p_reason: adjReason.trim(),
+        });
+        error = res.error;
+      } else {
+        const res = await supabase.rpc("admin_remove_points", {
+          p_team_id: targetId,
+          p_stage_id: null,
+          p_points: Math.abs(pointsNum),
+          p_reason: adjReason.trim(),
+        });
+        error = res.error;
+      }
 
       if (error) {
-        // Direct insert fallback
-        const { error: insertErr } = await (supabase as any).from("scores").insert({
-          team_id: targetId,
-          punti: pointsNum,
-          motivo: adjReason.trim(),
-          tipo_modificatore: "admin_adjustment",
+        // Fallback to custom RPC if available
+        const customRes = await supabase.rpc("admin_adjust_team_score", {
+          p_team_id: targetId,
+          p_punti: pointsNum,
+          p_motivo: adjReason.trim(),
+          p_admin_id: adminId,
         });
-        if (insertErr) throw insertErr;
+        if (customRes.error) {
+          throw error;
+        }
       }
 
       const teamObj = (allTeams.data ?? []).find((t: any) => t.id === targetId);

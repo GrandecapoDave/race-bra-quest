@@ -106,7 +106,7 @@ export function EmojiMoviesChallenge({
         if (error) throw new Error(error.message);
       }
 
-      // If answer is correct, log a score record immediately
+      // Log score or penalty
       if (isCorrect) {
         const { error: scoreErr } = await (supabase as any)
           .from("scores")
@@ -114,18 +114,30 @@ export function EmojiMoviesChallenge({
             team_id: team.id,
             challenge_id: challenge.id,
             punti: 1,
+            tipo_modificatore: "challenge_points",
             motivo: `Indovinato film dalle emoji: ${movie.title} (${index}/8)`
           });
         if (scoreErr) console.warn("Score insert warning:", scoreErr.message);
+      } else {
+        const { error: scoreErr } = await (supabase as any)
+          .from("scores")
+          .insert({
+            team_id: team.id,
+            challenge_id: challenge.id,
+            punti: -2,
+            tipo_modificatore: "penalty",
+            motivo: `Errore film emoji #${index}: "${answer}" (-2 PT)`
+          });
+        if (scoreErr) console.warn("Penalty score insert warning:", scoreErr.message);
       }
 
       return { isCorrect, nextAttempts, title: movie.title };
     },
     onSuccess: (data, variables) => {
       if (data?.isCorrect) {
-        toast.success(`Esatto! Hai indovinato: ${data.title}`);
+        toast.success(`🎉 Esatto! Hai indovinato: ${data.title} (+1 PT)`);
       } else {
-        toast.error(`Sbagliato! ${data?.nextAttempts === 3 ? `Risposta corretta: ${data.title}` : `Tentativo ${data?.nextAttempts} di 3.`}`);
+        toast.error(`❌ Sbagliato (-2 PT)! ${data?.nextAttempts === 3 ? `Risposta corretta: ${data.title}` : `Tentativo ${data?.nextAttempts} di 3.`}`);
       }
       queryClient.invalidateQueries();
     },
