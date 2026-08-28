@@ -4411,27 +4411,30 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             }
           });
 
-          // Step 2: build cycle if matching is empty or doesn't include all teams
-          const allMatched = activeTeams.every((t: any) =>
-            db.team_code_matches.some((m: any) => m.buyer_team_id === t.id),
-          );
-          if (!allMatched || db.team_code_matches.length !== activeTeams.length) {
-            db.team_code_matches = [];
-            activeTeams.forEach((team: any, index: number) => {
-              const sellerIndex = (index + 1) % activeTeams.length;
-              const seller = activeTeams[sellerIndex];
+          // Step 2: build purely random derangement cycle
+          db.team_code_matches = [];
+          const shuffled = [...activeTeams];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = temp;
+          }
 
-              const teamPart = db.team_code_parts.find((p: any) => p.team_id === team.id);
-              const requiredPart = teamPart?.part_type === "FIRST_5" ? "LAST_5" : "FIRST_5";
-              const cost = Math.floor(Math.random() * 3) + 3;
+          for (let i = 0; i < shuffled.length; i++) {
+            const buyer = shuffled[i];
+            const seller = shuffled[(i + 1) % shuffled.length];
 
-              db.team_code_matches.push({
-                buyer_team_id: team.id,
-                seller_team_id: seller.id,
-                required_part: requiredPart,
-                token_cost: cost,
-                created_at: new Date().toISOString(),
-              });
+            const teamPart = db.team_code_parts.find((p: any) => p.team_id === buyer.id);
+            const requiredPart = teamPart?.part_type === "FIRST_5" ? "LAST_5" : "FIRST_5";
+            const cost = Math.floor(Math.random() * 3) + 2;
+
+            db.team_code_matches.push({
+              buyer_team_id: buyer.id,
+              seller_team_id: seller.id,
+              required_part: requiredPart,
+              token_cost: cost,
+              created_at: new Date().toISOString(),
             });
           }
 

@@ -112,18 +112,75 @@ function AdminSecretCodePage() {
           </div>
           <button
             onClick={async () => {
-              if (confirm("Sei sicuro di voler auto-generare/resettare gli accoppiamenti delle squadre attive? Le modifiche manuali andranno perse.")) {
-                const { error } = await supabase.rpc("initialize_secret_code_challenge");
-                if (error) toast.error(error.message);
-                else {
-                  toast.success("Abbinamenti inizializzati con successo!");
-                  queryClient.invalidateQueries();
+              if (!confirm("Sei sicuro di voler auto-generare/resettare gli accoppiamenti delle squadre attive? Le associazioni saranno puramente casuali.")) {
+                return;
+              }
+              const activeTeams = (teamsList || []).filter((t: any) => t.active);
+              if (activeTeams.length < 2) {
+                toast.error("Servono almeno 2 squadre attive per generare il ciclo di abbinamenti.");
+                return;
+              }
+
+              try {
+                // 1. Get full PIN code
+                const fullCode = data?.full_code || "4829167305";
+                const first5 = fullCode.slice(0, 5);
+                const last5 = fullCode.slice(5);
+
+                // 2. Fisher-Yates Shuffle of active teams (purely random derangement)
+                const shuffled = [...activeTeams];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                  const j = Math.floor(Math.random() * (i + 1));
+                  const temp = shuffled[i];
+                  shuffled[i] = shuffled[j];
+                  shuffled[j] = temp;
                 }
+
+                // 3. Build parts and matches
+                for (let i = 0; i < shuffled.length; i++) {
+                  const buyer = shuffled[i];
+                  const seller = shuffled[(i + 1) % shuffled.length];
+
+                  const ownsFirst = i % 2 === 0;
+                  const partType = ownsFirst ? "FIRST_5" : "LAST_5";
+                  const codePart = ownsFirst ? first5 : last5;
+                  const requiredPart = ownsFirst ? "LAST_5" : "FIRST_5";
+                  const randomCost = Math.floor(Math.random() * 3) + 2; // 2 to 4 tokens
+
+                  // Safe upserts
+                  await (supabase as any).from("team_code_parts").upsert(
+                    {
+                      team_id: buyer.id,
+                      code_part: codePart,
+                      part_type: partType,
+                    },
+                    { onConflict: "team_id" }
+                  );
+
+                  await (supabase as any).from("team_code_matches").upsert(
+                    {
+                      buyer_team_id: buyer.id,
+                      seller_team_id: seller.id,
+                      required_part: requiredPart,
+                      token_cost: randomCost,
+                    },
+                    { onConflict: "buyer_team_id" }
+                  );
+                }
+
+                // Also trigger backend RPC if available
+                await supabase.rpc("initialize_secret_code_challenge");
+
+                toast.success("🎲 Ciclo di abbinamento e token generato casualmente con successo!");
+                await queryClient.invalidateQueries();
+              } catch (err: any) {
+                toast.error("Errore generazione ciclo: " + (err.message || err));
               }
             }}
-            className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl font-bold text-xs transition-all cursor-pointer"
+            className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
           >
-            Auto-Genera Ciclo
+            <span>🎲</span>
+            <span>Auto-Genera Ciclo (Casuale)</span>
           </button>
         </div>
 

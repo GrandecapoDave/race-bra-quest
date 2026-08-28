@@ -377,7 +377,7 @@ function AdminResocontoPage() {
           <div className="space-y-1">
             <span className="font-bold text-zinc-400 uppercase text-[10px] tracking-wider">Formula Punteggio Finale</span>
             <p className="font-mono text-zinc-300 text-[11px]">
-              <strong className="text-foreground">PUNTI FINALI</strong> = Base + Bonus Tempo + Bonus Token
+              <strong className="text-foreground">PUNTI FINALI</strong> = Punti Base + Cattiveria 😈 + Bonus Tempo + Bonus Token
             </p>
           </div>
           <div className="space-y-1">
@@ -420,6 +420,7 @@ function AdminResocontoPage() {
                     <th className="py-3.5 px-4 min-w-[180px]">Squadra</th>
                     <th className="py-3.5 px-3 text-center whitespace-nowrap">Prove</th>
                     <th className="py-3.5 px-3 text-right whitespace-nowrap">Punti Base</th>
+                    <th className="py-3.5 px-3 text-right whitespace-nowrap">Cattiveria 😈</th>
                     <th className="py-3.5 px-3 text-center whitespace-nowrap">Tempo Totale</th>
                     <th className="py-3.5 px-3 text-right whitespace-nowrap">Bonus Tempo</th>
                     <th className="py-3.5 px-3 text-center whitespace-nowrap">Token Rimasti</th>
@@ -430,10 +431,11 @@ function AdminResocontoPage() {
                 <tbody className="divide-y divide-border/20">
                   {teams.map((t: any) => {
                     const pos = t.final_rank ?? t.rank ?? t.position ?? 1;
-                    const basePts = t.base_score ?? t.total_score_before_final_bonuses ?? t.challenges_points + (t.modifier_points ?? 0) + (t.cattiveria_points ?? 0);
+                    const basePts = t.base_score ?? t.total_score_before_final_bonuses ?? (t.challenges_points ?? 0) + (t.modifier_points ?? 0);
+                    const cattiveriaPts = t.cattiveria_points ?? 0;
                     const timeBonus = t.time_bonus ?? t.bonus_tempo ?? 0;
                     const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.floor((t.token_balance ?? 50) / 5);
-                    const finalScore = t.final_score ?? t.total_points ?? (basePts + timeBonus + tokenBonus);
+                    const finalScore = t.final_score ?? t.total_points ?? (basePts + cattiveriaPts + timeBonus + tokenBonus);
                     const teamName = t.nome_squadra || t.name || t.team_name || "Squadra";
 
                     const isTop1 = pos === 1;
@@ -503,6 +505,11 @@ function AdminResocontoPage() {
                         {/* BASE SCORE */}
                         <td className="py-3.5 px-3 text-right font-mono font-bold text-zinc-200 whitespace-nowrap">
                           {basePts} PT
+                        </td>
+
+                        {/* CATTIVERIA */}
+                        <td className="py-3.5 px-3 text-right font-mono font-bold text-purple-400 whitespace-nowrap">
+                          {cattiveriaPts > 0 ? `+${cattiveriaPts}` : cattiveriaPts} 😈
                         </td>
 
                         {/* TOTAL TIME */}
@@ -615,10 +622,11 @@ function AdminResocontoPage() {
               const gainedTokens = team.tokens_gained_rewards ?? team.tokens_gained_stage_rewards ?? 0;
               const spentTokens = team.tokens_spent_marketplace ?? 0;
               const balanceTokens = team.token_balance ?? 50;
-              const basePts = team.base_score ?? team.challenges_points + (team.modifier_points ?? 0) + (team.cattiveria_points ?? 0);
+              const basePts = team.base_score ?? (team.challenges_points ?? 0) + (team.modifier_points ?? 0);
+              const cattiveriaPts = team.cattiveria_points ?? 0;
               const timeBonus = team.time_bonus ?? 0;
               const tokenBonus = team.token_efficiency_bonus ?? Math.floor(balanceTokens / 5);
-              const finalScore = team.final_score ?? team.total_points ?? (basePts + timeBonus + tokenBonus);
+              const finalScore = team.final_score ?? team.total_points ?? (basePts + cattiveriaPts + timeBonus + tokenBonus);
 
               return (
                 <div
@@ -654,7 +662,7 @@ function AdminResocontoPage() {
                     </div>
 
                     {/* SCORE BLOCKS */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                       <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                         <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Finali</span>
                         <p className="text-xl font-display font-black text-primary">{finalScore} PT</p>
@@ -662,6 +670,10 @@ function AdminResocontoPage() {
                       <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                         <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Base</span>
                         <p className="text-lg font-mono font-black text-zinc-200">{basePts} PT</p>
+                      </div>
+                      <div className="bg-zinc-900/60 p-3 rounded-xl border border-purple-500/30 text-center bg-purple-950/20">
+                        <span className="text-[10px] uppercase font-bold text-purple-400">Cattiveria 😈</span>
+                        <p className="text-lg font-mono font-black text-purple-400">{cattiveriaPts} PT</p>
                       </div>
                       <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
                         <span className="text-[10px] uppercase font-bold text-muted-foreground">Bonus Tempo</span>

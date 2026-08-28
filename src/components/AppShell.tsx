@@ -237,45 +237,75 @@ function AppShellInner({
     }
   });
 
-  // Find active maluses (checking state completed for freeze and enigma)
-  const activeFreezeTx = activeMalusesQuery.data?.find((t: any) => t.item_id === "freeze_2min" && t.stato === "completed");
-  const activeEnigmaTx = activeMalusesQuery.data?.find((t: any) => t.item_id === "enigma_extra" && t.stato === "completed");
+  // Strict FIFO Malus Queue (Consecutive Execution)
+  const pendingMaluses = (activeMalusesQuery.data ?? []).filter((t: any) => t.stato === "completed");
+  const queuedMalusesCount = pendingMaluses.length;
+  const currentActiveMalusTx = pendingMaluses[0] || null; // Active head of queue
 
-  const freezeExpiry = team.data?.freeze_expires_at 
-    || activeFreezeTx?.dettagli?.freeze_expires_at 
-    || activeFreezeTx?.outcome?.freeze_expires_at;
+  const isCurrentFreeze = currentActiveMalusTx?.item_id === "freeze_2min";
+  const isCurrentEnigma = currentActiveMalusTx?.item_id === "enigma_extra";
+  const isCurrentWheel = currentActiveMalusTx?.item_id === "ruota_sfortunata";
 
-  const expiresMs = freezeExpiry ? new Date(freezeExpiry).getTime() : 0;
-  const isFrozen = secondsLeft > 0;
+  const isFrozen = isCurrentFreeze && secondsLeft > 0;
 
   useEffect(() => {
-    let interval: any = null;
-    if (expiresMs > Date.now()) {
-      setSecondsLeft(Math.ceil((expiresMs - Date.now()) / 1000));
-      interval = setInterval(() => {
-        const remaining = Math.ceil((expiresMs - Date.now()) / 1000);
-        if (remaining <= 0) {
-          setSecondsLeft(0);
-          clearInterval(interval);
-          toast.success("❄️ FREEZE TERMINATO! Siete di nuovo operativi.");
-          queryClient.invalidateQueries();
-        } else {
-          setSecondsLeft(remaining);
-        }
-      }, 1000);
-    } else {
+    if (!isCurrentFreeze || !currentActiveMalusTx) {
       setSecondsLeft(0);
+      return;
     }
-    return () => {
-      if (interval) clearInterval(interval);
+
+    const key = `freeze_started_${currentActiveMalusTx.id}`;
+    let startMs = 0;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        startMs = parseInt(saved);
+      }
+    } catch {}
+
+    if (!startMs || isNaN(startMs)) {
+      startMs = Date.now();
+      try {
+        localStorage.setItem(key, String(startMs));
+      } catch {}
+    }
+
+    const durationMs = 120 * 1000; // 2 minutes
+    const targetExpiryMs = startMs + durationMs;
+
+    const updateRemaining = async () => {
+      const now = Date.now();
+      const remaining = Math.ceil((targetExpiryMs - now) / 1000);
+      if (remaining <= 0) {
+        setSecondsLeft(0);
+        try {
+          localStorage.removeItem(key);
+        } catch {}
+
+        // Mark this specific freeze transaction as used to advance the queue
+        await (supabase as any)
+          .from("marketplace_transactions")
+          .update({ stato: "used", data_utilizzo: new Date().toISOString() })
+          .eq("id", currentActiveMalusTx.id);
+
+        toast.success("❄️ FREEZE TERMINATO! Avanzamento coda malus in corso...");
+        queryClient.invalidateQueries();
+      } else {
+        setSecondsLeft(remaining);
+      }
     };
-  }, [expiresMs, queryClient]);
 
-  const pendingUnluckyWheelTx = activeMalusesQuery.data?.find(
-    (t: any) => t.item_id === "ruota_sfortunata" && t.stato === "completed"
-  );
+    updateRemaining();
+    const interval = setInterval(updateRemaining, 1000);
 
-  const currentActiveMalusTx = activeFreezeTx || activeEnigmaTx || pendingUnluckyWheelTx;
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isCurrentFreeze, currentActiveMalusTx?.id, queryClient]);
+
+  const pendingUnluckyWheelTx = isCurrentWheel ? currentActiveMalusTx : null;
+  const activeEnigmaTx = isCurrentEnigma ? currentActiveMalusTx : null;
+
   const attackerTeam = currentActiveMalusTx
     ? allTeamsQuery.data?.find((t: any) => t.id === currentActiveMalusTx.buyer_team_id)
     : null;
@@ -293,7 +323,13 @@ function AppShellInner({
       if (error) {
         setEnigmaError(error.message || "Errore di verifica.");
       } else if (data && data.is_correct) {
-        toast.success("🧩 ENIGMA RISOLTO CORRETTAMENTE! Puoi riprendere la gara.");
+        if (currentActiveMalusTx) {
+          await (supabase as any)
+            .from("marketplace_transactions")
+            .update({ stato: "used", data_utilizzo: new Date().toISOString() })
+            .eq("id", currentActiveMalusTx.id);
+        }
+        toast.success("🧩 ENIGMA RISOLTO CORRETTAMENTE! Squadra sbloccata.");
         setEnigmaAnswer("");
         queryClient.invalidateQueries();
       } else {
@@ -764,9 +800,18 @@ function AppShellInner({
                 <Snowflake className="size-10 text-cyan-400 animate-spin-slow" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-display font-black text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">
-                  Sei in Freeze!
-                </h2>
+                <div className="flex flex-col items-center gap-1.5">
+                  {queuedMalusesCount > 1 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider animate-pulse mb-1">
+                      <span>⚡ Coda Malus Attiva:</span>
+                      <span className="bg-cyan-400 text-black px-1.5 py-0.2 rounded font-black">1 di {queuedMalusesCount}</span>
+                      <span className="opacity-80">({queuedMalusesCount - 1} altri in attesa)</span>
+                    </span>
+                  )}
+                  <h2 className="text-2xl font-display font-black text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+                    Sei in Freeze!
+                  </h2>
+                </div>
                 <p className="text-xs text-zinc-300 max-w-xs mx-auto leading-relaxed font-semibold">
                   La squadra <strong className="text-white font-extrabold">{attackerName}</strong> vi ha colpito con un Malus. Tutte le vostre attività sono temporaneamente bloccate.
                 </p>
@@ -787,9 +832,18 @@ function AppShellInner({
               </div>
               
               <div className="space-y-2">
-                <h2 className="text-2xl font-display font-black text-purple-400 uppercase tracking-widest drop-shadow-[0_0_15px_rgba(192,132,252,0.4)]">
-                  Enigma Extra!
-                </h2>
+                <div className="flex flex-col items-center gap-1.5">
+                  {queuedMalusesCount > 1 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-[10px] font-black uppercase tracking-wider animate-pulse mb-1">
+                      <span>⚡ Coda Malus Attiva:</span>
+                      <span className="bg-purple-400 text-black px-1.5 py-0.2 rounded font-black">1 di {queuedMalusesCount}</span>
+                      <span className="opacity-80">({queuedMalusesCount - 1} altri in attesa)</span>
+                    </span>
+                  )}
+                  <h2 className="text-2xl font-display font-black text-purple-400 uppercase tracking-widest drop-shadow-[0_0_15px_rgba(192,132,252,0.4)]">
+                    Enigma Extra!
+                  </h2>
+                </div>
                 <p className="text-xs text-zinc-300 max-w-xs mx-auto leading-relaxed font-semibold">
                   La squadra <strong className="text-white font-extrabold">{attackerName}</strong> vi ha assegnato un enigma extra. Risolvilo per poter sbloccare la squadra e continuare la gara.
                 </p>

@@ -37,6 +37,24 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
     },
   });
 
+  const activityLogs = useQuery({
+    queryKey: ["team-admin-token-activity-log", teamId],
+    enabled: Boolean(teamId),
+    refetchInterval: 2000,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activity_log")
+        .select("id, tipo_evento, team_id, dettagli, created_at")
+        .eq("team_id", teamId!)
+        .eq("tipo_evento", "admin_tokens_adjusted")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data || [];
+    },
+  });
+
   // Realtime subscription for instant updates on admin points or token changes
   useEffect(() => {
     if (!teamId) return;
@@ -67,6 +85,18 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
           tokenTransactions.refetch();
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "activity_log",
+          filter: `team_id=eq.${teamId}`,
+        },
+        () => {
+          activityLogs.refetch();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -90,7 +120,7 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
   const pendingScoreDecisions = (scoreEvents.data || [])
     .filter(
       (s: any) =>
-        (s.tipo_modificatore === "admin_adjustment" || !s.challenge_id) &&
+        (!s.challenge_id || s.tipo_modificatore === "admin_adjustment" || s.tipo_modificatore === "bonus" || s.tipo_modificatore === "penalty") &&
         s.reason &&
         s.reason.trim().length > 0 &&
         !dismissedIds.includes(s.id)
@@ -117,9 +147,26 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
       };
     });
 
-  const allPending = [...pendingScoreDecisions, ...pendingTokenDecisions].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  const pendingActivityTokenDecisions = (activityLogs.data || [])
+    .filter((a: any) => !dismissedIds.includes(a.id))
+    .map((a: any) => {
+      const d = a.dettagli || {};
+      const amount = typeof d.amount === "number" ? d.amount : 0;
+      const reason = d.reason || d.message || "Regolazione manuale Regia";
+      return {
+        id: a.id,
+        type: "tokens" as const,
+        amount: amount,
+        reason: reason,
+        timestamp: a.created_at,
+      };
+    });
+
+  const allPending = [
+    ...pendingScoreDecisions,
+    ...pendingTokenDecisions,
+    ...pendingActivityTokenDecisions,
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const activeDecision = allPending[0];
 
