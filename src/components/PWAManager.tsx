@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { WifiOff, RefreshCw, Download, X, Smartphone, CheckCircle2 } from "lucide-react";
+import { Download, X, Smartphone, CheckCircle2 } from "lucide-react";
 
 export function PWAManager() {
-  const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" ? !navigator.onLine : false);
-  const [isOfflineDismissed, setIsOfflineDismissed] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -25,29 +23,7 @@ export function PWAManager() {
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
 
-    // 3. Online/Offline event handlers
-    const handleOnline = () => {
-      setIsOffline(false);
-      setIsOfflineDismissed(false);
-      toast.success("Connessione ripristinata!", {
-        description: "L'app si sta risincronizzando con la regia.",
-        duration: 3000,
-      });
-    };
-
-    const handleOffline = () => {
-      setIsOffline(true);
-      setIsOfflineDismissed(false);
-      toast.error("📡 Connessione assente o instabile", {
-        description: "I dati live richiedono connessione internet attiva.",
-        duration: 5000,
-      });
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    // 4. Register Service Worker
+    // 3. Register Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
@@ -113,31 +89,6 @@ export function PWAManager() {
 
   return (
     <>
-      {/* OFFLINE WARNING BANNER (Safe-Top for iPhone Notch) */}
-      {isOffline && !isOfflineDismissed && (
-        <div className="fixed top-0 inset-x-0 z-[110] px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pointer-events-none animate-in slide-in-from-top-4 duration-200">
-          <div className="max-w-md mx-auto pointer-events-auto bg-rose-950/95 border border-rose-500/40 backdrop-blur-xl rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3 text-rose-200">
-            <div className="flex items-center gap-2.5">
-              <WifiOff className="size-5 text-rose-400 shrink-0 animate-pulse" />
-              <div>
-                <p className="text-xs font-black uppercase tracking-wider text-rose-300 leading-tight">
-                  Nessuna Connessione
-                </p>
-                <p className="text-[10px] text-rose-400/90 font-medium">
-                  Riconnessione automatica in corso...
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsOfflineDismissed(true)}
-              className="p-1 text-rose-400 hover:text-white rounded-lg hover:bg-rose-900/50 transition-colors"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ANDROID / DESKTOP INSTALL BANNER */}
       {showInstallBanner && !isStandalone && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 bg-zinc-950/95 border border-primary/40 p-4 rounded-2xl shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-in slide-in-from-bottom-5 duration-300">

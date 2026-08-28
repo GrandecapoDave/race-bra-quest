@@ -34,7 +34,6 @@ import {
 import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useOnline } from "@/hooks/useAuth";
 import {
   myTeamQuery,
   stagesQuery,
@@ -118,7 +117,6 @@ function AppShellInner({
   const location = useLocation();
   const currentPath = location.pathname;
   const queryClient = useQueryClient();
-  const online = useOnline();
 
   const closeMobileMenu = () => {
     if (isMobile) {
@@ -759,12 +757,6 @@ function AppShellInner({
               </button>
             </div>
           </div>
-          {!online && (
-            <div className="flex items-center justify-center gap-2 bg-destructive/20 py-1.5 text-xs font-bold text-destructive">
-              <WifiOff className="size-3.5" /> Offline — i dati verranno
-              risincronizzati
-            </div>
-          )}
         </header>
 
         <main className="mx-auto w-full max-w-3xl min-w-0 px-3 sm:px-4 py-4 sm:py-5 pb-28 md:pb-12 box-border overflow-x-hidden">
