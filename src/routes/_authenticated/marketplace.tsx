@@ -220,6 +220,7 @@ function MarketplacePage() {
   const [selectedMalus, setSelectedMalus] = useState<typeof MARKETPLACE_ITEMS[0] | null>(null);
   const [targetTeamId, setTargetTeamId] = useState<string>("");
   const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<"ALL" | "BONUS" | "MALUS">("ALL");
 
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [consumingId, setConsumingId] = useState<string | null>(null);
@@ -656,9 +657,46 @@ function MarketplacePage() {
           </div>
         )}
 
+        {/* CATEGORY FILTER PILLS (Mobile-First UI/UX Pro Max) */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <button
+            onClick={() => { triggerHaptic("light"); setCategoryFilter("ALL"); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
+              categoryFilter === "ALL"
+                ? "bg-primary text-black shadow-md shadow-primary/30 scale-[1.02]"
+                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
+            }`}
+          >
+            Tutti ({bonusItems.length + malusItems.length})
+          </button>
+          <button
+            onClick={() => { triggerHaptic("light"); setCategoryFilter("BONUS"); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              categoryFilter === "BONUS"
+                ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/30 scale-[1.02]"
+                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-emerald-400"
+            }`}
+          >
+            <span>🟢 Bonus</span>
+            <span className="text-[10px] opacity-75">({bonusItems.length})</span>
+          </button>
+          <button
+            onClick={() => { triggerHaptic("light"); setCategoryFilter("MALUS"); }}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              categoryFilter === "MALUS"
+                ? "bg-rose-500 text-black shadow-md shadow-rose-500/30 scale-[1.02]"
+                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-rose-400"
+            }`}
+          >
+            <span>🔴 Malus</span>
+            <span className="text-[10px] opacity-75">({malusItems.length})</span>
+          </button>
+        </div>
+
         {/* SHOP GRID */}
         <div className="space-y-6">
           {/* BONUS SECTION */}
+          {(categoryFilter === "ALL" || categoryFilter === "BONUS") && (
           <div className="space-y-3">
             <h2 className="text-lg font-black uppercase tracking-wider text-emerald-500 flex items-center gap-2 border-b border-emerald-500/10 pb-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" /> 🟢 BONUS
@@ -855,9 +893,11 @@ function MarketplacePage() {
               })}
             </div>
           </div>
+          )}
 
           {/* MALUS SECTION */}
-          <div className="space-y-3 pt-4">
+          {(categoryFilter === "ALL" || categoryFilter === "MALUS") && (
+          <div className="space-y-3 pt-2">
             <h2 className="text-lg font-black uppercase tracking-wider text-red-500 flex items-center gap-2 border-b border-red-500/10 pb-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" /> 🔴 MALUS
             </h2>
@@ -896,9 +936,9 @@ function MarketplacePage() {
 
                     <div className="mt-4 pt-3 border-t border-border/10">
                       {alreadyPurchased ? (
-                        <div className="flex items-center gap-1 text-xs text-red-500/85 font-extrabold bg-red-500/5 p-2 rounded-xl border border-red-500/10 justify-center">
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-extrabold bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800 justify-center">
                           <Check className="size-3.5" />
-                          <span>Malus già utilizzato in gara</span>
+                          <span>GIÀ ACQUISTATO</span>
                         </div>
                       ) : (
                         <button
@@ -920,6 +960,7 @@ function MarketplacePage() {
               })}
             </div>
           </div>
+          )}
         </div>
 
         {/* TEAM DASHBOARD METRICS */}

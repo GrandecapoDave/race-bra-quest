@@ -5,6 +5,7 @@ import { Camera, Check, Loader2, MapPin, FlipHorizontal, RotateCw, X } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { mediaQuery, type Challenge, type Team } from "@/lib/race";
 import { transformImageFile } from "@/lib/imageUtils";
+import { triggerHaptic } from "@/lib/haptics";
 
 export function PhotoChallenge({
   challenge,
@@ -103,10 +104,12 @@ export function PhotoChallenge({
       if (error) throw new Error(error.message);
 
       toast.success("Foto caricata! La prova è completata.");
+      triggerHaptic("success");
       handleCancelPending();
       onComplete(); // unlock next challenge immediately
       await queryClient.invalidateQueries();
     } catch (e) {
+      triggerHaptic("error");
       toast.error(e instanceof Error ? e.message : "Upload non riuscito");
     } finally {
       setUploading(false);

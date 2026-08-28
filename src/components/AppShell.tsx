@@ -43,6 +43,8 @@ import {
   isStageUnlocked,
   reportStatusQuery,
 } from "@/lib/race";
+import { triggerHaptic } from "@/lib/haptics";
+import { AdminDecisionModal } from "@/components/AdminDecisionModal";
 import {
   Sidebar,
   SidebarContent,
@@ -1002,7 +1004,10 @@ function AppShellInner({
               )}
             </div>
           ) : (
-            children
+            <>
+              <AdminDecisionModal isAdmin={isAdmin} />
+              {children}
+            </>
           )}
         </main>
       </SidebarInset>

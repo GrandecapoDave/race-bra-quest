@@ -202,7 +202,21 @@ function AdminTeamsPage() {
           p_reason: tokenReason.trim() || undefined,
           p_admin_id: adminId,
         });
-        if (error) errors.push(`${team.nome_squadra}: ${error.message}`);
+        if (error) {
+          errors.push(`${team.nome_squadra}: ${error.message}`);
+        } else {
+          await (supabase as any).from("marketplace_transactions").insert({
+            team_id: team.id,
+            marketplace_item_id: "admin_token_adjust",
+            costo_token: amount,
+            stato: "completed",
+            dettagli: {
+              reason: tokenReason.trim() || "Regolazione manuale Regia",
+              amount: amount,
+              type: amount > 0 ? "reward" : "penalty",
+            },
+          });
+        }
       }
 
       if (errors.length > 0) {
