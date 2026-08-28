@@ -8,6 +8,7 @@ import { RaceTimer } from "@/components/RaceTimer";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   challengeState,
   challengesQuery,
@@ -422,12 +423,7 @@ function Dashboard() {
               {team.data?.avatar_url ?? "🏳️"}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-md">
-                  {position === 1 ? "🥇 In Testa" : position === 2 ? "🥈 2° Posto" : position === 3 ? "🥉 3° Posto" : position > 0 ? `#${position} in Classifica` : "Gara"}
-                </span>
-              </div>
-              <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground mt-1 drop-shadow-sm">
+              <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground drop-shadow-sm">
                 {team.data?.name ?? "Nessuna squadra"}
               </h1>
               <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold">
@@ -583,6 +579,7 @@ function Dashboard() {
               <Link
                 to="/challenge/$challengeId"
                 params={{ challengeId: nextChallenge.id }}
+                onClick={() => triggerHaptic("medium")}
                 className="w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-black text-base uppercase tracking-wider shadow-lg shadow-primary/30 hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer"
               >
                 <span>VAI ALLA PROVA</span>

@@ -87,21 +87,21 @@ const describeArc = (x: number, y: number, radius: number, startAngle: number, e
   const end = polarToCartesian(x, y, radius, startAngle);
   const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
   const d = [
-    "M", start.x, start.y,
+    "M", x, y,
+    "L", start.x, start.y,
     "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
-    "L", x, y,
     "Z"
   ].join(" ");
   return d;
 };
 
 const UNLUCKY_WHEEL_SLICES = [
-  { id: "freeze_2min", label: "❄️ FREEZE", color: "#06b6d4", text: "#000000" },
-  { id: "minus_20_points", label: "💸 -20 PT", color: "#dc2626", text: "#ffffff" },
-  { id: "minus_10_tokens", label: "🪙 -10 TK", color: "#ea580c", text: "#ffffff" },
-  { id: "plus_2_min", label: "⏱️ +2 MIN", color: "#eab308", text: "#000000" },
-  { id: "heavy_backpack", label: "🎒 ZAINO (+3m)", color: "#16a34a", text: "#ffffff" },
-  { id: "minus_10_points_minus_5_tokens", label: "💥 -10PT/-5TK", color: "#4f46e5", text: "#ffffff" }
+  { id: "freeze_2min", emoji: "❄️", label: "FREEZE (2m)", color: "#06b6d4", text: "#000000" },
+  { id: "minus_20_points", emoji: "💸", label: "-20 PUNTI", color: "#dc2626", text: "#ffffff" },
+  { id: "minus_10_tokens", emoji: "🪙", label: "-10 TOKEN", color: "#ea580c", text: "#ffffff" },
+  { id: "plus_2_min", emoji: "⏱️", label: "+2 MINUTI", color: "#eab308", text: "#000000" },
+  { id: "heavy_backpack", emoji: "🎒", label: "ZAINO (+3m)", color: "#16a34a", text: "#ffffff" },
+  { id: "minus_10_points_minus_5_tokens", emoji: "💥", label: "-10PT / -5TK", color: "#4f46e5", text: "#ffffff" }
 ];
 
 function AppShellInner({
@@ -308,6 +308,7 @@ function AppShellInner({
 
   const handleSpinUnluckyWheel = async () => {
     if (isUnluckySpinning || !pendingUnluckyWheelTx) return;
+    triggerHaptic("spin");
     setIsUnluckySpinning(true);
     setShowUnluckyPrize(false);
 
@@ -340,6 +341,7 @@ function AppShellInner({
         setTimeout(() => {
           setIsUnluckySpinning(false);
           setShowUnluckyPrize(true);
+          triggerHaptic("error");
           toast.warning(`🎡 MALUS RICEVUTO: ${outcome.label}`);
           queryClient.invalidateQueries();
         }, 5000);
@@ -354,6 +356,7 @@ function AppShellInner({
   };
 
   const handleDismissUnluckyWheel = () => {
+    triggerHaptic("light");
     setUnluckyRotation(0);
     setIsUnluckySpinning(false);
     setShowUnluckyPrize(false);
@@ -544,7 +547,7 @@ function AppShellInner({
       ]
     : [
         { to: "/dashboard", label: "Squadra", icon: LayoutDashboard },
-        { to: "/tappe", label: "Tappe", icon: Map },
+        { to: "/marketplace", label: "Marketplace", icon: ShoppingBag },
       ];
 
   return (
@@ -886,7 +889,7 @@ function AppShellInner({
                   </div>
 
                   {/* SVG Wheel */}
-                  <div className="relative w-[260px] h-[260px] sm:w-[280px] sm:h-[280px] shrink-0 my-2">
+                  <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] shrink-0 my-2">
                     <svg
                       viewBox="0 0 400 400"
                       className="w-full h-full select-none"
@@ -895,8 +898,8 @@ function AppShellInner({
                         transition: isUnluckySpinning ? "transform 5000ms cubic-bezier(0.2, 0.8, 0.2, 1)" : "none",
                       }}
                     >
-                      <circle cx="200" cy="200" r="190" fill="#09090b" stroke="#27272a" strokeWidth="8" />
-                      <circle cx="200" cy="200" r="186" fill="none" stroke="#f59e0b" strokeWidth="2" opacity="0.3" />
+                      <circle cx="200" cy="200" r="192" fill="#09090b" stroke="#27272a" strokeWidth="8" />
+                      <circle cx="200" cy="200" r="186" fill="none" stroke="#f59e0b" strokeWidth="2.5" opacity="0.4" />
 
                       {UNLUCKY_WHEEL_SLICES.map((slice, i) => {
                         const startAngle = i * 60;
@@ -911,14 +914,28 @@ function AppShellInner({
                               strokeWidth="2.5"
                             />
                             <g transform={`rotate(${midAngle} 200 200)`}>
+                              {/* Large Emoji */}
                               <text
                                 x="200"
-                                y="52"
+                                y="65"
                                 textAnchor="middle"
+                                dominantBaseline="central"
+                                fontSize="26"
+                                transform="rotate(90 200 65)"
+                              >
+                                {slice.emoji}
+                              </text>
+                              {/* Crisp Bold Label */}
+                              <text
+                                x="200"
+                                y="122"
+                                textAnchor="middle"
+                                dominantBaseline="central"
                                 fill={slice.text}
-                                fontSize="7.5"
+                                fontSize="13.5"
                                 fontWeight="900"
-                                transform="rotate(90 200 52)"
+                                letterSpacing="0.4"
+                                transform="rotate(90 200 122)"
                               >
                                 {slice.label}
                               </text>
@@ -928,12 +945,12 @@ function AppShellInner({
                       })}
 
                       {/* Inner pin */}
-                      <circle cx="200" cy="200" r="24" fill="#09090b" stroke="#f59e0b" strokeWidth="3" />
-                      <circle cx="200" cy="200" r="8" fill="#f59e0b" />
+                      <circle cx="200" cy="200" r="26" fill="#09090b" stroke="#f59e0b" strokeWidth="3.5" />
+                      <circle cx="200" cy="200" r="10" fill="#f59e0b" />
                     </svg>
 
                     {/* Pointer */}
-                    <div className="absolute top-[-6px] left-[50%] translate-x-[-50%] z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-amber-400 drop-shadow-[0_3px_5px_rgba(0,0,0,0.6)]" />
+                    <div className="absolute top-[-8px] left-[50%] translate-x-[-50%] z-10 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[22px] border-t-amber-400 drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)]" />
                   </div>
 
                   <button
@@ -1053,7 +1070,10 @@ function NavItem({
   return (
     <Link
       to={to}
-      onClick={onClick}
+      onClick={(e) => {
+        triggerHaptic("light");
+        if (onClick) onClick();
+      }}
       activeProps={{ className: "text-primary scale-105 font-bold drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" }}
       inactiveProps={{ className: "text-muted-foreground font-medium hover:text-foreground" }}
       className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] transition-all touch-active min-w-0"

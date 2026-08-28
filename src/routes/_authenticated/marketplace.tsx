@@ -166,25 +166,23 @@ const MARKETPLACE_ITEMS = [
   {
     id: "tassa_passaggio",
     nome: "TASSA DI PASSAGGIO",
+    descrizione: "Scambia all'istante il tuo punteggio totale di classifica con quello della squadra bersaglio!",
+    costo_token: 40,
     categoria: "MALUS",
-    costo: 70,
-    effetto: "Scambia integralmente i Punti Squadra correnti con quelli di una squadra avversaria.",
-    descrizione: "Prendi la posizione in classifica di un tuo rivale scambiando i vostri punteggi.",
     icon: RefreshCw,
-    color: "from-blue-600 to-indigo-800",
   },
 ];
 
 const WHEEL_SLICES = [
-  { id: "jackpot", label: "🏆 JACKPOT (+20 PT)", color: "#eab308", text: "#000000" },
-  { id: "dave_help", label: "🧠 AIUTO DAVE 📞", color: "#a855f7", text: "#ffffff" },
-  { id: "mega_bonus", label: "💎 MEGA (+15 PT)", color: "#3b82f6", text: "#ffffff" },
-  { id: "bonus", label: "⭐ BONUS (+10 PT)", color: "#10b981", text: "#ffffff" },
-  { id: "piccolo_bonus", label: "🎁 PICCOLO (+5 PT)", color: "#f97316", text: "#ffffff" },
-  { id: "gettoni_bonus", label: "🪙 GETTONI (+10 TK)", color: "#06b6d4", text: "#000000" },
-  { id: "doppio_premio", label: "🎯 DOPPIO (+5/5)", color: "#ec4899", text: "#ffffff" },
-  { id: "fortuna", label: "🍀 FORTUNA (+5 TK)", color: "#84cc16", text: "#ffffff" },
-  { id: "sorpresa", label: "🎉 SORPRESA (+3 PT)", color: "#ef4444", text: "#ffffff" },
+  { id: "jackpot", emoji: "🏆", label: "JACKPOT (+20)", color: "#eab308", text: "#000000" },
+  { id: "dave_help", emoji: "🧠", label: "AIUTO DAVE", color: "#a855f7", text: "#ffffff" },
+  { id: "mega_bonus", emoji: "💎", label: "MEGA (+15 PT)", color: "#3b82f6", text: "#ffffff" },
+  { id: "bonus", emoji: "⭐", label: "BONUS (+10 PT)", color: "#10b981", text: "#ffffff" },
+  { id: "piccolo_bonus", emoji: "🎁", label: "PICCOLO (+5 PT)", color: "#f97316", text: "#ffffff" },
+  { id: "gettoni_bonus", emoji: "🪙", label: "+10 TOKEN", color: "#06b6d4", text: "#000000" },
+  { id: "doppio_premio", emoji: "🎯", label: "DOPPIO (+5/+5)", color: "#ec4899", text: "#ffffff" },
+  { id: "fortuna", emoji: "🍀", label: "+5 TOKEN", color: "#84cc16", text: "#ffffff" },
+  { id: "sorpresa", emoji: "🎉", label: "+3 PUNTI", color: "#ef4444", text: "#ffffff" },
 ];
 
 const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -267,6 +265,7 @@ function MarketplacePage() {
 
   const handleSpinWheel = () => {
     if (isSpinning || !wheelOutcome) return;
+    triggerHaptic("spin");
 
     let sliceIndex = WHEEL_SLICES.findIndex((s) => s.id === wheelOutcome.id || s.id === wheelOutcome.outcome_id);
     if (sliceIndex === -1 && wheelOutcome.outcome_label) {
@@ -287,6 +286,7 @@ function MarketplacePage() {
     setTimeout(() => {
       setIsSpinning(false);
       setShowPrize(true);
+      triggerHaptic("success");
       queryClient.invalidateQueries();
     }, 5000);
   };
@@ -1395,7 +1395,7 @@ function MarketplacePage() {
                   </div>
 
                   {/* Graphic rotating SVG Wheel */}
-                  <div className="relative w-[280px] h-[280px] sm:w-[300px] sm:h-[300px] shrink-0 my-2">
+                  <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] shrink-0 my-2">
                     {/* The Wheel SVG */}
                     <svg
                       viewBox="0 0 400 400"
@@ -1405,8 +1405,8 @@ function MarketplacePage() {
                         transition: isSpinning ? "transform 5000ms cubic-bezier(0.2, 0.8, 0.2, 1)" : "none",
                       }}
                     >
-                      <circle cx="200" cy="200" r="190" fill="#18181b" stroke="#27272a" strokeWidth="8" />
-                      <circle cx="200" cy="200" r="186" fill="none" stroke="#a855f7" strokeWidth="2" opacity="0.3" />
+                      <circle cx="200" cy="200" r="192" fill="#18181b" stroke="#27272a" strokeWidth="8" />
+                      <circle cx="200" cy="200" r="186" fill="none" stroke="#a855f7" strokeWidth="2.5" opacity="0.4" />
 
                       {WHEEL_SLICES.map((slice, i) => {
                         const startAngle = i * 40;
@@ -1421,14 +1421,28 @@ function MarketplacePage() {
                               strokeWidth="2.5"
                             />
                             <g transform={`rotate(${midAngle} 200 200)`}>
+                              {/* Large Emoji */}
                               <text
                                 x="200"
-                                y="52"
+                                y="60"
                                 textAnchor="middle"
+                                dominantBaseline="central"
+                                fontSize="24"
+                                transform="rotate(90 200 60)"
+                              >
+                                {slice.emoji}
+                              </text>
+                              {/* Bold Label */}
+                              <text
+                                x="200"
+                                y="118"
+                                textAnchor="middle"
+                                dominantBaseline="central"
                                 fill={slice.text}
-                                fontSize="8.5"
+                                fontSize="11.5"
                                 fontWeight="900"
-                                transform="rotate(90 200 52)"
+                                letterSpacing="0.2"
+                                transform="rotate(90 200 118)"
                               >
                                 {slice.label}
                               </text>
@@ -1438,12 +1452,12 @@ function MarketplacePage() {
                       })}
 
                       {/* Inner center pin */}
-                      <circle cx="200" cy="200" r="24" fill="#18181b" stroke="#a855f7" strokeWidth="3" />
-                      <circle cx="200" cy="200" r="8" fill="#a855f7" />
+                      <circle cx="200" cy="200" r="26" fill="#18181b" stroke="#a855f7" strokeWidth="3.5" />
+                      <circle cx="200" cy="200" r="10" fill="#a855f7" />
                     </svg>
 
                     {/* Pointer - stationary at top pointing down */}
-                    <div className="absolute top-[-6px] left-[50%] translate-x-[-50%] z-10 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-purple-400 drop-shadow-[0_3px_5px_rgba(0,0,0,0.6)]" />
+                    <div className="absolute top-[-8px] left-[50%] translate-x-[-50%] z-10 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[22px] border-t-purple-400 drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)]" />
                   </div>
 
                   {/* SPIN BUTTON */}
