@@ -4,10 +4,12 @@ export function RaceTimer({
   startedAt,
   endedAt,
   status,
+  className = "",
 }: {
   startedAt?: string | null;
   endedAt?: string | null;
   status?: string | null;
+  className?: string;
 }) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -21,7 +23,7 @@ export function RaceTimer({
   }, [isTerminated, isNotStarted]);
 
   if (isNotStarted) {
-    return <span className="font-display text-3xl tabular-nums">00:00:00</span>;
+    return <span className={`font-display text-3xl tracking-wider tabular-nums ${className}`}>00:00:00</span>;
   }
 
   const startMs = new Date(startedAt!).getTime();
@@ -40,7 +42,7 @@ export function RaceTimer({
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <span className="font-display text-3xl tabular-nums">
+    <span className={`font-display text-3xl tracking-wider tabular-nums ${className}`}>
       {pad(h)}:{pad(m)}:{pad(s)}
     </span>
   );

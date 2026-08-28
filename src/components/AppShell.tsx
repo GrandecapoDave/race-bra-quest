@@ -947,8 +947,8 @@ function AppShellInner({
       </SidebarInset>
 
       {/* ── Mobile bottom nav ── */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-white/[0.07] bg-background/95 backdrop-blur-xl md:hidden shadow-lg shadow-black/40 safe-bottom">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-around px-1 py-1.5 min-h-16 box-border">
+      <nav className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-border/40 bg-background/90 backdrop-blur-2xl md:hidden shadow-2xl shadow-black/80 safe-bottom">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-around px-2 py-2 min-h-16 box-border">
           {mobileNavItems.map((item) => (
             <NavItem
               key={item.to}
@@ -965,7 +965,7 @@ function AppShellInner({
               icon={
                 <item.icon
                   className="size-5 transition-transform"
-                  strokeWidth={1.8}
+                  strokeWidth={2}
                 />
               }
               label={item.label}
@@ -983,10 +983,10 @@ function AppShellInner({
               }
               toggleSidebar();
             }}
-            className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-semibold text-slate-400 transition-colors hover:text-primary active:scale-95 cursor-pointer min-w-0"
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] font-semibold text-muted-foreground transition-all hover:text-primary active:scale-95 cursor-pointer min-w-0"
             aria-label="Apri menu"
           >
-            <Menu className="size-5" strokeWidth={1.8} />
+            <Menu className="size-5" strokeWidth={2} />
             <span className="tracking-tight truncate max-w-full text-center px-0.5">Menu</span>
           </button>
         </div>
@@ -1010,9 +1010,9 @@ function NavItem({
     <Link
       to={to}
       onClick={onClick}
-      activeProps={{ className: "text-orange-400 scale-105 font-bold" }}
-      inactiveProps={{ className: "text-slate-400 font-medium" }}
-      className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] transition-all hover:text-primary min-w-0"
+      activeProps={{ className: "text-primary scale-105 font-bold drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" }}
+      inactiveProps={{ className: "text-muted-foreground font-medium hover:text-foreground" }}
+      className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[11px] transition-all touch-active min-w-0"
     >
       {icon}
       <span className="tracking-tight truncate max-w-full text-center px-0.5">{label}</span>

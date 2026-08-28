@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Pechino Express Bra — design system.
- * Adventure / videogame aesthetic: deep night-jungle base, sunset orange
- * primary, jade accent. All values are oklch semantic tokens.
+ * Pechino Express Bra — Design System (UI/UX Pro Max Edition)
+ * Adventure / Video Game HUD Aesthetic:
+ * Deep Night-Blue Base + Sunset Orange Action + Trophy Gold + Jade Checkpoint
  */
 
 @theme inline {
@@ -54,48 +54,58 @@
 
 :root {
   --radius: 1rem;
-  --background: oklch(0.17 0.032 258);
-  --foreground: oklch(0.97 0.01 95);
-  --card: oklch(0.23 0.035 258);
-  --card-foreground: oklch(0.97 0.01 95);
-  --popover: oklch(0.21 0.035 258);
-  --popover-foreground: oklch(0.97 0.01 95);
-  --primary: oklch(0.72 0.19 45);
-  --primary-foreground: oklch(0.18 0.03 258);
-  --secondary: oklch(0.3 0.04 258);
-  --secondary-foreground: oklch(0.95 0.01 95);
-  --muted: oklch(0.27 0.03 258);
-  --muted-foreground: oklch(0.72 0.025 258);
-  --accent: oklch(0.72 0.14 175);
-  --accent-foreground: oklch(0.18 0.03 258);
+  /* Deep Night-Jungle Blue */
+  --background: oklch(0.15 0.035 258);
+  --foreground: oklch(0.98 0.01 95);
+  --card: oklch(0.20 0.04 258);
+  --card-foreground: oklch(0.98 0.01 95);
+  --popover: oklch(0.19 0.038 258);
+  --popover-foreground: oklch(0.98 0.01 95);
+
+  /* Adventure Sunset Orange */
+  --primary: oklch(0.72 0.20 45);
+  --primary-foreground: #ffffff;
+
+  /* Tactical Dark Navy */
+  --secondary: oklch(0.28 0.045 258);
+  --secondary-foreground: oklch(0.96 0.01 95);
+  --muted: oklch(0.25 0.032 258);
+  --muted-foreground: oklch(0.74 0.025 258);
+
+  /* Jade Emerald & Champion Gold */
+  --accent: oklch(0.73 0.16 165);
+  --accent-foreground: #090e18;
   --destructive: oklch(0.62 0.22 25);
-  --destructive-foreground: oklch(0.98 0.01 95);
-  --success: oklch(0.72 0.17 150);
-  --success-foreground: oklch(0.16 0.03 258);
-  --gold: oklch(0.83 0.16 88);
-  --gold-foreground: oklch(0.18 0.03 258);
-  --border: oklch(0.34 0.035 258);
-  --input: oklch(0.3 0.035 258);
-  --ring: oklch(0.72 0.19 45);
-  --sidebar: oklch(0.19 0.035 258);
-  --sidebar-foreground: oklch(0.97 0.01 95);
-  --sidebar-border: oklch(0.34 0.035 258);
+  --destructive-foreground: #ffffff;
+  --success: oklch(0.73 0.17 150);
+  --success-foreground: #090e18;
+  --gold: oklch(0.84 0.17 85);
+  --gold-foreground: #090e18;
+
+  /* Borders & Focus */
+  --border: oklch(0.32 0.038 258);
+  --input: oklch(0.28 0.035 258);
+  --ring: oklch(0.72 0.20 45);
+  --sidebar: oklch(0.17 0.035 258);
+  --sidebar-foreground: oklch(0.98 0.01 95);
+  --sidebar-border: oklch(0.32 0.038 258);
 
   --gradient-hero: linear-gradient(
     150deg,
-    oklch(0.24 0.05 268) 0%,
-    oklch(0.2 0.04 230) 45%,
-    oklch(0.3 0.09 40) 100%
+    oklch(0.22 0.05 268) 0%,
+    oklch(0.18 0.04 230) 45%,
+    oklch(0.28 0.09 45) 100%
   );
-  --gradient-primary: linear-gradient(100deg, oklch(0.74 0.19 40), oklch(0.82 0.16 75));
-  --gradient-accent: linear-gradient(100deg, oklch(0.68 0.14 185), oklch(0.75 0.15 150));
+  --gradient-primary: linear-gradient(100deg, oklch(0.72 0.20 40), oklch(0.80 0.18 65));
+  --gradient-accent: linear-gradient(100deg, oklch(0.68 0.15 180), oklch(0.76 0.16 150));
+  --gradient-gold: linear-gradient(100deg, oklch(0.80 0.17 80), oklch(0.88 0.16 95));
   --gradient-card: linear-gradient(
     160deg,
-    color-mix(in oklab, var(--card) 96%, white 4%),
+    color-mix(in oklab, var(--card) 94%, white 6%),
     var(--card)
   );
-  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent),
-    0 18px 40px -18px color-mix(in oklab, var(--primary) 55%, transparent);
+  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent),
+    0 18px 40px -18px color-mix(in oklab, var(--primary) 60%, transparent);
   --shadow-card: 0 20px 45px -30px oklch(0 0 0 / 0.9);
 }
 
@@ -121,6 +131,7 @@
     overflow-x: hidden;
     position: relative;
     -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
   }
 
   body {
@@ -135,12 +146,12 @@
     background-color: var(--color-background);
     background-image: radial-gradient(
         ellipse 80% 60% at 50% -10%,
-        color-mix(in oklab, var(--primary) 18%, transparent),
+        color-mix(in oklab, var(--primary) 16%, transparent),
         transparent
       ),
       radial-gradient(
         ellipse 60% 50% at 90% 100%,
-        color-mix(in oklab, var(--accent) 14%, transparent),
+        color-mix(in oklab, var(--accent) 12%, transparent),
         transparent
       );
     background-attachment: fixed;
@@ -172,13 +183,13 @@
   h3,
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
   }
 }
 
 @utility surface {
   background-image: var(--gradient-card);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in oklab, var(--color-border) 80%, white 20%);
   box-shadow: var(--shadow-card);
   border-radius: var(--radius-xl);
 }
@@ -195,14 +206,37 @@
   background-image: var(--gradient-accent);
 }
 
+@utility gold-gradient {
+  background-image: var(--gradient-gold);
+}
+
 @utility glow {
   box-shadow: var(--shadow-glow);
+}
+
+@utility glow-primary {
+  box-shadow: 0 0 24px -4px color-mix(in oklab, var(--primary) 50%, transparent);
+}
+
+@utility glow-accent {
+  box-shadow: 0 0 24px -4px color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+@utility glow-gold {
+  box-shadow: 0 0 24px -4px color-mix(in oklab, var(--gold) 50%, transparent);
+}
+
+@utility touch-active {
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), filter 0.15s ease;
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 @keyframes pop-in {
   0% {
     opacity: 0;
-    transform: scale(0.9) translateY(8px);
+    transform: scale(0.92) translateY(8px);
   }
   100% {
     opacity: 1;
@@ -265,6 +299,7 @@
 @media all and (display-mode: standalone) {
   body {
     -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 }
 
