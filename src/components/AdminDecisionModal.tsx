@@ -136,7 +136,7 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
   const pendingTokenDecisions = (tokenTransactions.data || [])
     .filter((t: any) => !dismissedIds.includes(t.id))
     .map((t: any) => {
-      const amount = t.dettagli?.amount ?? t.costo_token ?? 0;
+      let amount = typeof t.dettagli?.amount === "number" ? t.dettagli.amount : (t.costo_token ?? 0);
       const reason = t.dettagli?.reason || "Regolazione manuale Regia";
       return {
         id: t.id,
@@ -151,8 +151,29 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
     .filter((a: any) => !dismissedIds.includes(a.id))
     .map((a: any) => {
       const d = a.dettagli || {};
-      const amount = typeof d.amount === "number" ? d.amount : 0;
-      const reason = d.reason || d.message || "Regolazione manuale Regia";
+      let amount = typeof d.amount === "number" ? d.amount : 0;
+      const msg = typeof d.message === "string" ? d.message : "";
+
+      // Smart regex fallback if amount is 0 or not numeric in dettagli JSON
+      if (amount === 0 && msg) {
+        const match = msg.match(/(aggiunto|accreditato|rimosso|detratto|tolto)\s+(\d+)\s+token/i);
+        if (match) {
+          const action = match[1].toLowerCase();
+          const val = parseInt(match[2], 10);
+          amount = (action === "aggiunto" || action === "accreditato") ? val : -val;
+        }
+      }
+
+      let reason = d.reason;
+      if (!reason || reason === "Regolazione manuale Regia") {
+        if (msg.includes("Motivazione:")) {
+          const parts = msg.split("Motivazione:");
+          reason = parts[1]?.trim().replace(/^["']|["']$/g, "") || msg;
+        } else {
+          reason = msg || "Regolazione manuale Regia";
+        }
+      }
+
       return {
         id: a.id,
         type: "tokens" as const,
@@ -181,7 +202,7 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
 
   if (!activeDecision) return null;
 
-  const isPositive = activeDecision.amount > 0;
+  const isPositive = activeDecision.amount >= 0;
   const isPoints = activeDecision.type === "points";
 
   return (
