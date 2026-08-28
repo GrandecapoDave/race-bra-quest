@@ -237,10 +237,21 @@ function AppShellInner({
     }
   });
 
-  // Strict FIFO Malus Queue (Consecutive Execution)
-  const pendingMaluses = (activeMalusesQuery.data ?? []).filter((t: any) => t.stato === "completed");
+  const handledFreezeIdsRef = useRef<Set<string>>(new Set());
+  const [locallyConsumedMalusIds, setLocallyConsumedMalusIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("locally_consumed_maluses");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const pendingMaluses = (activeMalusesQuery.data ?? []).filter(
+    (t: any) => t.stato === "completed" && !locallyConsumedMalusIds.includes(t.id)
+  );
   const queuedMalusesCount = pendingMaluses.length;
-  const currentActiveMalusTx = pendingMaluses[0] || null; // Active head of queue
+  const currentActiveMalusTx = pendingMaluses[0] || null;
 
   const isCurrentFreeze = currentActiveMalusTx?.item_id === "freeze_2min";
   const isCurrentEnigma = currentActiveMalusTx?.item_id === "enigma_extra";
@@ -254,7 +265,13 @@ function AppShellInner({
       return;
     }
 
-    const key = `freeze_started_${currentActiveMalusTx.id}`;
+    const txId = currentActiveMalusTx.id;
+    if (handledFreezeIdsRef.current.has(txId)) {
+      setSecondsLeft(0);
+      return;
+    }
+
+    const key = `freeze_started_${txId}`;
     let startMs = 0;
     try {
       const saved = localStorage.getItem(key);
@@ -270,25 +287,36 @@ function AppShellInner({
       } catch {}
     }
 
-    const durationMs = 120 * 1000; // 2 minutes
+    const durationMs = 120 * 1000;
     const targetExpiryMs = startMs + durationMs;
 
     const updateRemaining = async () => {
+      if (handledFreezeIdsRef.current.has(txId)) {
+        return;
+      }
       const now = Date.now();
       const remaining = Math.ceil((targetExpiryMs - now) / 1000);
       if (remaining <= 0) {
+        handledFreezeIdsRef.current.add(txId);
         setSecondsLeft(0);
         try {
           localStorage.removeItem(key);
         } catch {}
 
-        // Mark this specific freeze transaction as used to advance the queue
-        await (supabase as any)
-          .from("marketplace_transactions")
-          .update({ stato: "used", data_utilizzo: new Date().toISOString() })
-          .eq("id", currentActiveMalusTx.id);
+        setLocallyConsumedMalusIds((prev) => {
+          const next = [...prev, txId];
+          try {
+            localStorage.setItem("locally_consumed_maluses", JSON.stringify(next));
+          } catch {}
+          return next;
+        });
 
-        toast.success("❄️ FREEZE TERMINATO! Avanzamento coda malus in corso...");
+        toast.success("❄️ FREEZE TERMINATO! Siete di nuovo operativi.");
+
+        await supabase.rpc("consume_marketplace_transaction", {
+          p_transaction_id: txId,
+        });
+
         queryClient.invalidateQueries();
       } else {
         setSecondsLeft(remaining);
@@ -313,7 +341,7 @@ function AppShellInner({
 
   const handleSubmitEnigmaExtra = async (e: any) => {
     e.preventDefault();
-    if (!enigmaAnswer.trim()) return;
+    if (!enigmaAnswer.trim() || !currentActiveMalusTx) return;
     setIsSubmittingEnigma(true);
     setEnigmaError("");
     try {
@@ -323,12 +351,19 @@ function AppShellInner({
       if (error) {
         setEnigmaError(error.message || "Errore di verifica.");
       } else if (data && data.is_correct) {
-        if (currentActiveMalusTx) {
-          await (supabase as any)
-            .from("marketplace_transactions")
-            .update({ stato: "used", data_utilizzo: new Date().toISOString() })
-            .eq("id", currentActiveMalusTx.id);
-        }
+        const txId = currentActiveMalusTx.id;
+        setLocallyConsumedMalusIds((prev) => {
+          const next = [...prev, txId];
+          try {
+            localStorage.setItem("locally_consumed_maluses", JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+
+        await supabase.rpc("consume_marketplace_transaction", {
+          p_transaction_id: txId,
+        });
+
         toast.success("🧩 ENIGMA RISOLTO CORRETTAMENTE! Squadra sbloccata.");
         setEnigmaAnswer("");
         queryClient.invalidateQueries();
@@ -366,7 +401,6 @@ function AppShellInner({
           return;
         }
 
-        // Spin animation: 360 * 6 full rotations + align slice under pointer (at top, which is angle 0)
         const rotationAngle = 360 * 6 + (360 - (sliceIndex * 60 + 30));
         
         requestAnimationFrame(() => {
@@ -391,14 +425,21 @@ function AppShellInner({
 
   const handleDismissUnluckyWheel = () => {
     triggerHaptic("light");
+    if (pendingUnluckyWheelTx) {
+      const txId = pendingUnluckyWheelTx.id;
+      setLocallyConsumedMalusIds((prev) => {
+        const next = [...prev, txId];
+        try {
+          localStorage.setItem("locally_consumed_maluses", JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }
     setUnluckyRotation(0);
     setIsUnluckySpinning(false);
     setShowUnluckyPrize(false);
-    setUnluckyOutcome(null);
     queryClient.invalidateQueries();
   };
-
-
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");

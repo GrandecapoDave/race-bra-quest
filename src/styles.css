@@ -339,3 +339,10 @@
   }
 }
 
+/* Toaster notch / Dynamic Island & status bar clearance */
+[data-sonner-toaster][data-y-position="top"],
+[data-sonner-toaster] {
+  top: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) !important;
+  z-index: 99999 !important;
+}
+

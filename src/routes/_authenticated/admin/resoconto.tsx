@@ -662,26 +662,28 @@ function AdminResocontoPage() {
                     </div>
 
                     {/* SCORE BLOCKS */}
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                      <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Finali</span>
-                        <p className="text-xl font-display font-black text-primary">{finalScore} PT</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                      <div className="bg-zinc-900/60 p-2.5 sm:p-3 rounded-xl border border-zinc-800 text-center flex flex-col items-center justify-center min-w-0 overflow-hidden col-span-2 sm:col-span-1">
+                        <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider text-muted-foreground truncate w-full">Punti Finali</span>
+                        <p className="text-lg sm:text-xl font-display font-black text-primary truncate mt-0.5">{finalScore} PT</p>
                       </div>
-                      <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground">Punti Base</span>
-                        <p className="text-lg font-mono font-black text-zinc-200">{basePts} PT</p>
+                      <div className="bg-zinc-900/60 p-2.5 sm:p-3 rounded-xl border border-zinc-800 text-center flex flex-col items-center justify-center min-w-0 overflow-hidden">
+                        <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate w-full">Punti Base</span>
+                        <p className="text-base sm:text-lg font-mono font-black text-zinc-200 truncate mt-0.5">{basePts} PT</p>
                       </div>
-                      <div className="bg-zinc-900/60 p-3 rounded-xl border border-purple-500/30 text-center bg-purple-950/20">
-                        <span className="text-[10px] uppercase font-bold text-purple-400">Cattiveria 😈</span>
-                        <p className="text-lg font-mono font-black text-purple-400">{cattiveriaPts} PT</p>
+                      <div className="bg-purple-950/20 p-2.5 sm:p-3 rounded-xl border border-purple-500/30 text-center flex flex-col items-center justify-center min-w-0 overflow-hidden">
+                        <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-tight text-purple-400 truncate w-full flex items-center justify-center gap-1">
+                          <span>😈</span> <span>Cattiveria</span>
+                        </span>
+                        <p className="text-base sm:text-lg font-mono font-black text-purple-400 truncate mt-0.5">+{cattiveriaPts} PT</p>
                       </div>
-                      <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground">Bonus Tempo</span>
-                        <p className="text-lg font-mono font-black text-amber-400">+{timeBonus} PT</p>
+                      <div className="bg-zinc-900/60 p-2.5 sm:p-3 rounded-xl border border-zinc-800 text-center flex flex-col items-center justify-center min-w-0 overflow-hidden">
+                        <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate w-full">Bonus Tempo</span>
+                        <p className="text-base sm:text-lg font-mono font-black text-amber-400 truncate mt-0.5">+{timeBonus} PT</p>
                       </div>
-                      <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 text-center">
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground">Bonus Token</span>
-                        <p className="text-lg font-mono font-black text-emerald-400">+{tokenBonus} PT</p>
+                      <div className="bg-zinc-900/60 p-2.5 sm:p-3 rounded-xl border border-zinc-800 text-center flex flex-col items-center justify-center min-w-0 overflow-hidden">
+                        <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate w-full">Bonus Token</span>
+                        <p className="text-base sm:text-lg font-mono font-black text-emerald-400 truncate mt-0.5">+{tokenBonus} PT</p>
                       </div>
                     </div>
                   </div>
