@@ -806,18 +806,6 @@ function AdminLayout() {
     return a.totalDurationSeconds - b.totalDurationSeconds;
   });
 
-  const pendingPostersCount = (allTeamPosters.data ?? []).filter(
-    (p: any) => p.url && (p.voto === null || p.voto === undefined)
-  ).length;
-
-  const pendingSocialCount = (allSocialSubmissions.data ?? []).filter(
-    (s: any) => s.voto === null || s.voto === undefined
-  ).length;
-
-  const pendingPassaparolaCount = (marketplaceTransactions.data ?? []).filter(
-    (t: any) => t.item_id === "passaparola" && (t.stato === "pending" || t.stato === "in_attesa")
-  ).length;
-
   const adminNavCategories = [
     {
       name: "Monitoraggio",
@@ -832,9 +820,9 @@ function AdminLayout() {
     {
       name: "Verifiche Media",
       links: [
-        { to: "/admin/photos", label: "Foto", badge: pendingApprovalsCount },
-        { to: "/admin/posters", label: "Locandine", badge: pendingPostersCount },
-        { to: "/admin/social", label: "Social", badge: pendingSocialCount },
+        { to: "/admin/photos", label: "Foto" },
+        { to: "/admin/posters", label: "Locandine" },
+        { to: "/admin/social", label: "Social" },
       ],
     },
     {
@@ -851,7 +839,7 @@ function AdminLayout() {
       name: "Marketplace & Malus",
       links: [
         { to: "/admin/marketplace", label: "Mercato" },
-        { to: "/admin/passaparola", label: "Passaparola", badge: pendingPassaparolaCount },
+        { to: "/admin/passaparola", label: "Passaparola" },
         { to: "/admin/partenze", label: "Partenze" },
         { to: "/admin/penalita", label: "Penalità" },
         { to: "/admin/tassa", label: "Tassa" },
@@ -948,11 +936,6 @@ function AdminLayout() {
                     }`}
                   >
                     <span>{link.label}</span>
-                    {link.badge && link.badge > 0 ? (
-                      <span className="flex size-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
-                        {link.badge}
-                      </span>
-                    ) : null}
                   </Link>
                 );
               })

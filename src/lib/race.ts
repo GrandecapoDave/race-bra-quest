@@ -245,7 +245,7 @@ export const scoreEventsQuery = (teamId: string | undefined) =>
       unwrap<any[]>(
         await (supabase as any)
           .from("scores")
-          .select("id,points:punti,reason:motivo,created_at")
+          .select("id,points:punti,reason:motivo,tipo_modificatore,challenge_id,created_at")
           .eq("team_id", teamId!)
           .order("created_at", { ascending: false })
           .limit(40),

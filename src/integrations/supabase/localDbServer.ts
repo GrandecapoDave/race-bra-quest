@@ -3526,6 +3526,62 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           return { data: { success: true, new_balance: newBalance }, error: null };
         }
 
+        if (fnName === "admin_adjust_team_score") {
+          const { p_team_id, p_punti, p_motivo, p_admin_id } = args;
+          const ADMIN_ID = "11111111-1111-1111-1111-111111111111";
+          const isAdminUser =
+            p_admin_id === ADMIN_ID ||
+            db.user_roles.some((ur: any) => ur.user_id === p_admin_id && ur.role === "admin");
+          if (!p_admin_id || !isAdminUser) {
+            return { data: null, error: { message: "Non autorizzato" } };
+          }
+          if (typeof p_punti !== "number" || isNaN(p_punti)) {
+            return { data: null, error: { message: "Punteggio non valido" } };
+          }
+
+          const team = db.teams.find((t: any) => t.id === p_team_id);
+          if (!team) return { data: null, error: { message: "Squadra non trovata" } };
+
+          const scoreRecord = {
+            id: crypto.randomUUID(),
+            team_id: p_team_id,
+            punti: p_punti,
+            motivo: p_motivo || "Regolazione manuale Regia",
+            tipo_modificatore: "admin_adjustment",
+            created_at: new Date().toISOString(),
+          };
+
+          db.scores = db.scores || [];
+          db.scores.push(scoreRecord);
+
+          const adminLabel = db.admin?.find((a: any) => a.id === p_admin_id)?.username || "admin";
+          const direction = p_punti >= 0 ? "assegnato" : "sottratto";
+          const absPoints = Math.abs(p_punti);
+          logActivity(
+            db,
+            p_admin_id,
+            `Regia (${adminLabel}) ha ${direction} ${absPoints} punti alla squadra "${team.nome_squadra}". Motivazione: ${p_motivo || "Nessuna"}.`,
+          );
+
+          saveDb(db);
+          return { data: { success: true, score_id: scoreRecord.id }, error: null };
+        }
+
+        if (fnName === "admin_delete_team_score") {
+          const { p_score_id, p_admin_id } = args;
+          const ADMIN_ID = "11111111-1111-1111-1111-111111111111";
+          const isAdminUser =
+            p_admin_id === ADMIN_ID ||
+            db.user_roles.some((ur: any) => ur.user_id === p_admin_id && ur.role === "admin");
+          if (!p_admin_id || !isAdminUser) {
+            return { data: null, error: { message: "Non autorizzato" } };
+          }
+
+          db.scores = (db.scores || []).filter((s: any) => s.id !== p_score_id);
+          saveDb(db);
+          return { data: { success: true }, error: null };
+        }
+
         if (fnName === "submit_quiz_answer") {
           const { p_question, p_selected } = args;
           const q = db.quiz_questions.find((qq: any) => qq.id === p_question);

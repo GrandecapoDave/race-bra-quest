@@ -308,7 +308,6 @@ function AppShellInner({
 
   const handleSpinUnluckyWheel = async () => {
     if (isUnluckySpinning || !pendingUnluckyWheelTx) return;
-    triggerHaptic("spin");
     setIsUnluckySpinning(true);
     setShowUnluckyPrize(false);
 
@@ -331,20 +330,19 @@ function AppShellInner({
           return;
         }
 
-        // Spin animation: 360 * 5 full rotations + align slice under pointer (at top, which is angle 0)
-        // Each slice is 60 degrees. Midpoint is i * 60 + 30.
-        // Rotation goes clockwise, so to align slice `i` under pointer (which is at the top/0 deg),
-        // we rotate by `360 - (i * 60 + 30)` degrees.
-        const rotationAngle = 360 * 5 + (360 - (sliceIndex * 60 + 30));
-        setUnluckyRotation(rotationAngle);
+        // Spin animation: 360 * 6 full rotations + align slice under pointer (at top, which is angle 0)
+        const rotationAngle = 360 * 6 + (360 - (sliceIndex * 60 + 30));
+        
+        requestAnimationFrame(() => {
+          setUnluckyRotation(rotationAngle);
+        });
 
         setTimeout(() => {
           setIsUnluckySpinning(false);
           setShowUnluckyPrize(true);
-          triggerHaptic("error");
           toast.warning(`🎡 MALUS RICEVUTO: ${outcome.label}`);
           queryClient.invalidateQueries();
-        }, 5000);
+        }, 5200);
       } else {
         toast.error("Errore durante l'estrazione.");
         setIsUnluckySpinning(false);

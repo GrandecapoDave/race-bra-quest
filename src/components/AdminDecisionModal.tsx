@@ -49,7 +49,13 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
 
   // Combine unread score adjustments and token adjustments
   const pendingScoreDecisions = (scoreEvents.data || [])
-    .filter((s) => s.reason && s.reason.trim().length > 0 && !dismissedIds.includes(s.id))
+    .filter(
+      (s: any) =>
+        (s.tipo_modificatore === "admin_adjustment" || !s.challenge_id) &&
+        s.reason &&
+        s.reason.trim().length > 0 &&
+        !dismissedIds.includes(s.id)
+    )
     .map((s) => ({
       id: s.id,
       type: "points" as const,

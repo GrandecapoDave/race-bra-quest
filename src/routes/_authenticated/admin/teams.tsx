@@ -13,6 +13,7 @@ import {
   CheckCircle,
   XCircle,
   Coins,
+  Trophy,
   Plus,
   Minus,
 } from "lucide-react";
@@ -59,6 +60,7 @@ function AdminTeamsPage() {
   const [editPass, setEditPass] = useState("");
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
 
+  const [scoreTargetId, setScoreTargetId] = useState<string | null>(null);
   const [adjPoints, setAdjPoints] = useState("");
   const [adjReason, setAdjReason] = useState("");
   const [isAdjusting, setIsAdjusting] = useState(false);
@@ -136,31 +138,54 @@ function AdminTeamsPage() {
     queryClient.invalidateQueries();
   }
 
-  async function handleAdjustPoints(e: React.FormEvent) {
+  async function handleAdjustPoints(e: React.FormEvent, teamId?: string | null) {
     e.preventDefault();
-    const pointsNum = parseInt(adjPoints);
-    if (isNaN(pointsNum)) {
-      toast.error("Inserisci un punteggio valido");
+    const targetId = teamId || scoreTargetId || selectedTeamId;
+    if (!targetId) {
+      toast.error("Seleziona una squadra per regolare il punteggio");
       return;
     }
-    if (adjReason.trim().length < 3) {
+    const pointsNum = parseInt(adjPoints);
+    if (isNaN(pointsNum) || pointsNum === 0) {
+      toast.error("Inserisci un punteggio valido (diverso da 0)");
+      return;
+    }
+    if (adjReason.trim().length < 2) {
       toast.error("Inserisci una motivazione valida");
       return;
     }
     setIsAdjusting(true);
     try {
-      const { error } = await (supabase as any).from("scores").insert({
-        team_id: selectedTeamId,
-        punti: pointsNum,
-        motivo: adjReason.trim(),
+      const { data: userData } = await supabase.auth.getUser();
+      const adminId = userData.user?.id || "11111111-1111-1111-1111-111111111111";
+
+      const { data, error } = await supabase.rpc("admin_adjust_team_score", {
+        p_team_id: targetId,
+        p_punti: pointsNum,
+        p_motivo: adjReason.trim(),
+        p_admin_id: adminId,
       });
-      if (error) throw error;
-      toast.success("Punteggio regolato con successo");
+
+      if (error) {
+        // Direct insert fallback
+        const { error: insertErr } = await (supabase as any).from("scores").insert({
+          team_id: targetId,
+          punti: pointsNum,
+          motivo: adjReason.trim(),
+          tipo_modificatore: "admin_adjustment",
+        });
+        if (insertErr) throw insertErr;
+      }
+
+      const teamObj = (allTeams.data ?? []).find((t: any) => t.id === targetId);
+      const label = teamObj?.nome_squadra || "Squadra";
+      const direction = pointsNum > 0 ? "assegnati" : "sottratti";
+      toast.success(`${Math.abs(pointsNum)} punti ${direction} a ${label}!`);
       setAdjPoints("");
       setAdjReason("");
       queryClient.invalidateQueries();
     } catch (err: any) {
-      toast.error("Errore regolazione: " + err.message);
+      toast.error("Errore regolazione punteggio: " + err.message);
     } finally {
       setIsAdjusting(false);
     }
@@ -168,13 +193,22 @@ function AdminTeamsPage() {
 
   async function handleDeleteScore(scoreId: string) {
     if (!confirm("Sei sicuro di voler eliminare questa regolazione manuale?")) return;
-    const { error } = await (supabase as any).from("scores").delete().eq("id", scoreId);
-    if (error) {
-      toast.error("Errore eliminazione score: " + error.message);
-      return;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const adminId = userData.user?.id || "11111111-1111-1111-1111-111111111111";
+      const { error } = await supabase.rpc("admin_delete_team_score", {
+        p_score_id: scoreId,
+        p_admin_id: adminId,
+      });
+      if (error) {
+        const { error: delErr } = await (supabase as any).from("scores").delete().eq("id", scoreId);
+        if (delErr) throw delErr;
+      }
+      toast.success("Regolazione eliminata");
+      queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast.error("Errore eliminazione: " + err.message);
     }
-    toast.success("Regolazione eliminata");
-    queryClient.invalidateQueries();
   }
 
   // Token management handler
@@ -747,140 +781,247 @@ function AdminTeamsPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* NEW TEAM FORM */}
-          <div className="surface p-5 space-y-4 h-fit">
-            <h2 className="text-xl font-bold uppercase tracking-wider text-muted-foreground">Crea Squadra</h2>
-            <form onSubmit={handleCreateTeam} className="space-y-3">
-              <input
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                placeholder="Nome squadra (es. I Lupi)"
-                className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
-              />
-              <input
-                value={teamUser}
-                onChange={(e) => setTeamUser(e.target.value)}
-                placeholder="Username (es. lupi)"
-                className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
-              />
-              <input
-                value={teamPass}
-                onChange={(e) => setTeamPass(e.target.value)}
-                placeholder="Password"
-                type="password"
-                className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
-              />
-              <button type="submit" className="primary-gradient w-full py-3 rounded-xl font-extrabold text-primary-foreground cursor-pointer">
-                Crea Squadra
-              </button>
-            </form>
-          </div>
-
-          {/* TOKEN MANAGEMENT PANEL */}
-          <div className="surface p-5 space-y-4 h-fit">
-            <div>
-              <h2 className="text-xl font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Coins className="size-5 text-yellow-500" />
-                Gestione Token
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Aggiungi o rimuovi token da una squadra specifica o da tutte le squadre attive.
-              </p>
-            </div>
-
-            <form onSubmit={(e) => handleAdjustTokens(e, tokenTargetId)} className="space-y-3">
-              {/* Target selector */}
+        <div className="space-y-6">
+          {/* TOP UNIFIED MANAGEMENT: REGOLA PUNTEGGIO & GESTIONE TOKEN */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* REGOLA PUNTEGGIO */}
+            <div className="surface p-5 space-y-4 rounded-2xl border border-primary/20 bg-zinc-950/40 shadow-xl">
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">Squadra destinataria</label>
-                <select
-                  value={tokenTargetId ?? ""}
-                  onChange={(e) => setTokenTargetId(e.target.value || null)}
-                  className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
-                >
-                  <option value="">Tutte le squadre attive</option>
-                  {(allTeams.data ?? []).filter((t: any) => t.active).map((t: any) => (
-                    <option key={t.id} value={t.id}>{t.nome_squadra} ({t.token_balance ?? 50} token)</option>
-                  ))}
-                </select>
+                <h2 className="text-lg font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                  <Trophy className="size-5 text-primary" />
+                  Regola Punteggio
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Assegna o sottrai punti direttamente a una squadra con motivazione.
+                </p>
               </div>
 
-              {/* Amount */}
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
-                  Quantità (negativo per togliere)
-                </label>
-                <div className="flex gap-2 items-center w-full">
-                  <button
-                    type="button"
-                    onClick={() => setTokenAmount(String((parseInt(tokenAmount) || 0) - 5))}
-                    className="size-11 shrink-0 rounded-full border border-border hover:bg-secondary/50 transition-colors cursor-pointer flex items-center justify-center"
+              <form onSubmit={(e) => handleAdjustPoints(e, scoreTargetId)} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                    Squadra destinataria
+                  </label>
+                  <select
+                    value={scoreTargetId ?? ""}
+                    onChange={(e) => setScoreTargetId(e.target.value || null)}
+                    className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
                   >
-                    <Minus className="size-4" />
-                  </button>
+                    <option value="">Seleziona una squadra...</option>
+                    {(allTeams.data ?? []).filter((t: any) => t.active).map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.nome_squadra}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                    Punteggio (positivo o negativo)
+                  </label>
+                  <div className="flex gap-2 items-center w-full">
+                    <button
+                      type="button"
+                      onClick={() => setAdjPoints(String((parseInt(adjPoints) || 0) - 5))}
+                      className="size-11 shrink-0 rounded-full border border-border hover:bg-secondary/50 transition-colors cursor-pointer flex items-center justify-center"
+                    >
+                      <Minus className="size-4" />
+                    </button>
+                    <input
+                      type="number"
+                      placeholder="Es. +10 o -5"
+                      value={adjPoints}
+                      onChange={(e) => setAdjPoints(e.target.value)}
+                      className="flex-1 min-w-0 rounded-xl border border-input bg-input/40 px-4 py-3 text-sm text-center font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAdjPoints(String((parseInt(adjPoints) || 0) + 5))}
+                      className="size-11 shrink-0 rounded-full border border-border hover:bg-secondary/50 transition-colors cursor-pointer flex items-center justify-center"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                    Motivazione (visibile alla squadra)
+                  </label>
                   <input
-                    type="number"
-                    placeholder="Es. +10 o -3"
-                    value={tokenAmount}
-                    onChange={(e) => setTokenAmount(e.target.value)}
-                    className="flex-1 min-w-0 rounded-xl border border-input bg-input/40 px-4 py-3 text-sm text-center font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    type="text"
+                    placeholder="Es. Bonus creatività prova / Penalità ritardo"
+                    value={adjReason}
+                    onChange={(e) => setAdjReason(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setTokenAmount(String((parseInt(tokenAmount) || 0) + 5))}
-                    className="size-11 shrink-0 rounded-full border border-border hover:bg-secondary/50 transition-colors cursor-pointer flex items-center justify-center"
+                    onClick={(e) => { setAdjPoints("-10"); handleAdjustPoints(e as any, scoreTargetId); }}
+                    disabled={isAdjusting || !scoreTargetId}
+                    className="py-2.5 rounded-xl border border-destructive/30 text-destructive font-bold text-xs hover:bg-destructive/10 transition-all cursor-pointer disabled:opacity-40"
                   >
-                    <Plus className="size-4" />
+                    − 10 Punti
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { setAdjPoints("10"); handleAdjustPoints(e as any, scoreTargetId); }}
+                    disabled={isAdjusting || !scoreTargetId}
+                    className="py-2.5 rounded-xl border border-success/30 text-success font-bold text-xs hover:bg-success/10 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    + 10 Punti
                   </button>
                 </div>
-              </div>
 
-              {/* Reason */}
+                <button
+                  type="submit"
+                  disabled={isAdjusting || !scoreTargetId || !adjPoints}
+                  className="primary-gradient w-full py-3 rounded-xl font-extrabold text-primary-foreground disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isAdjusting ? <Loader2 className="size-4 animate-spin" /> : <Trophy className="size-4" />}
+                  Applica Punteggio
+                </button>
+              </form>
+            </div>
+
+            {/* GESTIONE TOKEN */}
+            <div className="surface p-5 space-y-4 rounded-2xl border border-yellow-500/20 bg-zinc-950/40 shadow-xl">
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">Motivazione (opzionale)</label>
-                <input
-                  type="text"
-                  placeholder="Es. Bonus orientamento..."
-                  value={tokenReason}
-                  onChange={(e) => setTokenReason(e.target.value)}
-                  className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
-                />
+                <h2 className="text-lg font-black uppercase tracking-wider text-yellow-500 flex items-center gap-2">
+                  <Coins className="size-5 text-yellow-500" />
+                  Gestione Token
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aggiungi o rimuovi token da una squadra specifica o da tutte le squadre attive.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={(e) => { setTokenAmount("-5"); handleAdjustTokens(e as any, tokenTargetId); }}
-                  disabled={isAdjustingTokens}
-                  className="py-2.5 rounded-xl border border-destructive/30 text-destructive font-bold text-xs hover:bg-destructive/10 transition-all cursor-pointer disabled:opacity-40"
-                >
-                  − 5 Token
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { setTokenAmount("5"); handleAdjustTokens(e as any, tokenTargetId); }}
-                  disabled={isAdjustingTokens}
-                  className="py-2.5 rounded-xl border border-success/30 text-success font-bold text-xs hover:bg-success/10 transition-all cursor-pointer disabled:opacity-40"
-                >
-                  + 5 Token
-                </button>
-              </div>
+              <form onSubmit={(e) => handleAdjustTokens(e, tokenTargetId)} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                    Squadra destinataria
+                  </label>
+                  <select
+                    value={tokenTargetId ?? ""}
+                    onChange={(e) => setTokenTargetId(e.target.value || null)}
+                    className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
+                  >
+                    <option value="">Tutte le squadre attive</option>
+                    {(allTeams.data ?? []).filter((t: any) => t.active).map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.nome_squadra} ({t.token_balance ?? 50} token)</option>
+                    ))}
+                  </select>
+                </div>
 
-              <button
-                type="submit"
-                disabled={isAdjustingTokens || !tokenAmount}
-                className="primary-gradient w-full py-3 rounded-xl font-extrabold text-primary-foreground disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {isAdjustingTokens ? <Loader2 className="size-4 animate-spin" /> : <Coins className="size-4" />}
-                Applica Token
-              </button>
-            </form>
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                    Quantità token (positivo o negativo)
+                  </label>
+                  <div className="flex gap-2 items-center w-full">
+                    <button
+                      type="button"
+                      onClick={() => setTokenAmount(String((parseInt(tokenAmount) || 0) - 5))}
+                      className="size-11 shrink-0 rounded-full border border-border hover:bg-secondary/50 transition-colors cursor-pointer flex items-center justify-center"
+                    >
+                      <Minus className="size-4" />
+                    </button>
+                    <input
+                      type="number"
+                      placeholder="Es. +10 o -5"
+                      value={tokenAmount}
+                      onChange={(e) => setTokenAmount(e.target.value)}
+                      className="flex-1 min-w-0 rounded-xl border border-input bg-input/40 px-4 py-3 text-sm text-center font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTokenAmount(String((parseInt(tokenAmount) || 0) + 5))}
+                      className="size-11 shrink-0 rounded-full border border-border hover:bg-secondary/50 transition-colors cursor-pointer flex items-center justify-center"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase mb-1">
+                    Motivazione (visibile alla squadra)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Es. Bonus orientamento / Acquisto speciale"
+                    value={tokenReason}
+                    onChange={(e) => setTokenReason(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { setTokenAmount("-5"); handleAdjustTokens(e as any, tokenTargetId); }}
+                    disabled={isAdjustingTokens}
+                    className="py-2.5 rounded-xl border border-destructive/30 text-destructive font-bold text-xs hover:bg-destructive/10 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    − 5 Token
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { setTokenAmount("5"); handleAdjustTokens(e as any, tokenTargetId); }}
+                    disabled={isAdjustingTokens}
+                    className="py-2.5 rounded-xl border border-success/30 text-success font-bold text-xs hover:bg-success/10 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    + 5 Token
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAdjustingTokens || !tokenAmount}
+                  className="primary-gradient w-full py-3 rounded-xl font-extrabold text-primary-foreground disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isAdjustingTokens ? <Loader2 className="size-4 animate-spin" /> : <Coins className="size-4" />}
+                  Applica Token
+                </button>
+              </form>
+            </div>
           </div>
 
-          {/* TEAMS LIST */}
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-xl font-bold uppercase tracking-wider text-muted-foreground pl-1">Squadre in Gara</h2>
-            <div className="grid gap-3">
+          {/* LOWER SECTION: CREA SQUADRA + SQUADRE IN GARA */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* NEW TEAM FORM */}
+            <div className="surface p-5 space-y-4 h-fit rounded-2xl border border-border/40">
+              <h2 className="text-xl font-bold uppercase tracking-wider text-muted-foreground">Crea Squadra</h2>
+              <form onSubmit={handleCreateTeam} className="space-y-3">
+                <input
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  placeholder="Nome squadra (es. I Lupi)"
+                  className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
+                />
+                <input
+                  value={teamUser}
+                  onChange={(e) => setTeamUser(e.target.value)}
+                  placeholder="Username (es. lupi)"
+                  className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
+                />
+                <input
+                  value={teamPass}
+                  onChange={(e) => setTeamPass(e.target.value)}
+                  placeholder="Password"
+                  type="password"
+                  className="w-full rounded-xl border border-input bg-input/40 px-4 py-3 text-sm focus:outline-none"
+                />
+                <button type="submit" className="primary-gradient w-full py-3 rounded-xl font-extrabold text-primary-foreground cursor-pointer">
+                  Crea Squadra
+                </button>
+              </form>
+            </div>
+
+            {/* TEAMS LIST */}
+            <div className="lg:col-span-2 space-y-4">
+              <h2 className="text-xl font-bold uppercase tracking-wider text-muted-foreground pl-1">Squadre in Gara</h2>
+              <div className="grid gap-3">
               {(allTeams.data ?? []).map((t: any) => {
                 const isEditing = editingTeamId === t.id;
                 const teamProg = (allProgress.data ?? []).filter((p: any) => p.team_id === t.id);
@@ -982,6 +1123,7 @@ function AdminTeamsPage() {
               })}
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>

@@ -266,7 +266,6 @@ function MarketplacePage() {
 
   const handleSpinWheel = () => {
     if (isSpinning || !wheelOutcome) return;
-    triggerHaptic("spin");
 
     let sliceIndex = WHEEL_SLICES.findIndex((s) => s.id === wheelOutcome.id || s.id === wheelOutcome.outcome_id);
     if (sliceIndex === -1 && wheelOutcome.outcome_label) {
@@ -280,16 +279,18 @@ function MarketplacePage() {
     setIsSpinning(true);
     setShowPrize(false);
     
-    // 360 * 5 is 5 full rotations. (360 - (sliceIndex * 40 + 20)) degrees aligns the selected slice under the pointer
-    const rotationAngle = 360 * 5 + (360 - (sliceIndex * 40 + 20));
-    setWheelRotation(rotationAngle);
+    // 360 * 6 is 6 full rotations. (360 - (sliceIndex * 40 + 20)) aligns the selected slice under the pointer
+    const rotationAngle = 360 * 6 + (360 - (sliceIndex * 40 + 20));
+    
+    requestAnimationFrame(() => {
+      setWheelRotation(rotationAngle);
+    });
 
     setTimeout(() => {
       setIsSpinning(false);
       setShowPrize(true);
-      triggerHaptic("success");
       queryClient.invalidateQueries();
-    }, 5000);
+    }, 5200);
   };
 
   // Fetch all active teams in the game
