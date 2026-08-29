@@ -450,8 +450,13 @@ function Dashboard() {
         {photoPosterEvaluatedNotifications.map((s: any) => {
           const ch = allChallenges.find((c) => c.id === s.challenge_id);
           const st = (stages.data ?? []).find((st: any) => st.id === (s.stage_id || ch?.stage_id));
-          const stageNum = st?.order_index || 1;
+          const stageNum = st?.order_index ?? (st as any)?.numero_tappa ?? 1;
           const isPoster = ch?.type === "living_poster" || (s.motivo || "").toLowerCase().includes("locandina");
+          const challengeTitle = ch?.title ?? (ch as any)?.titolo ?? (isPoster ? "Locandina Vivente" : "Foto Ufficiale");
+
+          const finalPoints = Number(s.punti ?? s.points ?? 0);
+          const provisionalPoints = Number(ch?.points ?? (ch as any)?.punteggio_massimo ?? (isPoster ? 15 : 20));
+          const isConfirmedFull = finalPoints === provisionalPoints;
 
           return (
             <div
@@ -459,18 +464,33 @@ function Dashboard() {
               className="bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-emerald-950/30"
             >
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <div className="size-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
                   <Camera className="size-5 text-emerald-400 stroke-[2.5]" />
                 </div>
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                    {isPoster ? "🖼️ LOCANDINA VALUTATA DALLA REGIA" : "📸 FOTO VALUTATA DALLA REGIA"}
+                    {isConfirmedFull
+                      ? (isPoster ? "🖼️ Locandina Approvata a Pieni Voti" : "📸 Foto Approvata a Pieni Voti")
+                      : (isPoster ? "🖼️ Valutazione Regia — Locandina" : "📸 Valutazione Regia")}
                   </h4>
-                  <p className="text-zinc-200 text-xs">
-                    Hai ricevuto <strong className="text-emerald-400 font-extrabold text-sm">+{s.punti ?? s.points} PT</strong>
-                  </p>
-                  <div className="text-[11px] text-zinc-400 font-semibold flex items-center gap-2 mt-0.5">
-                    <span>Prova: <strong className="text-zinc-200">{ch?.title || "Foto Ufficiale"}</strong></span>
+                  <div className="text-zinc-200 text-xs font-semibold">
+                    {isConfirmedFull ? (
+                      <span>
+                        Confermati <strong className="text-emerald-400 font-extrabold text-sm">{finalPoints} PT</strong> dalla Regia
+                      </span>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <div>
+                          Punteggio aggiornato a <strong className="text-amber-400 font-extrabold text-sm">{finalPoints} PT</strong>
+                        </div>
+                        <div className="text-[11px] text-zinc-400 font-medium">
+                          (punteggio iniziale: {provisionalPoints} PT)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-zinc-400 font-semibold flex items-center gap-2 pt-0.5">
+                    <span>Prova: <strong className="text-zinc-200">{challengeTitle}</strong></span>
                     <span>·</span>
                     <span>Tappa: <strong className="text-zinc-200">Tappa {stageNum}</strong></span>
                   </div>

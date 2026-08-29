@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, createContext, useContext } from "react";
+import { useEffect, useState, useRef, useMemo, createContext, useContext } from "react";
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -1019,6 +1019,122 @@ export function StatCard({ title, value }: { title: string; value: string }) {
   );
 }
 
+export function ScoreEvaluator({
+  maxPoints,
+  currentPoints,
+  onConfirm,
+  isConfirming,
+  alreadyConfirmed,
+}: {
+  maxPoints: number;
+  currentPoints: number;
+  onConfirm: (points: number) => Promise<void>;
+  isConfirming: boolean;
+  alreadyConfirmed: boolean;
+}) {
+  const [points, setPoints] = useState<number>(currentPoints);
+
+  useEffect(() => {
+    setPoints(currentPoints);
+  }, [currentPoints]);
+
+  const quickPillOptions = useMemo(() => {
+    if (maxPoints === 15) return [0, 5, 8, 10, 12, 15];
+    if (maxPoints === 20) return [0, 5, 10, 15, 18, 20];
+    if (maxPoints === 10) return [0, 2, 5, 7, 10];
+    if (maxPoints === 25) return [0, 5, 10, 15, 20, 25];
+    const steps = [
+      0,
+      Math.round(maxPoints * 0.25),
+      Math.round(maxPoints * 0.5),
+      Math.round(maxPoints * 0.75),
+      maxPoints,
+    ];
+    return Array.from(new Set(steps)).sort((a, b) => a - b);
+  }, [maxPoints]);
+
+  const handleConfirmClick = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clampedPoints = Math.max(0, Math.min(maxPoints, Number(points) || 0));
+    if (alreadyConfirmed) {
+      const confirmChange = window.confirm(
+        `Questa prova è già stata verificata con ${currentPoints} punti. Sei sicuro di voler modificare il punteggio in ${clampedPoints} punti?`
+      );
+      if (!confirmChange) return;
+    }
+    await onConfirm(clampedPoints);
+  };
+
+  return (
+    <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800/80 space-y-4">
+      {/* 1. SELETTORE RAPIDO */}
+      <div className="space-y-2">
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+          Punteggio Rapido:
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {quickPillOptions.map((opt) => {
+            const isSelected = points === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setPoints(opt)}
+                className={`px-3 py-1.5 rounded-lg font-bold font-mono text-xs transition-all cursor-pointer border ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-105"
+                    : "bg-zinc-950/80 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/60"
+                }`}
+              >
+                {opt} PT
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. VOTO PERSONALIZZATO & INDICATORE */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border/20">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-muted-foreground uppercase">Oppure voto personalizzato:</span>
+          <input
+            type="number"
+            min="0"
+            max={maxPoints}
+            value={points}
+            onChange={(e) => {
+              const val = e.target.value === "" ? 0 : Number(e.target.value);
+              setPoints(Math.max(0, Math.min(maxPoints, val)));
+            }}
+            className="w-20 rounded-lg border border-input bg-zinc-950 px-2.5 py-1.5 text-sm text-center font-black text-foreground focus:outline-none focus:border-primary"
+          />
+          <span className="text-xs font-black text-zinc-400">PT</span>
+        </div>
+
+        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Punti da assegnare:{" "}
+          <strong className="text-primary text-sm font-black font-mono">
+            {points} / {maxPoints} PT
+          </strong>
+        </div>
+      </div>
+
+      {/* 3. UNICO PULSANTE DI CONFERMA */}
+      <div className="pt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={handleConfirmClick}
+          disabled={isConfirming}
+          className="w-full sm:w-auto primary-gradient px-6 py-2.5 rounded-xl font-extrabold text-primary-foreground shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 hover:brightness-110 active:scale-95 transition-all"
+        >
+          {isConfirming ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+          <span>Conferma Valutazione</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ApprovalCard({
   sub,
   progress,
@@ -1041,11 +1157,6 @@ export function ApprovalCard({
   );
   const maxPoints = sub.challenges?.punteggio_massimo ?? 20;
   const currentPoints = scoreEntry?.punti ?? maxPoints;
-  const [points, setPoints] = useState<number>(currentPoints);
-
-  useEffect(() => {
-    setPoints(currentPoints);
-  }, [currentPoints]);
 
   useEffect(() => {
     if (!sub.file_upload) return;
@@ -1075,16 +1186,6 @@ export function ApprovalCard({
       durationStr = `${hrs > 0 ? hrs + "h " : ""}${mins > 0 ? mins + "m " : ""}${secs}s`;
     }
   }
-
-  const handleConfirm = async () => {
-    if (sub.stato_approvazione === "confirmed") {
-      const confirmChange = window.confirm(
-        `Questa prova è già stata verificata con ${currentPoints} punti. Sei sicuro di voler modificare il punteggio in ${points} punti?`
-      );
-      if (!confirmChange) return;
-    }
-    await onConfirmScore(points);
-  };
 
   return (
     <div className="surface p-5 space-y-4">
@@ -1181,28 +1282,16 @@ export function ApprovalCard({
             </div>
           </div>
 
-          <div className="pt-3 border-t border-border/30 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Punteggio della Prova:</label>
-              <input
-                type="number"
-                min="0"
-                max={maxPoints}
-                value={points}
-                onChange={(e) => setPoints(Number(e.target.value))}
-                className="w-16 rounded-lg border border-input bg-input/40 px-2 py-1 text-sm text-center font-bold text-foreground focus:outline-none"
-              />
-              <span className="text-xs text-muted-foreground font-semibold">/ {maxPoints} PT</span>
-            </div>
-            
-            <button
-              onClick={handleConfirm}
-              disabled={isConfirming}
-              className="flex items-center gap-1.5 bg-success/20 text-success border border-success/35 hover:bg-success/35 disabled:opacity-40 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-            >
-              {isConfirming ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
-              <span>{sub.stato_approvazione === "confirmed" ? "Aggiorna Punteggio" : "Salva Punteggio"}</span>
-            </button>
+          <div className="pt-2">
+            <ScoreEvaluator
+              maxPoints={maxPoints}
+              currentPoints={currentPoints}
+              alreadyConfirmed={sub.stato_approvazione === "confirmed"}
+              onConfirm={async (points) => {
+                await onConfirmScore(points);
+              }}
+              isConfirming={isConfirming}
+            />
           </div>
         </div>
       </div>
@@ -1345,7 +1434,6 @@ export function PosterComparisonCard({
   isEvaluating: boolean;
 }) {
   const [teamPhotoUrl, setTeamPhotoUrl] = useState<string | null>(null);
-  const [selectedVoto, setSelectedVoto] = useState<number>(submission?.voto ?? 15);
   const [isFlipped, setIsFlipped] = useState(false);
   const [rotation, setRotation] = useState(0);
 
@@ -1363,26 +1451,6 @@ export function PosterComparisonCard({
       active = false;
     };
   }, [submission?.file_upload]);
-
-  useEffect(() => {
-    if (submission?.voto !== null && submission?.voto !== undefined) {
-      setSelectedVoto(submission.voto);
-    }
-  }, [submission?.voto]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!submission) return;
-
-    if (submission.voto !== null && submission.voto !== undefined) {
-      const confirmChange = window.confirm(
-        `Questa prova è già stata valutata con ${submission.voto} punti. Sei sicuro di voler modificare il voto in ${selectedVoto} punti?`
-      );
-      if (!confirmChange) return;
-    }
-
-    await onEvaluate(submission.id, selectedVoto);
-  };
 
   const posterFileName = poster?.file_name;
   const originalPosterUrl = posterFileName 
@@ -1509,46 +1577,21 @@ export function PosterComparisonCard({
         </div>
 
         {submission && (
-          <>
+          <div className="space-y-3">
             <div className="text-xs text-muted-foreground text-center font-mono">
               Consegna effettuata il: {new Date(submission.timestamp).toLocaleString("it-IT")}
             </div>
 
-            <form onSubmit={handleSubmit} className="bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex-1 space-y-2">
-                <div className="flex justify-between items-center text-xs font-bold text-zinc-400 uppercase">
-                  <span>Voto (Punteggio):</span>
-                  <span className="text-primary font-black text-sm">{selectedVoto} / 15 PT</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="15"
-                  step="1"
-                  value={selectedVoto}
-                  onChange={(e) => setSelectedVoto(parseInt(e.target.value))}
-                  className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600 focus:outline-none"
-                />
-                <div className="flex justify-between text-[10px] text-zinc-600 font-bold px-1">
-                  <span>0</span>
-                  <span>3</span>
-                  <span>6</span>
-                  <span>9</span>
-                  <span>12</span>
-                  <span>15</span>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isEvaluating}
-                className="primary-gradient px-6 py-3 rounded-xl font-extrabold text-primary-foreground shadow-lg flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-40"
-              >
-                {isEvaluating ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                {submission.voto !== null ? "Aggiorna Voto" : "Conferma Voto"}
-              </button>
-            </form>
-          </>
+            <ScoreEvaluator
+              maxPoints={15}
+              currentPoints={submission?.voto ?? 15}
+              alreadyConfirmed={submission?.voto !== null && submission?.voto !== undefined}
+              onConfirm={async (voto) => {
+                await onEvaluate(submission.id, voto);
+              }}
+              isConfirming={isEvaluating}
+            />
+          </div>
         )}
       </div>
     </div>
@@ -1572,7 +1615,6 @@ export function SocialSubmissionCard({
   const [flip2, setFlip2] = useState(false);
   const [rot1, setRot1] = useState(0);
   const [rot2, setRot2] = useState(0);
-  const [voto, setVoto] = useState<number>(submission?.admin_score ?? 20);
 
   useEffect(() => {
     let active = true;
@@ -1596,17 +1638,6 @@ export function SocialSubmissionCard({
       active = false;
     };
   }, [submission?.image_1_url, submission?.image_2_url]);
-
-  useEffect(() => {
-    if (submission?.admin_score !== null && submission?.admin_score !== undefined) {
-      setVoto(submission.admin_score);
-    }
-  }, [submission?.admin_score]);
-
-  const handleSaveScore = async () => {
-    if (!submission) return;
-    await onEvaluate(submission.id, voto);
-  };
 
   return (
     <div className="surface p-5 space-y-5 border border-zinc-800 bg-zinc-950/20 rounded-2xl relative overflow-hidden">
@@ -1726,34 +1757,15 @@ export function SocialSubmissionCard({
             </div>
           </div>
 
-          <div className="bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-zinc-400 uppercase">
-                <span>Punteggio (0–20 PT):</span>
-                <span className="text-primary font-black text-sm">{voto} / 20 PT</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                step="1"
-                value={voto}
-                onChange={(e) => setVoto(parseInt(e.target.value))}
-                className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none"
-              />
-            </div>
-
-            <div className="flex gap-2 shrink-0">
-              <button
-                onClick={handleSaveScore}
-                disabled={isEvaluating}
-                className="primary-gradient px-5 py-2.5 rounded-xl font-extrabold text-xs text-primary-foreground flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-              >
-                {isEvaluating ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle className="size-3.5" />}
-                Salva Punteggio
-              </button>
-            </div>
-          </div>
+          <ScoreEvaluator
+            maxPoints={20}
+            currentPoints={submission?.admin_score ?? 20}
+            alreadyConfirmed={submission?.status === "approved"}
+            onConfirm={async (newVoto) => {
+              await onEvaluate(submission.id, newVoto);
+            }}
+            isConfirming={isEvaluating}
+          />
         </div>
       ) : (
         <div className="bg-zinc-900/10 p-5 rounded-xl border border-zinc-900 text-center text-sm text-muted-foreground">
