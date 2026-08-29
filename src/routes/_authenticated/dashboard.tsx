@@ -266,8 +266,8 @@ function Dashboard() {
   const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
   const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used");
 
-  const activeDimezza = myReceivedMaluses.find((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "completed");
-  const usedDimezzaList = myReceivedMaluses.filter((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "used");
+  const activeDimezza = myReceivedMaluses.find((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "completed" && !dismissedNotifications.includes(t.id));
+  const usedDimezzaList = myReceivedMaluses.filter((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "used" && !dismissedNotifications.includes(t.id));
   const blackoutTx = myReceivedMaluses.find((t) => 
     t.item_id === "blackout_mercato" && 
     t.stato === "completed" && 
@@ -525,9 +525,18 @@ function Dashboard() {
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
-              In Attesa
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                In Attesa
+              </span>
+              <button
+                onClick={() => handleDismissNotification(activeDimezza.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 text-rose-200 transition-all shrink-0 cursor-pointer"
+                title="Chiudi notifica"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
           </div>
         )}
 
@@ -554,9 +563,18 @@ function Dashboard() {
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
-                Applicato
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700">
+                  Applicato
+                </span>
+                <button
+                  onClick={() => handleDismissNotification(tx.id)}
+                  className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-red-900/40 border border-red-500/30 hover:bg-red-800/50 text-red-200 transition-all shrink-0 cursor-pointer"
+                  title="Chiudi notifica"
+                >
+                  ✕ Chiudi
+                </button>
+              </div>
             </div>
           );
         })}
