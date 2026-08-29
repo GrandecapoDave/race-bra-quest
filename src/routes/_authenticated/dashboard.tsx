@@ -114,6 +114,19 @@ function Dashboard() {
   const scores = useQuery({ ...scoreEventsQuery(team.data?.id), refetchInterval: 3000 });
   const board = useQuery({ ...leaderboardQuery, refetchInterval: 3000 });
 
+  const gameSettings = useQuery({
+    queryKey: ["game-settings"],
+    refetchInterval: 3000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("game_settings")
+        .select("*")
+        .single();
+      if (error) return null;
+      return data;
+    },
+  });
+
   const transactionsQuery = useQuery({
     queryKey: ["marketplace-transactions-list"],
     staleTime: 0,
@@ -151,13 +164,29 @@ function Dashboard() {
   const [totalElapsed, setTotalElapsed] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!stages.data || !challenges.data || !progress.data) return;
-
-    const allStages = stages.data;
-    const allChs = challenges.data;
-    const progList = progress.data;
-
     const updateTimer = () => {
+      const settings = gameSettings.data;
+      if (settings?.race_status === "in_progress" && settings.race_started_at) {
+        const start = new Date(settings.race_started_at).getTime();
+        setTotalElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
+        return;
+      }
+      if (settings?.race_status === "completed" && settings.race_started_at && settings.race_ended_at) {
+        const start = new Date(settings.race_started_at).getTime();
+        const end = new Date(settings.race_ended_at).getTime();
+        setTotalElapsed(Math.max(0, Math.floor((end - start) / 1000)));
+        return;
+      }
+      if (settings?.race_status === "not_started") {
+        setTotalElapsed(null);
+        return;
+      }
+
+      // Fallback to cumulative stage timers if race_status not configured
+      if (!stages.data || !challenges.data || !progress.data) return;
+      const allStages = stages.data;
+      const allChs = challenges.data;
+      const progList = progress.data;
       let sumSeconds = 0;
 
       allStages.forEach((s) => {
@@ -183,13 +212,13 @@ function Dashboard() {
         }
       });
 
-      setTotalElapsed(sumSeconds);
+      setTotalElapsed(sumSeconds > 0 ? sumSeconds : null);
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [stages.data, challenges.data, progress.data]);
+  }, [gameSettings.data, stages.data, challenges.data, progress.data]);
 
   if (team.isLoading || stages.isLoading || challenges.isLoading) {
     return (
@@ -396,8 +425,10 @@ function Dashboard() {
         {/* 1. CONSUMED SHIELD NOTIFICATIONS (FOR VICTIM) */}
         {consumedShields.map((cs) => {
           const details = cs.outcome || cs.dettagli;
-          const attackerName = details?.blocked_attacker_name || (allTeams.find((t: any) => t.id === details?.blocked_attacker_id)?.nome_squadra) || "Un avversario";
-          const malusName = details?.blocked_malus_name || (MARKETPLACE_ITEMS.find((i) => i.id === details?.blocked_malus_id)?.nome) || "Malus Avversario";
+          const blockedMalusId = details?.blocked_malus || details?.blocked_malus_id || cs.blocked_info?.item_id;
+          const attackerName = details?.attacker_name || details?.blocked_attacker_name || (allTeams.find((t: any) => t.id === (details?.attacker_team_id || details?.blocked_attacker_id))?.nome_squadra) || "Un avversario";
+          const malusName = (MARKETPLACE_ITEMS.find((i) => i.id === blockedMalusId)?.nome) || details?.blocked_malus_name || details?.blocked_malus || "Malus Avversario";
+          const isTassa = blockedMalusId === "tassa_passaggio";
 
           return (
             <div key={cs.id} className="bg-blue-950/30 border border-blue-500/40 text-blue-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-blue-950/30">
@@ -406,9 +437,15 @@ function Dashboard() {
                   <Shield className="size-5 text-blue-400 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-blue-400">🛡️ SCUDO ATTIVATO — MALUS PARATO!</h4>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-blue-400">
+                    {isTassa ? "🛡️ SCUDO ATTIVATO — TASSA DI PASSAGGIO RESPINTA!" : "🛡️ SCUDO ATTIVATO — MALUS PARATO!"}
+                  </h4>
                   <p className="text-[11px] text-zinc-300">
-                    La squadra <strong className="text-white">{attackerName}</strong> ha tentato di inviarti <strong className="text-blue-300">{malusName}</strong>. Il tuo Scudo ha parato ed annullato completamente il colpo!
+                    {isTassa ? (
+                      <>La squadra <strong className="text-white">{attackerName}</strong> ha tentato di scambiare i propri punti con i tuoi tramite la <strong className="text-blue-300 font-bold">TASSA DI PASSAGGIO</strong>, ma il tuo <strong className="text-blue-400 font-extrabold">Bonus Scudo</strong> ha respinto ed annullato completamente l'attacco! Il tuo punteggio è rimasto intatto.</>
+                    ) : (
+                      <>La squadra <strong className="text-white">{attackerName}</strong> ha tentato di inviarti <strong className="text-blue-300">{malusName}</strong>. Il tuo Scudo ha parato ed annullato completamente il colpo!</>
+                    )}
                   </p>
                 </div>
               </div>

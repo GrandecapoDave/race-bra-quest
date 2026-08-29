@@ -104,28 +104,39 @@ export function TeamSetupChallenge({
 
       const parsed = teamSchema.parse({ motto });
       const { data: userData } = await supabase.auth.getUser();
+      
       const { data, error } = await (supabase as any)
-        .from("teams")
-        .insert({
-          nome_squadra: name.trim() || "Squadra " + (userData.user?.email?.split("@")[0] || "Gara"),
-          motto: parsed.motto,
-          color,
-          colore: color,
-          avatar_url: avatar,
-          owner_id: userData.user!.id,
-        })
-        .select("id")
-        .single();
-      if (error) throw new Error(error.message);
+        .rpc("update_team_profile", {
+          p_motto: parsed.motto,
+          p_color: color,
+          p_avatar_url: avatar,
+        });
+
+      if (error) {
+        // Fallback insert if not exists
+        const { data: insertData, error: insertError } = await (supabase as any)
+          .from("teams")
+          .insert({
+            nome_squadra: name.trim() || "Squadra " + (userData.user?.email?.split("@")[0] || "Gara"),
+            motto: parsed.motto,
+            color,
+            colore: color,
+            avatar_url: avatar,
+            owner_id: userData.user!.id,
+          })
+          .select("id")
+          .single();
+        if (insertError) throw new Error(insertError.message);
+      }
 
       // Save locally
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && team?.id) {
         try {
           const initialMembers = [
             { id: "local_1_" + Date.now(), name: member1.trim().slice(0, 60) },
             { id: "local_2_" + Date.now(), name: member2.trim().slice(0, 60) },
           ];
-          localStorage.setItem(`pechino_team_members_${data.id}`, JSON.stringify(initialMembers));
+          localStorage.setItem(`pechino_team_members_${team.id}`, JSON.stringify(initialMembers));
         } catch {
           // ignore
         }
@@ -133,16 +144,18 @@ export function TeamSetupChallenge({
 
       // Insert both required team members
       try {
-        await supabase.from("team_members").insert([
-          { team_id: data.id, name: member1.trim().slice(0, 60) },
-          { team_id: data.id, name: member2.trim().slice(0, 60) },
-        ]);
+        if (team?.id) {
+          await supabase.from("team_members").insert([
+            { team_id: team.id, name: member1.trim().slice(0, 60) },
+            { team_id: team.id, name: member2.trim().slice(0, 60) },
+          ]);
+        }
       } catch {
         // ignore
       }
 
       await supabase.rpc("start_challenge", { p_challenge: challenge.id });
-      return data.id;
+      return team?.id;
     },
     onSuccess: async () => {
       toast.success("Squadra configurata con successo!");
@@ -151,7 +164,7 @@ export function TeamSetupChallenge({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Errore"),
   });
 
-  // Autosave: persist ONLY avatar, color and motto to existing team without changing official team name
+  // Autosave: persist avatar, color and motto via update_team_profile RPC
   useEffect(() => {
     if (!team || completed) return;
     if (firstRender.current) {
@@ -161,16 +174,15 @@ export function TeamSetupChallenge({
     const timeout = setTimeout(async () => {
       const parsed = teamSchema.safeParse({ motto });
       if (!parsed.success) return;
-      const { error } = await (supabase as any)
-        .from("teams")
-        .update({
-          motto: parsed.data.motto,
-          color,
-          colore: color,
-          avatar_url: avatar || team.avatar_url || null,
-        })
-        .eq("id", team.id);
+
+      const { error } = await (supabase as any).rpc("update_team_profile", {
+        p_motto: parsed.data.motto,
+        p_color: color,
+        p_avatar_url: avatar || team.avatar_url || null,
+      });
+
       if (error) {
+        console.warn("[TeamSetup] Update profile RPC error:", error);
         toast.error("Salvataggio non riuscito, riprovo…");
         return;
       }

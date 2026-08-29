@@ -433,6 +433,21 @@ function AdminLayout() {
   // UPDATE GAME STATUS
   async function handleUpdateGameStatus(status: string) {
     const nowIso = new Date().toISOString();
+    const { data: userData } = await supabase.auth.getUser();
+    const adminId = userData.user?.id || "11111111-1111-1111-1111-111111111111";
+
+    try {
+      if (status === "Gara attiva") {
+        await supabase.rpc("start_global_race", { p_admin_id: adminId });
+      } else if (status === "Gara terminata") {
+        await supabase.rpc("end_global_race", { p_admin_id: adminId });
+      } else {
+        await supabase.rpc("reset_global_race", { p_admin_id: adminId });
+      }
+    } catch (rpcErr) {
+      console.warn("[Admin] Global race RPC error:", rpcErr);
+    }
+
     const updates: { id: string; value: string; updated_at: string }[] = [
       { id: "game_status", value: status, updated_at: nowIso }
     ];
