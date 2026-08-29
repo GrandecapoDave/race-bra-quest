@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Camera, Check, Loader2, MapPin, FlipHorizontal, RotateCw, X } from "lucide-react";
@@ -22,6 +22,11 @@ export function PhotoChallenge({
 }) {
   const queryClient = useQueryClient();
   const media = useQuery(mediaQuery(team?.id));
+
+  // Optimistic lock: set to true right after a successful submit so the UI
+  // does NOT flash the upload box while the DB query is still revalidating.
+  // It resets only when the component unmounts (which flushes state anyway).
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Selected file preview & transform state before upload
@@ -30,7 +35,20 @@ export function PhotoChallenge({
   const [flipH, setFlipH] = useState(false);
   const [rotation, setRotation] = useState(0);
 
+  // Ref to keep the latest lock value without triggering re-renders
+  const isLockedRef = useRef(false);
+
+  // SINGLE SOURCE OF TRUTH:
+  // The component is LOCKED when ANY of these is true:
+  //   1. The DB returned at least one submission for this challenge+team (persistent, survives refresh/logout)
+  //   2. The challenge is marked completed in team_progress (server-side)
+  //   3. An upload just finished and we're waiting for the DB query to re-settle (optimistic)
+  // While the media query is still loading we default to "unknown" and show a spinner,
+  // never the upload box, to avoid any flash.
   const photos = (media.data ?? []).filter((m) => m.challenge_id === challenge.id);
+  const isLockedByDB = photos.length > 0 || completed;
+  const isLocked = isLockedByDB || justSubmitted;
+  isLockedRef.current = isLocked;
 
   useEffect(() => {
     return () => {
@@ -50,12 +68,13 @@ export function PhotoChallenge({
   }
 
   function handleFileSelected(file: File) {
-    if (!team) {
-      toast.error("Crea prima la tua squadra");
+    // Double-guard: never allow file selection when locked
+    if (isLockedRef.current) {
+      toast.error("Hai già inviato la foto ufficiale per questa prova.");
       return;
     }
-    if (photos.length > 0 || completed) {
-      toast.error("Hai già inviato la foto ufficiale per questa prova.");
+    if (!team) {
+      toast.error("Crea prima la tua squadra");
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
@@ -78,12 +97,13 @@ export function PhotoChallenge({
   }
 
   async function handleConfirmUpload() {
-    if (!team || !pendingFile) {
-      toast.error("Nessuna foto selezionata");
+    // Double-guard at the start of the submit flow
+    if (isLockedRef.current) {
+      toast.error("Hai già inviato la foto ufficiale per questa prova.");
       return;
     }
-    if (photos.length > 0 || completed) {
-      toast.error("Hai già inviato la foto ufficiale per questa prova.");
+    if (!team || !pendingFile) {
+      toast.error("Nessuna foto selezionata");
       return;
     }
 
@@ -107,26 +127,55 @@ export function PhotoChallenge({
         tipo: "photo",
         latitude: coords.lat,
         longitude: coords.lng,
-        stato_approvazione: "approved", // approved: team proceeds immediately
+        stato_approvazione: "approved",
       });
       if (error) throw new Error(error.message);
 
+      // SUCCESS — lock the UI IMMEDIATELY (optimistic) BEFORE cleaning up state
+      // so there is no window in which photos.length===0 && justSubmitted===false
+      setJustSubmitted(true);
+      isLockedRef.current = true;
+
       toast.success("Foto caricata! La prova è completata.");
       triggerHaptic("success");
+
+      // Refetch FIRST to populate `photos` from DB, then clear pending state
+      await queryClient.invalidateQueries({ queryKey: ["media", team.id] });
+
+      // Now safe to clear the preview: photos.length will be > 0 from the fresh fetch
       handleCancelPending();
-      onComplete(); // unlock next challenge immediately
-      await queryClient.invalidateQueries();
+
+      // Complete the challenge (navigate away)
+      onComplete();
     } catch (e) {
       triggerHaptic("error");
       toast.error(e instanceof Error ? e.message : "Upload non riuscito");
+      // On failure, reset optimistic lock so the user can retry
+      setJustSubmitted(false);
+      isLockedRef.current = isLockedByDB;
     } finally {
       setUploading(false);
     }
   }
 
-  const isSubmittedOrCompleted = completed || photos.length > 0;
+  // -------------------------------------------------------------------
+  // LOADING STATE: while the DB query is in flight after mount/refresh,
+  // show a neutral spinner — NEVER the upload box — to prevent any flash.
+  // -------------------------------------------------------------------
+  if (media.isLoading || (media.isFetching && !media.data)) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <span className="text-xs font-semibold">Verifica stato consegna...</span>
+      </div>
+    );
+  }
 
-  if (isSubmittedOrCompleted) {
+  // -------------------------------------------------------------------
+  // LOCKED STATE: submission exists in DB or just submitted optimistically.
+  // The upload box is NOT rendered — no <input type="file">, no camera button.
+  // -------------------------------------------------------------------
+  if (isLocked) {
     return (
       <div className="space-y-4">
         <div className="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 text-center space-y-1">
@@ -153,10 +202,13 @@ export function PhotoChallenge({
     );
   }
 
+  // -------------------------------------------------------------------
+  // UNLOCKED STATE: no submission in DB for this team+challenge.
+  // -------------------------------------------------------------------
   return (
     <div className="space-y-4">
       {previewUrl && pendingFile ? (
-        /* PENDING PHOTO REVIEW & ADJUSTMENT MODAL/CARD */
+        /* PENDING PHOTO REVIEW & ADJUSTMENT */
         <div className="surface p-4 rounded-2xl border-2 border-primary/40 bg-zinc-950/60 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
@@ -240,6 +292,7 @@ export function PhotoChallenge({
           </div>
         </div>
       ) : (
+        /* UPLOAD / CAMERA AREA — only rendered when UNLOCKED */
         <label className="surface flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-border/80 p-5 sm:p-8 text-center transition-colors hover:border-primary w-full min-w-0 box-border">
           {uploading ? (
             <Loader2 className="size-8 animate-spin text-primary" />
@@ -248,11 +301,12 @@ export function PhotoChallenge({
           )}
           <span className="font-bold text-sm sm:text-base">Scatta o carica la foto ufficiale</span>
           <span className="text-xs text-muted-foreground">
-            Potrai visualizzare l'anteprima, ribaltarla o ruotarla prima dell'invio
+            Potrai visualizzare l&apos;anteprima, ribaltarla o ruotarla prima dell&apos;invio
           </span>
           <input
             type="file"
             accept="image/*"
+            capture="environment"
             className="hidden"
             disabled={uploading}
             onChange={(e) => {

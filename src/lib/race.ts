@@ -373,6 +373,8 @@ export const mediaQuery = (teamId: string | undefined) =>
   queryOptions({
     queryKey: ["media", teamId],
     enabled: Boolean(teamId),
+    staleTime: 0,
+    refetchOnMount: "always" as const,
     queryFn: async () =>
       unwrap<any[]>(
         await (supabase as any)
