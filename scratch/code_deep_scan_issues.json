@@ -1,0 +1,29 @@
+[
+  {
+    "file": "src/components/challenges/EmojiMoviesChallenge.tsx",
+    "line": 112,
+    "severity": "CRITICAL",
+    "type": "INVALID_INSERT_COLUMN",
+    "table": "scores",
+    "col": "emoji",
+    "detail": "Column \"emoji\" does not exist in table \"scores\". Valid columns: id, team_id, challenge_id, stage_id, punti, created_at, tipo_modificatore, motivo"
+  },
+  {
+    "file": "src/components/challenges/LivingPosterChallenge.tsx",
+    "line": 122,
+    "severity": "CRITICAL",
+    "type": "INVALID_INSERT_COLUMN",
+    "table": "submissions",
+    "col": "Locandina",
+    "detail": "Column \"Locandina\" does not exist in table \"submissions\". Valid columns: id, team_id, challenge_id, latitude, longitude, created_at, url, stato_approvazione, note, tipo"
+  },
+  {
+    "file": "src/components/challenges/PhotoChallenge.tsx",
+    "line": 56,
+    "severity": "CRITICAL",
+    "type": "INVALID_INSERT_COLUMN",
+    "table": "submissions",
+    "col": "approved",
+    "detail": "Column \"approved\" does not exist in table \"submissions\". Valid columns: id, team_id, challenge_id, latitude, longitude, created_at, url, stato_approvazione, note, tipo"
+  }
+]

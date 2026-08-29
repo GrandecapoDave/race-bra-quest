@@ -1,0 +1,662 @@
+[
+  {
+    "name": "current_team_id",
+    "src": "\nDECLARE\n  v_team_id UUID;\nBEGIN\n  SELECT team_id INTO v_team_id\n  FROM public.user_roles\n  WHERE user_id = auth.uid() AND role = 'team'\n  LIMIT 1;\n  \n  RETURN v_team_id;\nEND;\n",
+    "args": "",
+    "return": "uuid",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "has_role",
+    "src": "\nDECLARE\n  v_has BOOLEAN := false;\nBEGIN\n  -- Admin bypass speciale\n  IF _user_id = '11111111-1111-1111-1111-111111111111'::UUID THEN\n    RETURN true;\n  END IF;\n\n  SELECT EXISTS(\n    SELECT 1 FROM public.user_roles\n    WHERE user_id = _user_id AND role = _role\n  ) INTO v_has;\n\n  RETURN v_has;\nEND;\n",
+    "args": "_user_id uuid, _role text",
+    "return": "boolean",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "start_challenge",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_challenge_row RECORD;\n  v_prev_incomplete BOOLEAN;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato come team';\n  END IF;\n\n  -- Verifica esistenza della challenge\n  SELECT * INTO v_challenge_row FROM public.challenges WHERE id = p_challenge;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Sfida non esistente';\n  END IF;\n\n  -- Controllo progressione della tappa (challenge con ordine_sfida inferiore nello stesso stage)\n  SELECT EXISTS(\n    SELECT 1 FROM public.challenges c\n    LEFT JOIN public.team_progress tp ON tp.challenge_id = c.id AND tp.team_id = v_team_id\n    WHERE c.stage_id = v_challenge_row.stage_id \n      AND c.ordine_sfida < v_challenge_row.ordine_sfida\n      AND (tp.stato IS NULL OR tp.stato != 'completed')\n  ) INTO v_prev_incomplete;\n\n  IF v_prev_incomplete THEN\n    RAISE EXCEPTION 'Devi prima completare le sfide precedenti di questa tappa';\n  END IF;\n\n  INSERT INTO public.team_progress (team_id, challenge_id, stato, created_at)\n  VALUES (v_team_id, p_challenge, 'in_progress', now())\n  ON CONFLICT (team_id, challenge_id) DO NOTHING;\nEND;\n",
+    "args": "p_challenge uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "complete_challenge",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_stage_id UUID;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT stage_id INTO v_stage_id FROM public.challenges WHERE id = p_challenge;\n\n  -- Aggiorna progress\n  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n  VALUES (p_team_id, p_challenge, 'completed', now())\n  ON CONFLICT (team_id, challenge_id) \n  DO UPDATE SET stato = 'completed', completata_il = now();\n\n  -- Assegna punteggio\n  INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)\n  VALUES (p_team_id, p_challenge, v_stage_id, p_score, 'challenge_points', 'Sfida validata dalla Regia');\nEND;\n",
+    "args": "p_challenge uuid, p_team_id uuid, p_score integer",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_social_challenge",
+    "src": "\nDECLARE\n  v_team_id UUID;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  INSERT INTO public.team_social_submissions (team_id, challenge_id, social_url, stato_approvazione)\n  VALUES (v_team_id, p_challenge_id, p_url, 'pending')\n  ON CONFLICT (team_id, challenge_id)\n  DO UPDATE SET social_url = p_url, stato_approvazione = 'pending';\nEND;\n",
+    "args": "p_challenge_id uuid, p_url text",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_bank_state",
+    "src": "\nDECLARE\n  v_caller_team_id UUID;\n  v_answers JSONB;\n  v_questions JSONB;\n  v_progress RECORD;\nBEGIN\n  v_caller_team_id := public.current_team_id();\n  -- Gli admin possono leggere lo stato di qualsiasi team, altrimenti si forza il proprio team\n  IF v_caller_team_id IS NOT NULL THEN\n    p_team_id := v_caller_team_id;\n  END IF;\n\n  -- Risposte date\n  SELECT COALESCE(jsonb_agg(jsonb_build_object(\n    'question_number', question_id,\n    'answer', selected_answer,\n    'extracted_letter', SUBSTRING(selected_answer FROM 1 FOR 1)\n  )), '[]'::jsonb) INTO v_answers\n  FROM public.team_answers\n  WHERE team_id = p_team_id;\n\n  -- Domande del quiz della banca\n  v_questions := '[\n    {\"question_number\": 1, \"question_text\": \"Ha le corna ma non è un toro (6 lettere)\", \"length\": 6},\n    {\"question_number\": 2, \"question_text\": \"Ci si mette sopra chi vuole riposare (7 lettere)\", \"length\": 7},\n    {\"question_number\": 3, \"question_text\": \"Si lancia per fare canestro (5 lettere)\", \"length\": 5},\n    {\"question_number\": 4, \"question_text\": \"In mezzo alla faccia (4 lettere)\", \"length\": 4}\n  ]'::jsonb;\n\n  SELECT * INTO v_progress FROM public.team_progress\n  WHERE team_id = p_team_id AND challenge_id = 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';\n\n  RETURN jsonb_build_object(\n    'progress', jsonb_build_object('status', COALESCE(v_progress.stato, 'locked')),\n    'answers', v_answers,\n    'all_questions', v_questions\n  );\nEND;\n",
+    "args": "p_team_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_bank_answer",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_correct_answer TEXT;\n  v_correct BOOLEAN := false;\n  v_letter CHAR(1);\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  -- Soluzioni predefinite degli enigmi della banca:\n  -- 1: LUMACA (L)\n  -- 2: DIVANO (D)\n  -- 3: PALLA (P)\n  -- 4: NASO (N)\n  IF p_question_number = 1 THEN v_correct_answer := 'LUMACA';\n  ELSIF p_question_number = 2 THEN v_correct_answer := 'DIVANO';\n  ELSIF p_question_number = 3 THEN v_correct_answer := 'PALLA';\n  ELSIF p_question_number = 4 THEN v_correct_answer := 'NASO';\n  ELSE RAISE EXCEPTION 'Numero domanda non valido';\n  END IF;\n\n  v_correct := (UPPER(TRIM(p_answer)) = v_correct_answer);\n  v_letter := SUBSTRING(v_correct_answer FROM 1 FOR 1);\n\n  RETURN jsonb_build_object(\n    'correct', v_correct,\n    'letter', v_letter,\n    'challenge_completed', false\n  );\nEND;\n",
+    "args": "p_question_number integer, p_answer text",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_secret_code_state",
+    "src": "\nDECLARE\n  v_caller_team_id UUID;\n  v_part TEXT := '12345';\n  v_part_type TEXT := 'FIRST_5';\n  v_has_purchased BOOLEAN := false;\n  v_purchased_digits TEXT := NULL;\n  v_completed BOOLEAN := false;\nBEGIN\n  v_caller_team_id := public.current_team_id();\n  IF v_caller_team_id IS NOT NULL THEN\n    p_team_id := v_caller_team_id;\n  END IF;\n\n  -- Controlla se ha acquistato frammento\n  SELECT EXISTS(\n    SELECT 1 FROM public.marketplace_transactions\n    WHERE team_id = p_team_id AND marketplace_item_id = 'secret_code_part' AND stato = 'completed'\n  ) INTO v_has_purchased;\n\n  SELECT EXISTS(\n    SELECT 1 FROM public.team_progress\n    WHERE team_id = p_team_id AND challenge_id = 'c1c2c3c4-c5c6-c7c8-c9c0-c1c2c3c4c5c6' AND stato = 'completed'\n  ) INTO v_completed;\n\n  RETURN jsonb_build_object(\n    'part', jsonb_build_object('code_part', v_part, 'part_type', v_part_type),\n    'match', NULL,\n    'has_purchased', v_has_purchased,\n    'purchased_digits', CASE WHEN v_has_purchased THEN '67890' ELSE NULL END,\n    'completed', v_completed,\n    'destination', 'Traguardo Finale: Piazza'\n  );\nEND;\n",
+    "args": "p_team_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "buy_secret_code_part",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_team RECORD;\n  v_cost INTEGER := 15;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  SELECT * INTO v_team FROM public.teams WHERE id = v_team_id FOR UPDATE;\n  IF v_team.token_balance < v_cost THEN\n    RAISE EXCEPTION 'Token insufficienti (Costo: 15)';\n  END IF;\n\n  UPDATE public.teams SET token_balance = token_balance - v_cost WHERE id = v_team_id;\n\n  INSERT INTO public.marketplace_transactions (team_id, marketplace_item_id, costo_token, stato)\n  VALUES (v_team_id, 'secret_code_part', v_cost, 'completed');\nEND;\n",
+    "args": "",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_secret_code_pin",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_correct_pin TEXT := '1234567890'; -- Esempio\n  v_correct BOOLEAN := false;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  v_correct := (p_inserted_code = v_correct_pin);\n\n  IF v_correct THEN\n    INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n    VALUES (v_team_id, 'c1c2c3c4-c5c6-c7c8-c9c0-c1c2c3c4c5c6', 'completed', now())\n    ON CONFLICT (team_id, challenge_id) \n    DO UPDATE SET stato = 'completed', completata_il = now();\n\n    INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n    VALUES (v_team_id, 'c1c2c3c4-c5c6-c7c8-c9c0-c1c2c3c4c5c6', 30, 'challenge_points', 'Sfida PIN superata');\n  END IF;\n\n  RETURN jsonb_build_object('success', v_correct, 'message', CASE WHEN v_correct THEN 'Sbloccato!' ELSE 'Codice errato' END);\nEND;\n",
+    "args": "p_inserted_code text",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_social_submission",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_sub RECORD;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RETURN NULL;\n  END IF;\n\n  SELECT * INTO v_sub FROM public.team_social_submissions WHERE team_id = v_team_id LIMIT 1;\n  IF NOT FOUND THEN\n    RETURN NULL;\n  END IF;\n\n  RETURN jsonb_build_object(\n    'id', v_sub.id,\n    'social_url', v_sub.social_url,\n    'stato_approvazione', v_sub.stato_approvazione,\n    'note', v_sub.note,\n    'created_at', v_sub.created_at\n  );\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "evaluate_social_challenge",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_sub RECORD;\n  v_challenge_row RECORD;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_sub FROM public.team_social_submissions WHERE id = p_submission_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Sottomissione non trovata';\n  END IF;\n\n  SELECT * INTO v_challenge_row FROM public.challenges WHERE id = v_sub.challenge_id;\n\n  IF p_approved THEN\n    UPDATE public.team_social_submissions \n    SET stato_approvazione = 'approved' \n    WHERE id = p_submission_id;\n\n    INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n    VALUES (v_sub.team_id, v_sub.challenge_id, 'completed', now())\n    ON CONFLICT (team_id, challenge_id) \n    DO UPDATE SET stato = 'completed', completata_il = now();\n\n    INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)\n    VALUES (v_sub.team_id, v_sub.challenge_id, v_challenge_row.stage_id, p_score, 'challenge_points', 'Sfida social approvata');\n  ELSE\n    UPDATE public.team_social_submissions \n    SET stato_approvazione = 'rejected' \n    WHERE id = p_submission_id;\n  END IF;\nEND;\n",
+    "args": "p_submission_id uuid, p_approved boolean, p_score integer",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_or_assign_poster",
+    "src": "\nDECLARE\n  v_caller_team_id UUID;\n  v_poster RECORD;\n  v_assigned RECORD;\nBEGIN\n  v_caller_team_id := public.current_team_id();\n  IF v_caller_team_id IS NOT NULL THEN\n    p_team_id := v_caller_team_id;\n  END IF;\n\n  -- Controlla se ha già un poster assegnato\n  SELECT * INTO v_assigned FROM public.team_posters WHERE team_id = p_team_id LIMIT 1;\n  IF FOUND THEN\n    SELECT * INTO v_poster FROM public.posters WHERE id = v_assigned.poster_id;\n    RETURN jsonb_build_object('id', v_poster.id, 'file_name', v_poster.file_name, 'titolo', v_poster.titolo);\n  END IF;\n\n  -- Altrimenti assegna il primo poster disponibile\n  SELECT p.* INTO v_poster\n  FROM public.posters p\n  LEFT JOIN public.team_posters tp ON tp.poster_id = p.id\n  WHERE p.active = true\n  GROUP BY p.id, p.file_name, p.titolo\n  ORDER BY COUNT(tp.id) ASC\n  LIMIT 1;\n\n  IF FOUND THEN\n    INSERT INTO public.team_posters (team_id, poster_id) VALUES (p_team_id, v_poster.id);\n    RETURN jsonb_build_object('id', v_poster.id, 'file_name', v_poster.file_name, 'titolo', v_poster.titolo);\n  END IF;\n\n  RETURN NULL;\nEND;\n",
+    "args": "p_team_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "evaluate_poster",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_sub RECORD;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_sub FROM public.submissions WHERE id = p_submission_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Sottomissione non trovata';\n  END IF;\n\n  IF p_approved THEN\n    UPDATE public.submissions \n    SET stato_approvazione = 'approved', note = 'Voto locandina: ' || p_score::text\n    WHERE id = p_submission_id;\n\n    INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n    VALUES (v_sub.team_id, v_sub.challenge_id, 'completed', now())\n    ON CONFLICT (team_id, challenge_id) \n    DO UPDATE SET stato = 'completed', completata_il = now();\n\n    INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n    VALUES (v_sub.team_id, v_sub.challenge_id, p_score, 'challenge_points', 'Valutazione Locandina Vivente');\n  ELSE\n    UPDATE public.submissions \n    SET stato_approvazione = 'rejected'\n    WHERE id = p_submission_id;\n  END IF;\nEND;\n",
+    "args": "p_submission_id uuid, p_approved boolean, p_score integer",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "confirm_photo_score",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_sub RECORD;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_sub FROM public.submissions WHERE id = p_submission_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Sottomissione non trovata';\n  END IF;\n\n  UPDATE public.submissions SET stato_approvazione = 'approved' WHERE id = p_submission_id;\n\n  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n  VALUES (v_sub.team_id, v_sub.challenge_id, 'completed', now())\n  ON CONFLICT (team_id, challenge_id) \n  DO UPDATE SET stato = 'completed', completata_il = now();\n\n  INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n  VALUES (v_sub.team_id, v_sub.challenge_id, p_score, 'challenge_points', 'Punteggio foto confermato');\nEND;\n",
+    "args": "p_submission_id uuid, p_score integer",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_enigma_answer",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_solution RECORD;\n  v_already_completed BOOLEAN;\n  v_attempt_count INTEGER;\n  v_is_correct BOOLEAN := false;\n  v_penalty INTEGER := -8;\n  v_team_name TEXT;\n  v_challenge_title TEXT;\n  v_stage_id UUID;\n  v_notes_correct TEXT[];\n  v_notes_submitted TEXT[];\n  v_dirs_correct TEXT[];\n  v_dirs_submitted TEXT[];\n  v_lat_correct TEXT;\n  v_lng_correct TEXT;\n  v_lat_submitted TEXT;\n  v_lng_submitted TEXT;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Non autenticato come team');\n  END IF;\n\n  SELECT * INTO v_solution FROM public.enigma_solutions WHERE challenge_id = p_challenge_id;\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Enigma non configurato');\n  END IF;\n\n  SELECT titolo, stage_id INTO v_challenge_title, v_stage_id FROM public.challenges WHERE id = p_challenge_id;\n\n  SELECT EXISTS(\n    SELECT 1 FROM public.team_progress \n    WHERE team_id = v_team_id AND challenge_id = p_challenge_id AND stato = 'completed'\n  ) INTO v_already_completed;\n\n  IF v_already_completed THEN\n    RETURN jsonb_build_object(\n      'is_correct', true,\n      'already_completed', true,\n      'attempt_number', 0,\n      'points', v_solution.punteggio\n    );\n  END IF;\n\n  -- Lock concorrente sul team\n  PERFORM 1 FROM public.teams WHERE id = v_team_id FOR UPDATE;\n\n  SELECT COUNT(*) INTO v_attempt_count FROM public.enigma_attempts\n  WHERE team_id = v_team_id AND challenge_id = p_challenge_id;\n  v_attempt_count := v_attempt_count + 1;\n\n  -- Valutazione a seconda del tipo\n  IF v_solution.solution_type = 'notes' THEN\n    SELECT ARRAY(SELECT jsonb_array_elements_text(v_solution.solution)) INTO v_notes_correct;\n    SELECT ARRAY(SELECT jsonb_array_elements_text(p_answer)) INTO v_notes_submitted;\n    \n    IF array_length(v_notes_correct, 1) = array_length(v_notes_submitted, 1) THEN\n      v_is_correct := true;\n      FOR i IN 1..array_length(v_notes_correct, 1) LOOP\n        IF LOWER(v_notes_correct[i]) != LOWER(v_notes_submitted[i]) THEN\n          v_is_correct := false;\n        END IF;\n      END LOOP;\n    END IF;\n\n  ELSIF v_solution.solution_type = 'directions' THEN\n    SELECT ARRAY(SELECT jsonb_array_elements_text(v_solution.solution)) INTO v_dirs_correct;\n    SELECT ARRAY(SELECT jsonb_array_elements_text(p_answer)) INTO v_dirs_submitted;\n\n    IF array_length(v_dirs_correct, 1) = array_length(v_dirs_submitted, 1) THEN\n      v_is_correct := true;\n      FOR i IN 1..array_length(v_dirs_correct, 1) LOOP\n        IF LOWER(v_dirs_correct[i]) != LOWER(v_dirs_submitted[i]) THEN\n          v_is_correct := false;\n        END IF;\n      END LOOP;\n    END IF;\n\n  ELSIF v_solution.solution_type = 'coordinates' THEN\n    v_lat_correct := REPLACE(TRIM(v_solution.solution->>'lat'), ',', '.');\n    v_lng_correct := REPLACE(TRIM(v_solution.solution->>'lng'), ',', '.');\n    v_lat_submitted := REPLACE(TRIM(p_answer->>'lat'), ',', '.');\n    v_lng_submitted := REPLACE(TRIM(p_answer->>'lng'), ',', '.');\n\n    v_is_correct := (v_lat_correct = v_lat_submitted AND v_lng_correct = v_lng_submitted);\n  ELSE\n    v_is_correct := (LOWER(REGEXP_REPLACE(v_solution.solution->>0, '\\s+', '', 'g')) = LOWER(REGEXP_REPLACE(p_answer->>0, '\\s+', '', 'g')));\n  END IF;\n\n  -- Registra tentativo\n  INSERT INTO public.enigma_attempts (team_id, challenge_id, attempt_number, answer, is_correct)\n  VALUES (v_team_id, p_challenge_id, v_attempt_count, p_answer, v_is_correct);\n\n  SELECT nome_squadra INTO v_team_name FROM public.teams WHERE id = v_team_id;\n\n  IF v_is_correct THEN\n    -- Completa sfida\n    INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n    VALUES (v_team_id, p_challenge_id, 'completed', now())\n    ON CONFLICT (team_id, challenge_id) \n    DO UPDATE SET stato = 'completed', completata_il = now();\n\n    -- Assegna punti (+20)\n    INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)\n    VALUES (v_team_id, p_challenge_id, v_stage_id, v_solution.punteggio, 'challenge_points', 'Enigma risolto: ' || v_challenge_title);\n\n    INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n    VALUES ('enigma_solved', v_team_id, jsonb_build_object('message', 'La squadra \"' || v_team_name || '\" ha risolto l''enigma \"' || v_challenge_title || '\" al tentativo #' || v_attempt_count, 'punti', v_solution.punteggio));\n  ELSE\n    -- Detrae punti (-8)\n    INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)\n    VALUES (v_team_id, p_challenge_id, v_stage_id, v_penalty, 'penalty', 'Risposta enigma errata: ' || v_challenge_title);\n\n    INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n    VALUES ('enigma_failed', v_team_id, jsonb_build_object('message', 'La squadra \"' || v_team_name || '\" ha risposto in modo errato all''enigma \"' || v_challenge_title || '\", subendo ' || v_penalty || ' PT.', 'punti', v_penalty));\n  END IF;\n\n  RETURN jsonb_build_object(\n    'success', true,\n    'is_correct', v_is_correct,\n    'attempt_number', v_attempt_count,\n    'points', CASE WHEN v_is_correct THEN v_solution.punteggio ELSE v_penalty END,\n    'already_completed', false\n  );\nEND;\n",
+    "args": "p_challenge_id uuid, p_answer jsonb",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_enigma_extra_answer",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_tx RECORD;\n  v_is_correct BOOLEAN := false;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  -- Controlla se c'è enigma extra acquistato e non ancora consumato\n  SELECT * INTO v_tx FROM public.marketplace_transactions\n  WHERE target_team_id = v_team_id AND marketplace_item_id = 'enigma_extra' AND stato = 'completed'\n  LIMIT 1;\n\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Nessun enigma extra attivo');\n  END IF;\n\n  v_is_correct := (LOWER(TRIM(p_answer)) = 'lanterna'); -- Soluzione fissa\n\n  IF v_is_correct THEN\n    UPDATE public.marketplace_transactions SET stato = 'used', data_utilizzo = now() WHERE id = v_tx.id;\n  END IF;\n\n  RETURN jsonb_build_object('is_correct', v_is_correct);\nEND;\n",
+    "args": "p_answer text",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_edit_secret_code_match",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n  -- Logica fittizia per evitare errori\nEND;\n",
+    "args": "p_team_id uuid, p_partner_id uuid, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "spin_unlucky_wheel",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_tx RECORD;\n  v_roll INTEGER;\n  v_result TEXT;\n  v_points_penalty INTEGER := 0;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  SELECT * INTO v_tx FROM public.marketplace_transactions\n  WHERE target_team_id = v_team_id AND marketplace_item_id = 'ruota_sfortunata' AND stato = 'completed'\n  LIMIT 1;\n\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Nessuna ruota sfortunata in sospeso');\n  END IF;\n\n  -- Genera un esito casuale server-side (1-100)\n  v_roll := floor(random() * 100) + 1;\n\n  IF v_roll <= 30 THEN\n    v_result := 'PENALITA_PUNTI_LIEVE';\n    v_points_penalty := -10;\n  ELSIF v_roll <= 60 THEN\n    v_result := 'PENALITA_PUNTI_MEDIA';\n    v_points_penalty := -20;\n  ELSIF v_roll <= 80 THEN\n    v_result := 'BLOCCO_PUNTI_GRAVE';\n    v_points_penalty := -30;\n  ELSE\n    v_result := 'AIUTO_EXTRA_DAVE'; -- Premio speciale, Dave aiuta\n  END IF;\n\n  -- Registra esito ed elimina transazione\n  UPDATE public.marketplace_transactions \n  SET stato = 'used', data_utilizzo = now(), dettagli = jsonb_build_object('roll', v_roll, 'result', v_result, 'penalty', v_points_penalty)\n  WHERE id = v_tx.id;\n\n  IF v_points_penalty != 0 THEN\n    INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n    VALUES (v_team_id, v_points_penalty, 'penalty', 'Esito Ruota Sfortunata (' || v_result || ')');\n  END IF;\n\n  RETURN jsonb_build_object('success', true, 'roll', v_roll, 'result', v_result, 'penalty', v_points_penalty);\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "open_classifica_bonus",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_tx RECORD;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  SELECT * INTO v_tx FROM public.marketplace_transactions\n  WHERE id = p_transaction_id AND team_id = v_team_id;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Transazione non trovata';\n  END IF;\n\n  IF v_tx.marketplace_item_id != 'bonus_classifica' THEN\n    RAISE EXCEPTION 'Transazione non abbinata al bonus classifica';\n  END IF;\n\n  IF v_tx.stato = 'completed' THEN\n    UPDATE public.marketplace_transactions\n    SET stato = 'viewing', data_utilizzo = now()\n    WHERE id = p_transaction_id;\n  END IF;\nEND;\n",
+    "args": "p_transaction_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "consume_marketplace_transaction",
+    "src": "\nDECLARE\n  v_team_id UUID;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  UPDATE public.marketplace_transactions\n  SET stato = 'used', data_utilizzo = now()\n  WHERE id = p_transaction_id AND team_id = v_team_id AND stato = 'viewing';\nEND;\n",
+    "args": "p_transaction_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "mark_partenza_used",
+    "src": "\nDECLARE\n  v_team_id UUID;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  UPDATE public.marketplace_transactions\n  SET stato = 'used', data_utilizzo = now()\n  WHERE id = p_transaction_id AND team_id = v_team_id AND stato = 'completed';\nEND;\n",
+    "args": "p_transaction_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "play_jackpot",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_team_points INTEGER;\n  v_s1 INTEGER;\n  v_s2 INTEGER;\n  v_s3 INTEGER;\n  v_win BOOLEAN := false;\n  v_delta INTEGER;\n  v_already_played BOOLEAN;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Non autenticato');\n  END IF;\n\n  IF p_puntata < 5 OR p_puntata > 20 THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Puntata consentita tra 5 e 20 punti');\n  END IF;\n\n  -- Lock concorrente sul team\n  PERFORM 1 FROM public.teams WHERE id = v_team_id FOR UPDATE;\n\n  -- Verifica se ha già giocato\n  SELECT EXISTS(\n    SELECT 1 FROM public.jackpot_plays WHERE team_id = v_team_id\n  ) INTO v_already_played;\n\n  IF v_already_played THEN\n    RETURN jsonb_build_object('success', false, 'error', 'La tua squadra ha già tentato il Jackpot della Regia');\n  END IF;\n\n  -- Calcola i punti totali del team\n  SELECT COALESCE(SUM(punti), 0) INTO v_team_points FROM public.scores WHERE team_id = v_team_id;\n  IF v_team_points < p_puntata THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Punteggio insufficiente');\n  END IF;\n\n  -- Genera tre simboli casuali (1-5)\n  v_s1 := floor(random() * 5) + 1;\n  v_s2 := floor(random() * 5) + 1;\n  v_s3 := floor(random() * 5) + 1;\n\n  v_win := (v_s1 = v_s2 AND v_s2 = v_s3);\n\n  IF v_win THEN\n    v_delta := p_puntata; -- Vince raddoppio puntata (+p_puntata netti)\n  ELSE\n    v_delta := -p_puntata; -- Perde la puntata\n  END IF;\n\n  -- Registra giocata\n  INSERT INTO public.jackpot_plays (team_id, puntata_punti, esito_moltiplicatore, delta_punti)\n  VALUES (v_team_id, p_puntata, CASE WHEN v_win THEN 2.0 ELSE 0.0 END, v_delta);\n\n  -- Salva punteggio\n  INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n  VALUES (v_team_id, v_delta, 'jackpot', 'Slot Jackpot della Regia');\n\n  RETURN jsonb_build_object(\n    'success', true,\n    'win', v_win,\n    'symbols', jsonb_build_array(v_s1, v_s2, v_s3),\n    'delta', v_delta\n  );\nEND;\n",
+    "args": "p_puntata integer",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_edit_secret_code_settings",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n  -- Logica fittizia per evitare errori\nEND;\n",
+    "args": "p_full_code text, p_destination text, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_secure_leaderboard",
+    "src": "\nDECLARE\n  v_caller_team_id UUID;\n  v_has_bonus BOOLEAN := false;\n  v_is_admin BOOLEAN := false;\nBEGIN\n  v_caller_team_id := public.current_team_id();\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n\n  IF v_is_admin THEN\n    v_has_bonus := true;\n  ELSIF v_caller_team_id IS NOT NULL THEN\n    -- Controlla se ha bonus classifica attivo\n    SELECT EXISTS(\n      SELECT 1 FROM public.marketplace_transactions\n      WHERE team_id = v_caller_team_id AND marketplace_item_id = 'bonus_classifica' AND stato = 'viewing'\n    ) INTO v_has_bonus;\n  END IF;\n\n  RETURN QUERY\n  WITH raw_leaderboard AS (\n    SELECT \n      t.id AS l_team_id,\n      t.nome_squadra AS l_name,\n      t.colore AS l_color,\n      t.avatar_url AS l_avatar_url,\n      t.motto AS l_motto,\n      COALESCE((SELECT SUM(s.punti) FROM public.scores s WHERE s.team_id = t.id AND s.challenge_id IS NOT NULL), 0)::NUMERIC AS l_ch_pts,\n      COALESCE((SELECT SUM(s.punti) FROM public.scores s WHERE s.team_id = t.id AND s.challenge_id IS NULL), 0)::NUMERIC AS l_mod_pts,\n      COALESCE((SELECT SUM(cl.punti) FROM public.cattiveria_ledger cl WHERE cl.team_id = t.id), 0)::NUMERIC AS l_catt_pts,\n      (\n        COALESCE((SELECT SUM(s.punti) FROM public.scores s WHERE s.team_id = t.id), 0) +\n        COALESCE((SELECT SUM(cl.punti) FROM public.cattiveria_ledger cl WHERE cl.team_id = t.id), 0)\n      )::NUMERIC AS l_tot_pts,\n      COALESCE((SELECT COUNT(*) FROM public.team_progress tp WHERE tp.team_id = t.id AND tp.stato = 'completed'), 0)::BIGINT AS l_comp_ch,\n      COALESCE((SELECT SUM(minuti_penalita * 60) FROM public.time_penalties WHERE team_id = t.id), 0)::NUMERIC AS l_duration,\n      (SELECT MAX(completata_il) FROM public.team_progress WHERE team_id = t.id AND stato = 'completed') AS l_last_comp,\n      t.active AS l_active,\n      t.freeze_started_at AS l_freeze_start,\n      t.freeze_expires_at AS l_freeze_exp\n    FROM public.teams t\n  ),\n  ranked_leaderboard AS (\n    SELECT \n      *,\n      ROW_NUMBER() OVER (\n        ORDER BY l_active DESC, l_comp_ch DESC, l_tot_pts DESC, l_duration ASC, l_last_comp ASC NULLS LAST\n      )::INTEGER AS l_rank\n    FROM raw_leaderboard\n  )\n  SELECT \n    l_team_id, l_name, l_color, l_avatar_url, l_motto, l_ch_pts, l_mod_pts, l_catt_pts, l_tot_pts, l_comp_ch, l_duration, l_last_comp, l_active, l_freeze_start, l_freeze_exp, l_rank\n  FROM ranked_leaderboard\n  WHERE v_has_bonus = true OR l_team_id = v_caller_team_id;\nEND;\n",
+    "args": "",
+    "return": "TABLE(team_id uuid, name text, color text, avatar_url text, motto text, challenges_points numeric, modifier_points numeric, cattiveria_points numeric, total_points numeric, completed_challenges bigint, total_duration_seconds numeric, last_completion timestamp with time zone, active boolean, freeze_started_at timestamp with time zone, freeze_expires_at timestamp with time zone, rank integer)",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_add_points",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)\n  VALUES (p_team_id, p_stage_id, p_points, 'bonus', p_reason);\nEND;\n",
+    "args": "p_team_id uuid, p_stage_id uuid, p_points integer, p_reason text",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_remove_points",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)\n  VALUES (p_team_id, p_stage_id, -ABS(p_points), 'penalty', p_reason);\nEND;\n",
+    "args": "p_team_id uuid, p_stage_id uuid, p_points integer, p_reason text",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_add_tokens",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.teams \n  SET token_balance = token_balance + p_tokens \n  WHERE id = p_team_id;\nEND;\n",
+    "args": "p_team_id uuid, p_tokens integer",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_remove_tokens",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_current_tokens INTEGER;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT token_balance INTO v_current_tokens FROM public.teams WHERE id = p_team_id FOR UPDATE;\n  \n  UPDATE public.teams \n  SET token_balance = GREATEST(0, v_current_tokens - p_tokens)\n  WHERE id = p_team_id;\nEND;\n",
+    "args": "p_team_id uuid, p_tokens integer",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "close_stage",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.stages SET stato = 'closed' WHERE id = p_stage_id;\nEND;\n",
+    "args": "p_stage_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "reopen_stage",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.stages SET stato = 'open' WHERE id = p_stage_id;\nEND;\n",
+    "args": "p_stage_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "delete_team_auth_user",
+    "src": "\nBEGIN\n  IF OLD.owner_id IS NOT NULL THEN\n    DELETE FROM public.user_roles WHERE user_id = OLD.owner_id;\n    DELETE FROM auth.users WHERE id = OLD.owner_id;\n  END IF;\n  RETURN OLD;\nEND;\n",
+    "args": "",
+    "return": "trigger",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_force_complete_bank",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  -- Completa la sfida\n  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n  VALUES (p_team_id, v_challenge_id, 'completed', now())\n  ON CONFLICT (team_id, challenge_id)\n  DO UPDATE SET stato = 'completed', completata_il = now();\n\n  -- Assegna punteggio (25 punti)\n  INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n  VALUES (p_team_id, v_challenge_id, 25, 'challenge_points', 'Sfida Banca forzata da Admin');\nEND;\n",
+    "args": "p_team_id uuid, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_reset_bank",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  -- Elimina risposte\n  DELETE FROM public.team_answers WHERE team_id = p_team_id;\n\n  -- Resetta progresso\n  DELETE FROM public.team_progress WHERE team_id = p_team_id AND challenge_id = v_challenge_id;\n\n  -- Elimina punteggio associato\n  DELETE FROM public.scores WHERE team_id = p_team_id AND challenge_id = v_challenge_id;\nEND;\n",
+    "args": "p_team_id uuid, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_edit_bank_answer",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_real_q_id UUID;\n  v_challenge_id UUID := 'b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6';\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  -- Cerchiamo se c'è una domanda fittizia\n  -- Nella banca le domande sono logiche e registrate per numero. Per evitare FK errors, associamo ad una riga in quiz_questions se presente o la creiamo fittizia.\n  SELECT id INTO v_real_q_id FROM public.quiz_questions WHERE question = 'Banca Q' || p_question_id::text LIMIT 1;\n  IF NOT FOUND THEN\n    INSERT INTO public.quiz_questions (challenge_id, question, options, correct_answer_index, order_index, points)\n    VALUES (v_challenge_id, 'Banca Q' || p_question_id::text, '[]'::jsonb, 0, p_question_id, 5)\n    RETURNING id INTO v_real_q_id;\n  END IF;\n\n  INSERT INTO public.team_answers (team_id, question_id, selected_answer, correct)\n  VALUES (p_team_id, v_real_q_id, 0, p_correct) -- Selected index fittizio\n  ON CONFLICT (team_id, question_id)\n  DO UPDATE SET correct = p_correct;\nEND;\n",
+    "args": "p_team_id uuid, p_question_id integer, p_answer text, p_correct boolean, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_force_complete_secret_code",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7'; -- Codice Segreto\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n  VALUES (p_team_id, v_challenge_id, 'completed', now())\n  ON CONFLICT (team_id, challenge_id)\n  DO UPDATE SET stato = 'completed', completata_il = now();\n\n  INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n  VALUES (p_team_id, v_challenge_id, 15, 'challenge_points', 'Codice Segreto sbloccato da Admin');\nEND;\n",
+    "args": "p_team_id uuid, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "toggle_marketplace",
+    "src": "\nDECLARE v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN RAISE EXCEPTION 'Non autorizzato'; END IF;\n  UPDATE public.game_settings SET\n    marketplace_active = p_active,\n    activated_at = CASE WHEN p_active THEN now() ELSE NULL END,\n    activated_by = CASE WHEN p_active THEN p_admin_id ELSE NULL END\n  WHERE id = (SELECT id FROM public.game_settings LIMIT 1);\nEND;\n",
+    "args": "p_active boolean, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_get_secret_code_dashboard",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_completed_teams JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(jsonb_build_object(\n    'team_id', tp.team_id,\n    'nome_squadra', t.nome_squadra,\n    'completed_at', tp.completata_il\n  )), '[]'::jsonb) INTO v_completed_teams\n  FROM public.team_progress tp\n  JOIN public.teams t ON t.id = tp.team_id\n  WHERE tp.challenge_id = 'c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7' AND tp.stato = 'completed';\n\n  RETURN jsonb_build_object(\n    'full_code', '4829167305',\n    'destination', 'Parco Giochi Madonna dei Fiori (lato piazzale grigio)',\n    'parts', '[]'::jsonb,\n    'matches', '[]'::jsonb,\n    'transactions', '[]'::jsonb,\n    'attempts', '[]'::jsonb,\n    'completed_teams', v_completed_teams\n  );\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "sync_team_to_auth_user",
+    "src": "\nDECLARE\n  v_user_id UUID;\n  v_email TEXT;\n  v_encrypted_pass TEXT;\nBEGIN\n  IF NEW.username IS NULL OR NEW.password_plain IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  v_email := LOWER(TRIM(NEW.username)) || '@pechino.it';\n  v_encrypted_pass := extensions.crypt(NEW.password_plain, extensions.gen_salt('bf', 10));\n\n  -- Cerca utente esistente\n  SELECT id INTO v_user_id \n  FROM auth.users \n  WHERE email = v_email;\n\n  IF v_user_id IS NULL THEN\n    v_user_id := gen_random_uuid();\n\n    -- Crea utente in auth.users\n    INSERT INTO auth.users (\n      instance_id,\n      id,\n      aud,\n      role,\n      email,\n      encrypted_password,\n      email_confirmed_at,\n      raw_app_meta_data,\n      raw_user_meta_data,\n      created_at,\n      updated_at,\n      confirmation_token,\n      email_change,\n      email_change_token_new,\n      recovery_token\n    )\n    VALUES (\n      '00000000-0000-0000-0000-000000000000',\n      v_user_id,\n      'authenticated',\n      'authenticated',\n      v_email,\n      v_encrypted_pass,\n      now(),\n      '{\"provider\":\"email\",\"providers\":[\"email\"]}'::jsonb,\n      '{}'::jsonb,\n      now(),\n      now(),\n      '',\n      '',\n      '',\n      ''\n    );\n  ELSE\n    -- Aggiorna password esistente\n    UPDATE auth.users \n    SET encrypted_password = v_encrypted_pass, updated_at = now()\n    WHERE id = v_user_id;\n  END IF;\n\n  -- Imposta owner_id\n  NEW.owner_id := v_user_id;\n\n  RETURN NEW;\nEND;\n",
+    "args": "",
+    "return": "trigger",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp, extensions"
+    ]
+  },
+  {
+    "name": "after_sync_team_to_user",
+    "src": "\nBEGIN\n  IF NEW.owner_id IS NOT NULL THEN\n    INSERT INTO public.user_roles (user_id, role, team_id)\n    VALUES (NEW.owner_id, 'team', NEW.id)\n    ON CONFLICT DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n",
+    "args": "",
+    "return": "trigger",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_get_enigma_dashboard",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_stage4_id UUID := '4b4b4c4d-5e5f-6061-7172-838485868788';\n  v_rows JSONB;\n  v_solutions JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  WITH stage4_challenges AS (\n    SELECT id, titolo, ordine_sfida \n    FROM public.challenges \n    WHERE stage_id = v_stage4_id\n    ORDER BY ordine_sfida ASC\n  ),\n  team_enigma_progress AS (\n    SELECT \n      t.id AS team_id,\n      t.nome_squadra,\n      t.active,\n      sc.id AS challenge_id,\n      sc.titolo,\n      sc.ordine_sfida,\n      COALESCE(tp.stato, 'not_started') AS stato,\n      tp.created_at AS started_at,\n      tp.completata_il AS completed_at,\n      (SELECT COUNT(*)::INTEGER FROM public.enigma_attempts ea WHERE ea.team_id = t.id AND ea.challenge_id = sc.id) AS attempt_count\n    FROM public.teams t\n    CROSS JOIN stage4_challenges sc\n    LEFT JOIN public.team_progress tp ON tp.team_id = t.id AND tp.challenge_id = sc.id\n  ),\n  aggregated_teams AS (\n    SELECT \n      team_id,\n      nome_squadra,\n      active,\n      bool_or(stato != 'not_started') AS started,\n      count(*) FILTER (WHERE stato = 'completed') = (SELECT count(*) FROM stage4_challenges) AS completed_all,\n      count(*) FILTER (WHERE stato = 'completed')::INTEGER AS enigmi_completati,\n      (SELECT count(*)::INTEGER FROM stage4_challenges) AS enigmi_totali,\n      jsonb_agg(jsonb_build_object(\n        'challenge_id', challenge_id,\n        'titolo', titolo,\n        'ordine', ordine_sfida,\n        'stato', stato,\n        'started_at', started_at,\n        'completed_at', completed_at,\n        'attempt_count', attempt_count\n      ) ORDER BY ordine_sfida) AS enigma_progress\n    FROM team_enigma_progress\n    GROUP BY team_id, nome_squadra, active\n  )\n  SELECT COALESCE(jsonb_agg(jsonb_build_object(\n    'team_id', team_id,\n    'nome_squadra', nome_squadra,\n    'active', active,\n    'started', started,\n    'completed_all', completed_all,\n    'enigmi_completati', enigmi_completati,\n    'enigmi_totali', enigmi_totali,\n    'enigma_progress', enigma_progress\n  )), '[]'::jsonb) INTO v_rows\n  FROM aggregated_teams;\n\n  SELECT COALESCE(jsonb_agg(jsonb_build_object(\n    'challenge_id', challenge_id,\n    'solution_type', solution_type,\n    'hint', CASE \n      WHEN solution_type = 'text' THEN SUBSTRING(solution->>0 FROM 1 FOR 3) || '...'\n      WHEN solution_type = 'directions' THEN '[lucchetto]'\n      WHEN solution_type = 'coordinates' THEN 'Lat: 44.71, Lng: 7.84'\n      ELSE '[note]'\n    END\n  )), '[]'::jsonb) INTO v_solutions\n  FROM public.enigma_solutions;\n\n  RETURN jsonb_build_object(\n    'rows', v_rows,\n    'enigma_solutions', v_solutions\n  );\nEND;\n",
+    "args": "p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_update_enigma_solution",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  INSERT INTO public.enigma_solutions (challenge_id, solution, solution_type)\n  VALUES (p_challenge_id, p_solution, 'text')\n  ON CONFLICT (challenge_id) \n  DO UPDATE SET solution = EXCLUDED.solution;\nEND;\n",
+    "args": "p_challenge_id uuid, p_solution jsonb, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_jackpot_plays",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_plays JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(jsonb_build_object(\n    'id', jp.id,\n    'team_id', jp.team_id,\n    'nome_squadra', t.nome_squadra,\n    'puntata_punti', jp.puntata_punti,\n    'esito_moltiplicatore', jp.esito_moltiplicatore,\n    'delta_punti', jp.delta_punti,\n    'timestamp', jp.timestamp\n  )), '[]'::jsonb) INTO v_plays\n  FROM public.jackpot_plays jp\n  JOIN public.teams t ON t.id = jp.team_id;\n\n  RETURN v_plays;\nEND;\n",
+    "args": "p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_report_status",
+    "src": "\nDECLARE\n  v_report RECORD;\nBEGIN\n  SELECT * INTO v_report FROM public.game_report WHERE id = 'current';\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('state', 'PRIVATE_LIVE', 'is_published', false, 'published_at', NULL);\n  END IF;\n\n  RETURN jsonb_build_object(\n    'state', v_report.state,\n    'is_published', (v_report.state = 'PUBLISHED_FINAL'),\n    'published_at', v_report.published_at\n  );\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_game_report",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_report RECORD;\n  v_snapshot JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  SELECT * INTO v_report FROM public.game_report WHERE id = 'current';\n\n  IF NOT v_is_admin AND COALESCE(v_report.state, 'PRIVATE_LIVE') != 'PUBLISHED_FINAL' THEN\n    RAISE EXCEPTION 'Il Resoconto Gara non è ancora stato pubblicato dalla Regia.';\n  END IF;\n\n  IF v_report.snapshot IS NOT NULL THEN\n    RETURN v_report.snapshot;\n  END IF;\n\n  RETURN jsonb_build_object(\n    'state', COALESCE(v_report.state, 'PRIVATE_LIVE'),\n    'published_at', v_report.published_at\n  );\nEND;\n",
+    "args": "p_user_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "respond_passaparola_request",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_tx RECORD;\n  v_team_name TEXT;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_tx FROM public.marketplace_transactions WHERE id = p_transaction_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Transazione non trovata';\n  END IF;\n\n  IF v_tx.stato != 'pending' THEN\n    RAISE EXCEPTION 'La richiesta non è in attesa di risposta';\n  END IF;\n\n  UPDATE public.marketplace_transactions \n  SET \n    stato = 'used', \n    data_utilizzo = now(), \n    dettagli = dettagli || jsonb_build_object('response_text', p_response, 'nota_interna', p_nota_interna, 'response_timestamp', now())\n  WHERE id = p_transaction_id;\n\n  SELECT nome_squadra INTO v_team_name FROM public.teams WHERE id = v_tx.team_id;\n\n  INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n  VALUES ('passaparola_responded', v_tx.team_id, jsonb_build_object('message', 'La Regia ha risposto alla richiesta Passaparola di \"' || COALESCE(v_team_name, 'Sconosciuta') || '\": \"' || p_response || '\"'));\nEND;\n",
+    "args": "p_transaction_id uuid, p_response text, p_nota_interna text, p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "publish_game_report",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_report RECORD;\n  v_snapshot JSONB;\n  v_published_at TIMESTAMPTZ := now();\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_report FROM public.game_report WHERE id = 'current';\n  IF FOUND AND v_report.state = 'PUBLISHED_FINAL' THEN\n    RETURN jsonb_build_object('success', true, 'alreadyPublished', true, 'published_at', v_report.published_at);\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(l)), '[]'::jsonb) INTO v_snapshot\n  FROM (\n    SELECT * FROM public.get_secure_leaderboard()\n  ) l;\n\n  INSERT INTO public.game_report (id, state, published_at, published_by, snapshot)\n  VALUES ('current', 'PUBLISHED_FINAL', v_published_at, p_admin_id, v_snapshot)\n  ON CONFLICT (id)\n  DO UPDATE SET \n    state = 'PUBLISHED_FINAL',\n    published_at = v_published_at,\n    published_by = p_admin_id,\n    snapshot = v_snapshot;\n\n  RETURN jsonb_build_object('success', true, 'alreadyPublished', false, 'published_at', v_published_at);\nEND;\n",
+    "args": "p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "initialize_secret_code_challenge",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_team RECORD;\n  v_index INTEGER := 0;\n  v_full_code TEXT := '4829167305';\n  v_first5 TEXT;\n  v_last5 TEXT;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT full_code INTO v_full_code FROM public.game_final_code WHERE id = 'current';\n  v_first5 := SUBSTRING(v_full_code FROM 1 FOR 5);\n  v_last5 := SUBSTRING(v_full_code FROM 6 FOR 5);\n\n  FOR v_team IN SELECT id FROM public.teams WHERE active = true LOOP\n    INSERT INTO public.team_code_parts (team_id, code_part, part_type)\n    VALUES (v_team.id, CASE WHEN v_index % 2 = 0 THEN v_first5 ELSE v_last5 END, CASE WHEN v_index % 2 = 0 THEN 'FIRST_5' ELSE 'LAST_5' END)\n    ON CONFLICT (team_id) DO NOTHING;\n    \n    v_index := v_index + 1;\n  END LOOP;\n\n  RETURN jsonb_build_object('success', true, 'message', 'Sfida codice segreto inizializzata per tutte le squadre attive.');\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "admin_adjust_team_tokens",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_current_tokens INTEGER;\n  v_new_balance INTEGER;\n  v_team_name TEXT;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT token_balance, nome_squadra INTO v_current_tokens, v_team_name \n  FROM public.teams \n  WHERE id = p_team_id \n  FOR UPDATE;\n  \n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Squadra non trovata';\n  END IF;\n\n  v_new_balance := GREATEST(0, v_current_tokens + p_amount);\n\n  UPDATE public.teams \n  SET token_balance = v_new_balance \n  WHERE id = p_team_id;\n\n  INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n  VALUES ('admin_tokens_adjusted', p_team_id, jsonb_build_object(\n    'message', 'La Regia ha ' || CASE WHEN p_amount >= 0 THEN 'aggiunto ' ELSE 'rimosso ' END || ABS(p_amount)::text || ' token alla squadra \"' || v_team_name || '\".' || CASE WHEN p_reason != '' THEN ' Motivazione: ' || p_reason ELSE '' END,\n    'new_balance', v_new_balance\n  ));\n\n  RETURN jsonb_build_object('success', true, 'new_balance', v_new_balance);\nEND;\n",
+    "args": "p_team_id uuid, p_amount integer, p_reason text, p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_cornhole_settings",
+    "src": "\nDECLARE\n  v_settings RECORD;\nBEGIN\n  SELECT * INTO v_settings FROM public.game_settings WHERE id = 'settings_01';\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('cornhole_special_bye_team_id', NULL);\n  END IF;\n  RETURN jsonb_build_object('cornhole_special_bye_team_id', v_settings.cornhole_special_bye_team_id);\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_boxe_settings",
+    "src": "\nDECLARE\n  v_settings RECORD;\nBEGIN\n  SELECT * INTO v_settings FROM public.game_settings WHERE id = 'settings_01';\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('boxe_special_bye_team_id', NULL);\n  END IF;\n  RETURN jsonb_build_object('boxe_special_bye_team_id', v_settings.boxe_special_bye_team_id);\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "rollback_boxe_match_result",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';\n  v_result JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.boxe_matches \n  SET winner_id = NULL, status = 'ready', completed_at = NULL\n  WHERE id = p_match_id;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result\n  FROM public.boxe_matches m\n  WHERE m.challenge_id = v_challenge_id;\n\n  RETURN v_result;\nEND;\n",
+    "args": "p_match_id text, p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_cornhole_tournament",
+    "src": "\nDECLARE\n  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';\n  v_challenge_id UUID := 'c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0';\n  v_count INTEGER;\n  v_active_teams RECORD;\n  v_special_bye_id UUID;\n  v_teams_count INTEGER;\n  v_virtual_pool INTEGER;\n  v_k INTEGER;\n  v_num_matches INTEGER;\n  v_total_byes INTEGER;\n  v_num_tech_byes INTEGER;\n  v_rounds_count INTEGER;\n  v_team_array UUID[];\n  v_match_id TEXT;\n  v_index INTEGER := 1;\n  v_round INTEGER;\n  v_match INTEGER;\n  v_result JSONB;\nBEGIN\n  SELECT COUNT(*)::INTEGER INTO v_count FROM public.cornhole_matches WHERE challenge_id = v_challenge_id;\n  \n  IF v_count = 0 THEN\n    SELECT cornhole_special_bye_team_id INTO v_special_bye_id FROM public.game_settings WHERE id = 'settings_01';\n    \n    SELECT ARRAY(\n      SELECT id FROM public.teams \n      WHERE active = true AND id IS DISTINCT FROM v_special_bye_id\n      ORDER BY nome_squadra ASC\n    ) INTO v_team_array;\n\n    IF v_special_bye_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.teams WHERE id = v_special_bye_id AND active = true) THEN\n      v_team_array := v_special_bye_id || v_team_array;\n    END IF;\n\n    v_teams_count := cardinality(v_team_array);\n    IF v_teams_count = 0 THEN\n      RETURN '[]'::jsonb;\n    END IF;\n\n    v_virtual_pool := CASE WHEN v_special_bye_id IS NOT NULL THEN v_teams_count + 1 ELSE v_teams_count END;\n    v_k := POWER(2, CEIL(LOG(2, v_virtual_pool)))::INTEGER;\n    v_num_matches := v_k / 2;\n    v_total_byes := v_k - v_teams_count;\n    v_num_tech_byes := CASE WHEN v_special_bye_id IS NOT NULL THEN GREATEST(0, v_total_byes - 1) ELSE v_total_byes END;\n    v_rounds_count := LOG(2, v_k)::INTEGER;\n\n    FOR v_round IN 0..(v_rounds_count - 1) LOOP\n      v_num_matches := v_k / POWER(2, v_round + 1)::INTEGER;\n      FOR v_match IN 0..(v_num_matches - 1) LOOP\n        v_match_id := 'cornhole_' || v_round::text || '_' || v_match::text || '_' || SUBSTRING(gen_random_uuid()::text FROM 1 FOR 8);\n        \n        INSERT INTO public.cornhole_matches (id, stage_id, challenge_id, round, match_index, team1_id, team2_id, winner_id, status, completed_at, is_special_bye)\n        VALUES (v_match_id, v_stage_id, v_challenge_id, v_round, v_match, NULL, NULL, NULL, 'pending', NULL, false);\n      END LOOP;\n    END LOOP;\n\n    v_num_matches := v_k / 2;\n    FOR v_match IN 0..(v_num_matches - 1) LOOP\n      IF v_match = 0 AND v_special_bye_id IS NOT NULL THEN\n        UPDATE public.cornhole_matches \n        SET team1_id = v_special_bye_id, team2_id = NULL, winner_id = v_special_bye_id, status = 'completed', completed_at = now(), is_special_bye = true\n        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n        \n        v_index := v_index + 1;\n      ELSIF v_match > 0 AND v_match <= v_num_tech_byes THEN\n        IF v_index <= v_teams_count THEN\n          UPDATE public.cornhole_matches \n          SET team1_id = v_team_array[v_index], team2_id = NULL, winner_id = v_team_array[v_index], status = 'completed', completed_at = now()\n          WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n          \n          v_index := v_index + 1;\n        END IF;\n      ELSE\n        IF v_index <= v_teams_count THEN\n          UPDATE public.cornhole_matches SET team1_id = v_team_array[v_index], status = 'ready'\n          WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n          v_index := v_index + 1;\n        END IF;\n        IF v_index <= v_teams_count THEN\n          UPDATE public.cornhole_matches SET team2_id = v_team_array[v_index]\n          WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n          v_index := v_index + 1;\n        END IF;\n      END IF;\n    END LOOP;\n\n    FOR v_round IN 0..(v_rounds_count - 2) LOOP\n      FOR v_match IN SELECT * FROM public.cornhole_matches WHERE challenge_id = v_challenge_id AND round = v_round AND status = 'completed' LOOP\n        IF v_match.winner_id IS NOT NULL THEN\n          IF v_match.match_index % 2 = 0 THEN\n            UPDATE public.cornhole_matches SET team1_id = v_match.winner_id\n            WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);\n          ELSE\n            UPDATE public.cornhole_matches SET team2_id = v_match.winner_id\n            WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);\n          END IF;\n        END IF;\n      END LOOP;\n    END LOOP;\n\n    UPDATE public.cornhole_matches \n    SET status = 'ready' \n    WHERE challenge_id = v_challenge_id AND status = 'pending' AND team1_id IS NOT NULL AND team2_id IS NOT NULL;\n\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result\n  FROM public.cornhole_matches m\n  WHERE m.challenge_id = v_challenge_id;\n\n  RETURN v_result;\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_boxe_tournament",
+    "src": "\nDECLARE\n  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';\n  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';\n  v_count INTEGER;\n  v_result JSONB;\nBEGIN\n  SELECT COUNT(*)::INTEGER INTO v_count FROM public.boxe_matches WHERE challenge_id = v_challenge_id;\n  \n  IF v_count = 0 THEN\n    RETURN '[]'::jsonb;\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result\n  FROM public.boxe_matches m\n  WHERE m.challenge_id = v_challenge_id;\n\n  RETURN v_result;\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "generate_boxe_tournament",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_stage_id UUID := '5c5c5d5e-6f6a-7b7b-8c8c-9c9c9c9c9c9c';\n  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';\n  v_special_bye_id UUID;\n  v_teams_count INTEGER;\n  v_virtual_pool INTEGER;\n  v_k INTEGER;\n  v_num_matches INTEGER;\n  v_total_byes INTEGER;\n  v_num_tech_byes INTEGER;\n  v_rounds_count INTEGER;\n  v_team_array UUID[];\n  v_match_id TEXT;\n  v_index INTEGER := 1;\n  v_round INTEGER;\n  v_match INTEGER;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  DELETE FROM public.boxe_matches WHERE challenge_id = v_challenge_id;\n\n  SELECT boxe_special_bye_team_id INTO v_special_bye_id FROM public.game_settings WHERE id = 'settings_01';\n  \n  SELECT ARRAY(\n    SELECT id FROM public.teams \n    WHERE active = true AND id IS DISTINCT FROM v_special_bye_id\n    ORDER BY nome_squadra ASC\n  ) INTO v_team_array;\n\n  IF v_special_bye_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.teams WHERE id = v_special_bye_id AND active = true) THEN\n    v_team_array := v_special_bye_id || v_team_array;\n  END IF;\n\n  v_teams_count := cardinality(v_team_array);\n  IF v_teams_count = 0 THEN\n    RETURN;\n  END IF;\n\n  v_virtual_pool := CASE WHEN v_special_bye_id IS NOT NULL THEN v_teams_count + 1 ELSE v_teams_count END;\n  v_k := POWER(2, CEIL(LOG(2, v_virtual_pool)))::INTEGER;\n  v_num_matches := v_k / 2;\n  v_total_byes := v_k - v_teams_count;\n  v_num_tech_byes := CASE WHEN v_special_bye_id IS NOT NULL THEN GREATEST(0, v_total_byes - 1) ELSE v_total_byes END;\n  v_rounds_count := LOG(2, v_k)::INTEGER;\n\n  FOR v_round IN 0..(v_rounds_count - 1) LOOP\n    v_num_matches := v_k / POWER(2, v_round + 1)::INTEGER;\n    FOR v_match IN 0..(v_num_matches - 1) LOOP\n      v_match_id := 'boxe_' || v_round::text || '_' || v_match::text || '_' || SUBSTRING(gen_random_uuid()::text FROM 1 FOR 8);\n      \n      INSERT INTO public.boxe_matches (id, stage_id, challenge_id, round, match_index, team1_id, team2_id, winner_id, status, completed_at, is_special_bye)\n      VALUES (v_match_id, v_stage_id, v_challenge_id, v_round, v_match, NULL, NULL, NULL, 'pending', NULL, false);\n    END LOOP;\n  END LOOP;\n\n  v_num_matches := v_k / 2;\n  FOR v_match IN 0..(v_num_matches - 1) LOOP\n    IF v_match = 0 AND v_special_bye_id IS NOT NULL THEN\n      UPDATE public.boxe_matches \n      SET team1_id = v_special_bye_id, team2_id = NULL, winner_id = v_special_bye_id, status = 'completed', completed_at = now(), is_special_bye = true\n      WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n      \n      v_index := v_index + 1;\n    ELSIF v_match > 0 AND v_match <= v_num_tech_byes THEN\n      IF v_index <= v_teams_count THEN\n        UPDATE public.boxe_matches \n        SET team1_id = v_team_array[v_index], team2_id = NULL, winner_id = v_team_array[v_index], status = 'completed', completed_at = now()\n        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n        \n        v_index := v_index + 1;\n      END IF;\n    ELSE\n      IF v_index <= v_teams_count THEN\n        UPDATE public.boxe_matches SET team1_id = v_team_array[v_index], status = 'ready'\n        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n        v_index := v_index + 1;\n      END IF;\n      IF v_index <= v_teams_count THEN\n        UPDATE public.boxe_matches SET team2_id = v_team_array[v_index]\n        WHERE challenge_id = v_challenge_id AND round = 0 AND match_index = v_match;\n        v_index := v_index + 1;\n      END IF;\n    END IF;\n  END LOOP;\n\n  FOR v_round IN 0..(v_rounds_count - 2) LOOP\n    FOR v_match IN SELECT * FROM public.boxe_matches WHERE challenge_id = v_challenge_id AND round = v_round AND status = 'completed' LOOP\n      IF v_match.winner_id IS NOT NULL THEN\n        IF v_match.match_index % 2 = 0 THEN\n          UPDATE public.boxe_matches SET team1_id = v_match.winner_id\n          WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);\n        ELSE\n          UPDATE public.boxe_matches SET team2_id = v_match.winner_id\n          WHERE challenge_id = v_challenge_id AND round = v_round + 1 AND match_index = (v_match.match_index / 2);\n        END IF;\n      END IF;\n    END LOOP;\n  END LOOP;\n\n  UPDATE public.boxe_matches \n  SET status = 'ready' \n  WHERE challenge_id = v_challenge_id AND status = 'pending' AND team1_id IS NOT NULL AND team2_id IS NOT NULL;\nEND;\n",
+    "args": "p_admin_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_cornhole_match_result",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0';\n  v_match RECORD;\n  v_max_round INTEGER;\n  v_points_assigned BOOLEAN;\n  v_result JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_match FROM public.cornhole_matches WHERE id = p_match_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Match non trovato.';\n  END IF;\n\n  UPDATE public.cornhole_matches \n  SET winner_id = p_winner_id, status = 'completed', completed_at = now()\n  WHERE id = p_match_id;\n\n  SELECT MAX(round)::INTEGER INTO v_max_round FROM public.cornhole_matches WHERE challenge_id = v_challenge_id;\n\n  IF v_match.round < v_max_round THEN\n    IF v_match.match_index % 2 = 0 THEN\n      UPDATE public.cornhole_matches SET team1_id = p_winner_id\n      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);\n    ELSE\n      UPDATE public.cornhole_matches SET team2_id = p_winner_id\n      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);\n    END IF;\n\n    UPDATE public.cornhole_matches \n    SET status = 'ready'\n    WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2) AND team1_id IS NOT NULL AND team2_id IS NOT NULL;\n  ELSE\n    SELECT EXISTS(SELECT 1 FROM public.scores WHERE challenge_id = v_challenge_id) INTO v_points_assigned;\n    IF NOT v_points_assigned THEN\n      INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n      VALUES (p_winner_id, v_challenge_id, 20, 'challenge_points', 'Vincitore Torneo Cornhole');\n\n      INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n      VALUES (p_winner_id, v_challenge_id, 'completed', now())\n      ON CONFLICT (team_id, challenge_id) DO UPDATE SET stato = 'completed', completata_il = now();\n    END IF;\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result\n  FROM public.cornhole_matches m\n  WHERE m.challenge_id = v_challenge_id;\n\n  RETURN v_result;\nEND;\n",
+    "args": "p_match_id text, p_winner_id uuid, p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_boxe_match_result",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'd6d6d6d6-e7e7-f8f8-a9a9-b0b0b0b0b0b0';\n  v_match RECORD;\n  v_max_round INTEGER;\n  v_points_assigned BOOLEAN;\n  v_result JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  SELECT * INTO v_match FROM public.boxe_matches WHERE id = p_match_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Match non trovato.';\n  END IF;\n\n  UPDATE public.boxe_matches \n  SET winner_id = p_winner_id, status = 'completed', completed_at = now()\n  WHERE id = p_match_id;\n\n  SELECT MAX(round)::INTEGER INTO v_max_round FROM public.boxe_matches WHERE challenge_id = v_challenge_id;\n\n  IF v_match.round < v_max_round THEN\n    IF v_match.match_index % 2 = 0 THEN\n      UPDATE public.boxe_matches SET team1_id = p_winner_id\n      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);\n    ELSE\n      UPDATE public.boxe_matches SET team2_id = p_winner_id\n      WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2);\n    END IF;\n\n    UPDATE public.boxe_matches \n    SET status = 'ready'\n    WHERE challenge_id = v_challenge_id AND round = v_match.round + 1 AND match_index = (v_match.match_index / 2) AND team1_id IS NOT NULL AND team2_id IS NOT NULL;\n  ELSE\n    SELECT EXISTS(SELECT 1 FROM public.scores WHERE challenge_id = v_challenge_id) INTO v_points_assigned;\n    IF NOT v_points_assigned THEN\n      INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n      VALUES (p_winner_id, v_challenge_id, 20, 'challenge_points', 'Vincitore Torneo Boxe');\n\n      INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n      VALUES (p_winner_id, v_challenge_id, 'completed', now())\n      ON CONFLICT (team_id, challenge_id) DO UPDATE SET stato = 'completed', completata_il = now();\n    END IF;\n  END IF;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result\n  FROM public.boxe_matches m\n  WHERE m.challenge_id = v_challenge_id;\n\n  RETURN v_result;\nEND;\n",
+    "args": "p_match_id text, p_winner_id uuid, p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "rollback_cornhole_match_result",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\n  v_challenge_id UUID := 'c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0';\n  v_result JSONB;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.cornhole_matches \n  SET winner_id = NULL, status = 'ready', completed_at = NULL\n  WHERE id = p_match_id;\n\n  SELECT COALESCE(jsonb_agg(row_to_json(m)), '[]'::jsonb) INTO v_result\n  FROM public.cornhole_matches m\n  WHERE m.challenge_id = v_challenge_id;\n\n  RETURN v_result;\nEND;\n",
+    "args": "p_match_id text, p_admin_id uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "set_cornhole_special_bye",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.game_settings \n  SET cornhole_special_bye_team_id = p_team_id\n  WHERE id = 'settings_01';\nEND;\n",
+    "args": "p_team_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "set_boxe_special_bye",
+    "src": "\nDECLARE\n  v_is_admin BOOLEAN;\nBEGIN\n  SELECT public.has_role(auth.uid(), 'admin') INTO v_is_admin;\n  IF NOT v_is_admin THEN\n    RAISE EXCEPTION 'Non autorizzato';\n  END IF;\n\n  UPDATE public.game_settings \n  SET boxe_special_bye_team_id = p_team_id\n  WHERE id = 'settings_01';\nEND;\n",
+    "args": "p_team_id uuid",
+    "return": "void",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "buy_marketplace_item",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_team RECORD;\n  v_item RECORD;\n  v_tx_id UUID;\n  v_shield_tx RECORD;\n  \n  -- Variabili per ruota fortuna\n  v_roll INTEGER;\n  v_label TEXT;\n  v_points INTEGER := 0;\n  v_tokens INTEGER := 0;\n  v_dave_help BOOLEAN := false;\n  v_dettagli JSONB := '{}'::jsonb;\n  \n  -- Variabili per malus\n  v_buyer_points INTEGER;\n  v_target_points INTEGER;\n  v_points_stolen INTEGER;\n  v_points_deducted INTEGER;\n  v_buyer_diff INTEGER;\n  v_target_diff INTEGER;\n  v_target_team_name TEXT;\n  v_stage_id UUID;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Non autenticato');\n  END IF;\n\n  -- Lock concorrente per evitare race conditions sui token della squadra\n  SELECT * INTO v_team FROM public.teams WHERE id = v_team_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Squadra non trovata');\n  END IF;\n\n  SELECT * INTO v_item FROM public.marketplace_items WHERE id = p_item_id;\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Prodotto non trovato');\n  END IF;\n\n  IF v_team.token_balance < v_item.costo_token THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Token insufficienti');\n  END IF;\n\n  -- Preveniamo doppio acquisto per bonus monouso non cumulabili (se necessario, altrimenti proseguiamo)\n  -- Per adesso verifichiamo la validità del target per i Malus\n  IF v_item.categoria = 'MALUS' THEN\n    IF p_target_team_id IS NULL THEN\n      RETURN jsonb_build_object('success', false, 'error', 'Scegli la squadra avversaria da colpire');\n    END IF;\n    IF p_target_team_id = v_team_id THEN\n      RETURN jsonb_build_object('success', false, 'error', 'Non puoi colpire la tua stessa squadra!');\n    END IF;\n    \n    SELECT nome_squadra INTO v_target_team_name FROM public.teams WHERE id = p_target_team_id;\n    IF NOT FOUND THEN\n      RETURN jsonb_build_object('success', false, 'error', 'Squadra bersaglio non trovata.');\n    END IF;\n\n    -- Validazioni specifiche per stato malus attivo\n    IF p_item_id = 'freeze_2min' THEN\n      IF EXISTS(SELECT 1 FROM public.teams WHERE id = p_target_team_id AND freeze_expires_at > now()) THEN\n        RETURN jsonb_build_object('success', false, 'error', 'La squadra bersaglio è già congelata!');\n      END IF;\n    END IF;\n\n    IF p_item_id = 'enigma_extra' THEN\n      IF EXISTS(SELECT 1 FROM public.marketplace_transactions WHERE target_team_id = p_target_team_id AND marketplace_item_id = 'enigma_extra' AND stato = 'completed') THEN\n        RETURN jsonb_build_object('success', false, 'error', 'La squadra bersaglio ha già un Enigma Extra attivo!');\n      END IF;\n    END IF;\n\n    IF p_item_id = 'ruota_sfortunata' THEN\n      IF EXISTS(SELECT 1 FROM public.marketplace_transactions WHERE target_team_id = p_target_team_id AND marketplace_item_id = 'ruota_sfortunata' AND stato = 'completed') THEN\n        RETURN jsonb_build_object('success', false, 'error', 'La squadra bersaglio ha già una Ruota Sfortunata da girare!');\n      END IF;\n    END IF;\n  END IF;\n\n  -- Detrazione atomica dei token\n  UPDATE public.teams \n  SET token_balance = token_balance - v_item.costo_token \n  WHERE id = v_team_id;\n\n  v_tx_id := gen_random_uuid();\n\n  -- Cerca l'ultimo stage attivo dell'utente per i log\n  SELECT id INTO v_stage_id FROM public.stages WHERE active = true ORDER BY ordine LIMIT 1;\n\n  -- GESTIONE DELLO SCUDO ATTIVO DELLA VITTIMA\n  IF v_item.categoria = 'MALUS' AND p_target_team_id IS NOT NULL THEN\n    SELECT * INTO v_shield_tx \n    FROM public.marketplace_transactions \n    WHERE team_id = p_target_team_id AND marketplace_item_id = 'bonus_scudo' AND stato = 'completed'\n    ORDER BY data_acquisto ASC\n    LIMIT 1;\n\n    IF FOUND THEN\n      -- Lo scudo para il malus e viene consumato\n      UPDATE public.marketplace_transactions \n      SET stato = 'used', data_utilizzo = now() \n      WHERE id = v_shield_tx.id;\n\n      -- Inseriamo la transazione del malus come bloccata/scaduta\n      INSERT INTO public.marketplace_transactions (id, team_id, marketplace_item_id, target_team_id, costo_token, stato, dettagli)\n      VALUES (v_tx_id, v_team_id, p_item_id, p_target_team_id, v_item.costo_token, 'expired', jsonb_build_object('blocked_by_shield_id', v_shield_tx.id));\n\n      -- Assegniamo -3 Punti Cattiveria alla vittima (perché ha usato lo scudo)\n      INSERT INTO public.cattiveria_ledger (team_id, stage_id, tipo, punti, motivo, riferimento_transazione, marketplace_item_id)\n      VALUES (p_target_team_id, v_stage_id, 'SCUDO_ATTIVATO', -3, 'Scudo attivato per parare il malus ' || v_item.nome, v_shield_tx.id, 'bonus_scudo');\n\n      -- Registriamo l'attività nel log\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('malus_blocked', v_team_id, jsonb_build_object('message', 'Il Malus \"' || v_item.nome || '\" lanciato da \"' || v_team.nome_squadra || '\" contro \"' || v_target_team_name || '\" è stato BLOCCATO dallo Scudo.'));\n\n      RETURN jsonb_build_object('success', true, 'shielded', true, 'new_balance', v_team.token_balance - v_item.costo_token);\n    END IF;\n  END IF;\n\n  -- PREPARAZIONE DETTAGLI SPECIFICI\n  IF p_item_id = 'ruota_fortuna' THEN\n    v_roll := floor(random() * 100) + 1;\n    \n    IF v_roll <= 3 THEN\n      v_label := '🏆 JACKPOT'; v_points := 20;\n    ELSIF v_roll <= 6 THEN\n      v_label := '🧠 AIUTO EXTRA DI DAVE'; v_dave_help := true;\n    ELSIF v_roll <= 13 THEN\n      v_label := '💎 MEGA BONUS'; v_points := 15;\n    ELSIF v_roll <= 25 THEN\n      v_label := '⭐ BONUS'; v_points := 10;\n    ELSIF v_roll <= 45 THEN\n      v_label := '🎁 PICCOLO BONUS'; v_points := 5;\n    ELSIF v_roll <= 55 THEN\n      v_label := '🪙 GETTONI BONUS'; v_tokens := 10;\n    ELSIF v_roll <= 65 THEN\n      v_label := '🎯 DOPPIO PREMIO'; v_points := 5; v_tokens := 5;\n    ELSIF v_roll <= 80 THEN\n      v_label := '🍀 FORTUNA'; v_tokens := 5;\n    ELSE\n      v_label := '🎉 SORPRESA'; v_points := 3;\n    END IF;\n\n    v_dettagli := jsonb_build_object(\n      'roll', v_roll, \n      'outcome_label', v_label, \n      'outcome_points', v_points, \n      'outcome_tokens', v_tokens,\n      'dave_help', v_dave_help\n    );\n  ELSIF p_item_id = 'enigma_extra' THEN\n    v_dettagli := jsonb_build_object(\n      'enigma_name', 'Il Codice del Viaggiatore',\n      'assigned_at', now(),\n      'solution', 'LANTERNA',\n      'solved_at', NULL\n    );\n  END IF;\n\n  -- INSERIMENTO TRANSAZIONE COMPLETATA\n  INSERT INTO public.marketplace_transactions (id, team_id, marketplace_item_id, target_team_id, costo_token, stato, dettagli)\n  VALUES (v_tx_id, v_team_id, p_item_id, p_target_team_id, v_item.costo_token, 'completed', v_dettagli);\n\n  -- APPLICAZIONE EFFETTI IMMEDIATI BONUS\n  IF p_item_id = 'bonus_punti' THEN\n    INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n    VALUES (v_team_id, 20, 'bonus_punti', 'Bonus Punti acquistato (+20 PT)');\n  END IF;\n\n  IF p_item_id = 'ruota_fortuna' THEN\n    IF v_points > 0 THEN\n      INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n      VALUES (v_team_id, v_points, 'bonus_punti', 'Ruota della Fortuna: ' || v_label);\n    END IF;\n    IF v_tokens > 0 THEN\n      UPDATE public.teams \n      SET token_balance = token_balance + v_tokens \n      WHERE id = v_team_id;\n    END IF;\n    \n    INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n    VALUES ('ruota_fortuna_spin', v_team_id, jsonb_build_object('message', 'La squadra \"' || v_team.nome_squadra || '\" ha girato la Ruota della Fortuna ed ha ottenuto: ' || v_label));\n  END IF;\n\n  -- APPLICAZIONE EFFETTI IMMEDIATI MALUS\n  IF v_item.categoria = 'MALUS' THEN\n    -- Aggiungiamo 10 Punti Cattiveria a chi ha lanciato il malus\n    INSERT INTO public.cattiveria_ledger (team_id, stage_id, tipo, punti, motivo, riferimento_transazione, marketplace_item_id)\n    VALUES (v_team_id, v_stage_id, 'MALUS_UTILIZZATO', 10, 'Malus ' || v_item.nome || ' attivato.', v_tx_id, p_item_id);\n\n    -- 1. Freeze 2 Minuti\n    IF p_item_id = 'freeze_2min' THEN\n      UPDATE public.teams \n      SET \n        freeze_started_at = now(),\n        freeze_expires_at = now() + INTERVAL '120 seconds',\n        freeze_duration_seconds = 120\n      WHERE id = p_target_team_id;\n\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('team_frozen', p_target_team_id, jsonb_build_object('message', 'La squadra \"' || v_target_team_name || '\" è stata congelata da \"' || v_team.nome_squadra || '\" per 120 secondi!'));\n    \n    -- 2. Enigma Extra\n    ELSIF p_item_id = 'enigma_extra' THEN\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('enigma_extra_assigned', p_target_team_id, jsonb_build_object('message', 'La squadra \"' || v_target_team_name || '\" ha ricevuto un Enigma Extra da \"' || v_team.nome_squadra || '\"!'));\n\n    -- 3. Ruota Sfortunata\n    ELSIF p_item_id = 'ruota_sfortunata' THEN\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('ruota_sfortunata_assigned', p_target_team_id, jsonb_build_object('message', 'La squadra \"' || v_target_team_name || '\" ha subito un Malus Ruota Sfortunata da \"' || v_team.nome_squadra || '\"!'));\n\n    -- 4. Trappola (Ruba fino a 30 punti)\n    ELSIF p_item_id = 'trappola' THEN\n      SELECT COALESCE(SUM(punti), 0) INTO v_target_points FROM public.scores WHERE team_id = p_target_team_id;\n      v_points_stolen := LEAST(30, GREATEST(0, v_target_points));\n\n      IF v_points_stolen > 0 THEN\n        -- Sottraiamo punti alla vittima\n        INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n        VALUES (p_target_team_id, -v_points_stolen, 'penalty', 'Malus Trappola: sottratti −' || v_points_stolen::text || ' PT da ' || v_team.nome_squadra);\n\n        -- Aggiungiamo punti all'acquirente\n        INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n        VALUES (v_team_id, v_points_stolen, 'bonus_punti', 'Malus Trappola: rubati +' || v_points_stolen::text || ' PT a ' || v_target_team_name);\n      END IF;\n\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('trappola_used', v_team_id, jsonb_build_object('message', 'La squadra \"' || v_team.nome_squadra || '\" ha attivato la TRAPPOLA contro \"' || v_target_team_name || '\" rubando ' || v_points_stolen::text || ' PT.'));\n\n    -- 5. Penalità Punti (-20 PT)\n    ELSIF p_item_id = 'penalita_punti' THEN\n      SELECT COALESCE(SUM(punti), 0) INTO v_target_points FROM public.scores WHERE team_id = p_target_team_id;\n      v_points_deducted := LEAST(20, GREATEST(0, v_target_points));\n\n      IF v_points_deducted > 0 THEN\n        INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n        VALUES (p_target_team_id, -v_points_deducted, 'penalty', 'Malus Penalità Punti: sottratti −' || v_points_deducted::text || ' PT da ' || v_team.nome_squadra);\n      END IF;\n\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('penalita_punti_used', v_team_id, jsonb_build_object('message', 'La squadra \"' || v_team.nome_squadra || '\" ha inflitto una PENALITÀ PUNTI contro \"' || v_target_team_name || '\" sottraendo ' || v_points_deducted::text || ' PT.'));\n\n    -- 6. Tassa di Passaggio (Scambio punti)\n    ELSIF p_item_id = 'tassa_passaggio' THEN\n      SELECT COALESCE(SUM(punti), 0) INTO v_buyer_points FROM public.scores WHERE team_id = v_team_id;\n      SELECT COALESCE(SUM(punti), 0) INTO v_target_points FROM public.scores WHERE team_id = p_target_team_id;\n\n      v_buyer_diff := v_target_points - v_buyer_points;\n      v_target_diff := v_buyer_points - v_target_points;\n\n      -- Aggiorniamo i punteggi inserendo le differenze\n      INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n      VALUES (v_team_id, v_buyer_diff, 'bonus_punti', 'Tassa di Passaggio: scambiati ' || v_buyer_points::text || ' PT con ' || v_target_points::text || ' PT di ' || v_target_team_name);\n\n      INSERT INTO public.scores (team_id, punti, tipo_modificatore, motivo)\n      VALUES (p_target_team_id, v_target_diff, 'penalty', 'Tassa di Passaggio: scambiati ' || v_target_points::text || ' PT con ' || v_buyer_points::text || ' PT di ' || v_team.nome_squadra);\n\n      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n      VALUES ('tassa_passaggio_used', v_team_id, jsonb_build_object('message', 'La squadra \"' || v_team.nome_squadra || '\" ha attivato la TASSA DI PASSAGGIO scambiando i suoi ' || v_buyer_points::text || ' PT con i ' || v_target_points::text || ' PT di \"' || v_target_team_name || '\".'));\n    END IF;\n  END IF;\n\n  RETURN jsonb_build_object('success', true, 'shielded', false, 'new_balance', v_team.token_balance - v_item.costo_token);\nEND;\n",
+    "args": "p_item_id text, p_target_team_id uuid DEFAULT NULL::uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "complete_challenge",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_team RECORD;\n  v_challenge RECORD;\n  v_prog RECORD;\n  v_already BOOLEAN := false;\n  v_is_photo BOOLEAN := false;\n  v_points INTEGER := 0;\n  v_bonus INTEGER := 0;\n  v_stage_completed BOOLEAN := false;\n  v_total INTEGER;\n  v_completed INTEGER;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN RAISE EXCEPTION 'Non autenticato'; END IF;\n\n  SELECT * INTO v_team FROM public.teams WHERE id = v_team_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Squadra non trovata'; END IF;\n\n  SELECT * INTO v_challenge FROM public.challenges WHERE id = p_challenge;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Sfida non trovata'; END IF;\n\n  -- Upsert progress: se esiste aggiorna, se no inserisci (senza stage_id che non esiste nella tabella)\n  SELECT * INTO v_prog FROM public.team_progress WHERE team_id = v_team_id AND challenge_id = p_challenge;\n\n  IF FOUND THEN\n    IF v_prog.stato = 'completed' THEN\n      v_already := true;\n    ELSE\n      UPDATE public.team_progress SET stato = 'completed', completata_il = now()\n      WHERE team_id = v_team_id AND challenge_id = p_challenge;\n    END IF;\n  ELSE\n    -- team_progress NON ha stage_id, quindi non lo mettiamo\n    INSERT INTO public.team_progress (team_id, challenge_id, stato, completata_il)\n    VALUES (v_team_id, p_challenge, 'completed', now());\n  END IF;\n\n  -- Determina se è sfida fotografica/social\n  v_is_photo := (v_challenge.tipo_sfida = 'photo' OR v_challenge.tipo_sfida = 'living_poster' OR v_challenge.tipo_sfida = 'social');\n\n  -- Calcola punti\n  IF NOT v_is_photo THEN\n    v_points := COALESCE(v_challenge.punteggio_massimo, 0);\n    IF v_challenge.tipo_sfida = 'emoji_movies' THEN v_points := 7; END IF;\n  END IF;\n\n  -- Assegna punti e log solo se non era già completata\n  IF NOT v_already THEN\n    -- scores HA stage_id, lo passiamo prendendo v_challenge.stage_id\n    INSERT INTO public.scores (team_id, challenge_id, stage_id, punti, tipo_modificatore, motivo)\n    VALUES (\n      v_team_id,\n      p_challenge,\n      v_challenge.stage_id,\n      v_points,\n      CASE WHEN v_is_photo THEN 'pending_approval' ELSE 'challenge_points' END,\n      CASE WHEN v_is_photo\n           THEN 'Foto consegnata — in attesa di valutazione: ' || v_challenge.titolo\n           ELSE 'Completamento prova: ' || v_challenge.titolo\n      END\n    );\n\n    -- Sblocca marketplace alla prima sfida completata\n    IF p_challenge = '0147e750-f0a3-4b72-8e76-a003fe2ef143' THEN\n      UPDATE public.game_settings SET marketplace_visible = true WHERE id = 'settings_01';\n    END IF;\n  END IF;\n\n  -- Verifica completamento tappa: join su challenges per ricavare stage_id (team_progress non ce l'ha)\n  SELECT COUNT(*)::INTEGER INTO v_total FROM public.challenges WHERE stage_id = v_challenge.stage_id;\n\n  SELECT COUNT(*)::INTEGER INTO v_completed\n  FROM public.team_progress tp\n  JOIN public.challenges c ON c.id = tp.challenge_id\n  WHERE tp.team_id = v_team_id AND c.stage_id = v_challenge.stage_id AND tp.stato = 'completed';\n\n  IF v_total > 0 AND v_completed >= v_total THEN v_stage_completed := true; END IF;\n\n  RETURN jsonb_build_object(\n    'already', v_already,\n    'points', v_points,\n    'bonus', v_bonus,\n    'stage_completed', v_stage_completed\n  );\nEND;\n",
+    "args": "p_challenge uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_enigma_state",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_attempts JSONB;\n  v_is_completed BOOLEAN;\n  v_prog RECORD;\nBEGIN\n  -- Admin può passare p_team_id, il team usa il proprio id\n  v_team_id := COALESCE(p_team_id, public.current_team_id());\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  SELECT * INTO v_prog FROM public.team_progress\n  WHERE team_id = v_team_id AND challenge_id = p_challenge_id;\n\n  v_is_completed := (FOUND AND v_prog.stato = 'completed');\n\n  SELECT COALESCE(jsonb_agg(\n    jsonb_build_object(\n      'id', ea.id,\n      'attempt_number', ea.attempt_number,\n      'answer', ea.answer,\n      'is_correct', ea.is_correct,\n      'submitted_at', ea.submitted_at\n    ) ORDER BY ea.attempt_number\n  ), '[]'::jsonb)\n  INTO v_attempts\n  FROM public.enigma_attempts ea\n  WHERE ea.team_id = v_team_id AND ea.challenge_id = p_challenge_id;\n\n  RETURN jsonb_build_object(\n    'attempts', v_attempts,\n    'attempt_count', jsonb_array_length(v_attempts),\n    'is_completed', v_is_completed,\n    'completed_at', CASE WHEN v_is_completed THEN v_prog.completata_il ELSE NULL END\n  );\nEND;\n",
+    "args": "p_challenge_id uuid, p_team_id uuid DEFAULT NULL::uuid",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "get_jackpot_state",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_play RECORD;\n  v_current_score INTEGER;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  SELECT * INTO v_play FROM public.jackpot_plays\n  WHERE team_id = v_team_id\n  ORDER BY timestamp DESC\n  LIMIT 1;\n\n  SELECT COALESCE(SUM(punti), 0)::INTEGER INTO v_current_score\n  FROM public.scores\n  WHERE team_id = v_team_id;\n\n  IF FOUND THEN\n    RETURN jsonb_build_object(\n      'played', true,\n      'play', jsonb_build_object(\n        'id', v_play.id,\n        'puntata_punti', v_play.puntata_punti,\n        'esito_moltiplicatore', v_play.esito_moltiplicatore,\n        'delta_punti', v_play.delta_punti,\n        'timestamp', v_play.timestamp\n      ),\n      'current_score', v_current_score\n    );\n  ELSE\n    RETURN jsonb_build_object('played', false, 'play', NULL, 'current_score', v_current_score);\n  END IF;\nEND;\n",
+    "args": "",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_passaparola_request",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_team_name TEXT;\n  v_tx RECORD;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Non autenticato');\n  END IF;\n\n  SELECT * INTO v_tx FROM public.marketplace_transactions\n  WHERE id = p_transaction_id AND team_id = v_team_id;\n\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Transazione non trovata');\n  END IF;\n\n  IF v_tx.marketplace_item_id != 'passaparola' OR v_tx.stato != 'completed' THEN\n    RETURN jsonb_build_object('success', false, 'error', 'Richiesta non valida o già inoltrata');\n  END IF;\n\n  -- Aggiorna stato a pending e salva testo della richiesta\n  UPDATE public.marketplace_transactions\n  SET stato = 'pending', dettagli = jsonb_build_object('request_text', p_request_text, 'requested_at', now())\n  WHERE id = p_transaction_id;\n\n  SELECT nome_squadra INTO v_team_name FROM public.teams WHERE id = v_team_id;\n\n  INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)\n  VALUES ('passaparola_request', v_team_id,\n    jsonb_build_object('message', 'La squadra \"' || v_team_name || '\" ha inoltrato una richiesta Passaparola: \"' || p_request_text || '\"'));\n\n  RETURN jsonb_build_object('success', true);\nEND;\n",
+    "args": "p_transaction_id uuid, p_request_text text",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  },
+  {
+    "name": "submit_quiz_answer",
+    "src": "\nDECLARE\n  v_team_id UUID;\n  v_question RECORD;\n  v_correct BOOLEAN;\n  v_points INTEGER := 0;\nBEGIN\n  v_team_id := public.current_team_id();\n  IF v_team_id IS NULL THEN\n    RAISE EXCEPTION 'Non autenticato';\n  END IF;\n\n  SELECT * INTO v_question FROM public.quiz_questions WHERE id = p_question;\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('correct', false, 'points', 0, 'error', 'Domanda non trovata');\n  END IF;\n\n  v_correct := (p_selected = v_question.correct_answer_index);\n  v_points := CASE WHEN v_correct THEN v_question.points ELSE 0 END;\n\n  -- Upsert risposta (UNIQUE su team_id, question_id)\n  INSERT INTO public.team_answers (team_id, question_id, selected_answer, correct)\n  VALUES (v_team_id, p_question, p_selected, v_correct)\n  ON CONFLICT (team_id, question_id) DO UPDATE\n    SET selected_answer = EXCLUDED.selected_answer, correct = EXCLUDED.correct;\n\n  -- Assegna punti se corretto\n  IF v_correct AND v_points > 0 THEN\n    INSERT INTO public.scores (team_id, challenge_id, punti, tipo_modificatore, motivo)\n    VALUES (v_team_id, v_question.challenge_id, v_points, 'challenge_points', 'Risposta corretta al quiz');\n  END IF;\n\n  RETURN jsonb_build_object('correct', v_correct, 'points', v_points);\nEND;\n",
+    "args": "p_question uuid, p_selected integer",
+    "return": "jsonb",
+    "secdef": true,
+    "config": [
+      "search_path=public, pg_temp"
+    ]
+  }
+]

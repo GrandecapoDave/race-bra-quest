@@ -69,31 +69,36 @@ function Dashboard() {
   const [passaparolaText, setPassaparolaText] = useState("");
   const [isSendingPassaparola, setIsSendingPassaparola] = useState(false);
 
-  const [dismissedShieldId, setDismissedShieldId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("dismissed_shield_notification");
-    }
-    return null;
-  });
+  const [dismissedShieldId, setDismissedShieldId] = useState<string | null>(null);
 
   const handleDismissShieldAlert = (shieldId: string) => {
-    localStorage.setItem("dismissed_shield_notification", shieldId);
+    const key = `dismissed_shield_notification_${user?.id ?? "anon"}`;
+    localStorage.setItem(key, shieldId);
     setDismissedShieldId(shieldId);
   };
 
-  const [dismissedRewards, setDismissedRewards] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("dismissed_stage_rewards");
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  });
+  const [dismissedRewards, setDismissedRewards] = useState<string[]>([]);
 
   const handleDismissReward = (stageId: string) => {
+    const key = `dismissed_stage_rewards_${user?.id ?? "anon"}`;
     const updated = [...dismissedRewards, stageId];
-    localStorage.setItem("dismissed_stage_rewards", JSON.stringify(updated));
+    localStorage.setItem(key, JSON.stringify(updated));
     setDismissedRewards(updated);
   };
+
+  // Load user-specific dismissed state when user changes (handles login/logout)
+  useEffect(() => {
+    if (!user?.id) {
+      setDismissedShieldId(null);
+      setDismissedRewards([]);
+      return;
+    }
+    const shieldKey = `dismissed_shield_notification_${user.id}`;
+    const rewardsKey = `dismissed_stage_rewards_${user.id}`;
+    setDismissedShieldId(localStorage.getItem(shieldKey));
+    const stored = localStorage.getItem(rewardsKey);
+    setDismissedRewards(stored ? JSON.parse(stored) : []);
+  }, [user?.id]);
 
   const team = useQuery(myTeamQuery);
   const stages = useQuery(stagesQuery);
@@ -292,7 +297,14 @@ function Dashboard() {
   };
 
   const isTeamFrozen = team.data?.freeze_expires_at && new Date(team.data.freeze_expires_at).getTime() > Date.now();
-  const isMarketplaceFrozen = Boolean(team.data?.marketplace_freeze_expires_at && new Date(team.data.marketplace_freeze_expires_at).getTime() > Date.now());
+  // Blackout mercato: check for an active blackout_mercato transaction targeting this team within last 6 minutes
+  const blackoutTx = myReceivedMaluses.find((t) => 
+    t.item_id === "blackout_mercato" && 
+    t.stato === "completed" && 
+    (t.timestamp || t.data_acquisto) &&
+    (Date.now() - new Date(t.timestamp || t.data_acquisto).getTime()) < 360 * 1000
+  );
+  const isMarketplaceFrozen = Boolean(blackoutTx);
   const activeEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "completed");
   const solvedEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "used");
   const activeRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "completed");

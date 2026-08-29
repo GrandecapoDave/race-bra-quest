@@ -24,14 +24,14 @@ export function useCompleteChallenge() {
         let earnedPoints = result.points ?? 0;
 
         try {
-          const { data: teamIdData } = await supabase.rpc("current_team_id");
-          const teamId = teamIdData || queryClient.getQueryData<any>(["my-team"])?.id;
+          // Get teamId from query cache (current_team_id RPC may not exist)
+          const teamId = queryClient.getQueryData<any>(["my-team"])?.id;
 
           if (teamId) {
             // 1. Check for Active Moltiplicatore 2X
             const { data: active2x } = await (supabase as any)
               .from("marketplace_transactions")
-              .select("*")
+              .select("id, stato")
               .eq("team_id", teamId)
               .eq("marketplace_item_id", "moltiplicatore_2x")
               .eq("stato", "completed")
@@ -52,14 +52,14 @@ export function useCompleteChallenge() {
               }
               await (supabase as any)
                 .from("marketplace_transactions")
-                .update({ stato: "used", data_utilizzo: new Date().toISOString() })
+                .update({ stato: "used" })
                 .eq("id", active2x.id);
             }
 
             // 2. Check for Received Dimezza Punti Malus
             const { data: activeDimezza } = await (supabase as any)
               .from("marketplace_transactions")
-              .select("*")
+              .select("id, stato")
               .eq("target_team_id", teamId)
               .eq("marketplace_item_id", "dimezza_punti")
               .eq("stato", "completed")
@@ -67,6 +67,16 @@ export function useCompleteChallenge() {
 
             if (activeDimezza) {
               const penalty = Math.floor(earnedPoints / 2);
+
+              // 3. Check for Polizza Diretta before applying dimezza (logic #6 of 6)
+              const { data: activePolizza } = await (supabase as any)
+                .from("marketplace_transactions")
+                .select("id, stato")
+                .eq("team_id", teamId)
+                .eq("marketplace_item_id", "polizza_diretta")
+                .eq("stato", "completed")
+                .maybeSingle();
+
               if (penalty > 0) {
                 await (supabase as any).from("scores").insert({
                   team_id: teamId,
@@ -77,10 +87,30 @@ export function useCompleteChallenge() {
                 toast.error(`⚠️ Malus Dimezza Punti applicato: Punteggio prova dimezzato (-${penalty} PT)!`, {
                   duration: 6000,
                 });
+
+                // Polizza: refund 50% of the penalty (= 25% of original points)
+                if (activePolizza) {
+                  const refund = Math.floor(penalty / 2);
+                  if (refund > 0) {
+                    await (supabase as any).from("scores").insert({
+                      team_id: teamId,
+                      punti: refund,
+                      tipo_modificatore: "bonus_polizza_rimborso",
+                      motivo: `Polizza Diretta: Rimborso 50% del malus (+${refund} PT)`,
+                    });
+                    toast.success(`🛡️ Polizza Diretta attivata! Rimborso del 50% del malus (+${refund} PT)`, {
+                      duration: 6000,
+                    });
+                  }
+                  await (supabase as any)
+                    .from("marketplace_transactions")
+                    .update({ stato: "used" })
+                    .eq("id", activePolizza.id);
+                }
               }
               await (supabase as any)
                 .from("marketplace_transactions")
-                .update({ stato: "used", data_utilizzo: new Date().toISOString() })
+                .update({ stato: "used" })
                 .eq("id", activeDimezza.id);
             }
           }

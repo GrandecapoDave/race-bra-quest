@@ -480,18 +480,42 @@ function MarketplacePage() {
   });
   const myReceivedMaluses = team ? transactions.filter((t) => t.target_team_id === team.id) : [];
 
+  // Blackout mercato: check if current team has an active blackout blocking marketplace access
+  const activeBlackout = !isAdmin.data && myReceivedMaluses.find((t) =>
+    t.item_id === "blackout_mercato" &&
+    t.stato === "completed" &&
+    (t.timestamp || t.data_acquisto) &&
+    (Date.now() - new Date(t.timestamp || t.data_acquisto).getTime()) < 360 * 1000
+  );
+  const blackoutRemainingMs = activeBlackout 
+    ? Math.max(0, 360 * 1000 - (Date.now() - new Date(activeBlackout.timestamp || activeBlackout.data_acquisto).getTime()))
+    : 0;
+  const blackoutRemainingMin = Math.ceil(blackoutRemainingMs / 60000);
+
   const balance = team?.token_balance ?? 50;
 
-  // Handle Purchase RPC
+  // Items handled entirely client-side (not in the RPC buy_marketplace_item function)
+  const CLIENT_SIDE_ITEMS = ["moltiplicatore_2x", "polizza_diretta", "blackout_mercato", "dimezza_punti"];
+
+  // Handle Purchase
   const handlePurchase = async (itemId: string, targetId?: string) => {
     if (!isMarketplaceActive) {
       toast.error("Il Marketplace è chiuso. Non puoi effettuare acquisti.");
       return;
     }
 
-    // Check single-use rule
+    // Block purchases during active blackout (malus #2 of 6 logics)
+    if (activeBlackout) {
+      toast.error("🔒 BLACKOUT MERCATO ATTIVO!", {
+        description: `Non puoi effettuare acquisti. Attendi ancora circa ${blackoutRemainingMin} minut${blackoutRemainingMin === 1 ? "o" : "i"}.`,
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Check single-use rule (enforcement #1 of 6 logics)
     const alreadyBought = myPurchases.some(
-      (t) => t.item_id === itemId && (t.stato === "completed" || t.stato === "used" || t.stato === "pending" || t.stato === "viewing")
+      (t) => t.item_id === itemId && (t.stato === "completed" || t.stato === "used" || t.stato === "pending" || t.stato === "viewing" || t.stato === "expired")
     );
     if (alreadyBought) {
       toast.error("Hai già acquistato questo articolo. Ogni bonus e malus è utilizzabile 1 sola volta!");
@@ -507,7 +531,117 @@ function MarketplacePage() {
 
     setBuyingId(itemId);
     try {
-      // 1. Try server RPC first
+      // ================================================================
+      // PATH A: New items — always execute client-side with guaranteed
+      //         transaction insert for single-use enforcement
+      // ================================================================
+      if (CLIENT_SIDE_ITEMS.includes(itemId)) {
+        // Deduct tokens from team balance
+        const newBalance = Math.max(0, balance - itemCost);
+        if (team?.id) {
+          try {
+            await (supabase as any).from("teams").update({ token_balance: newBalance }).eq("id", team.id);
+          } catch {}
+        }
+
+        // Shield check for malus items (logic #3 of 6)
+        if (targetId && (itemId === "blackout_mercato" || itemId === "dimezza_punti")) {
+          const targetShield = transactions.find(
+            (t: any) => t.buyer_team_id === targetId && t.item_id === "bonus_scudo" && t.stato === "completed"
+          );
+
+          if (targetShield) {
+            // Shield neutralizes the malus: consume shield, log expired tx
+            try {
+              await (supabase as any).from("marketplace_transactions").update({ stato: "used" }).eq("id", targetShield.id);
+            } catch {}
+            // Refund tokens since malus was blocked
+            if (team?.id) {
+              try {
+                await (supabase as any).from("teams").update({ token_balance: balance }).eq("id", team.id);
+              } catch {}
+            }
+            try {
+              await (supabase as any).from("marketplace_transactions").insert({
+                team_id: team?.id,
+                marketplace_item_id: itemId,
+                target_team_id: targetId,
+                costo_token: 0,
+                stato: "expired",
+                dettagli: { blocked_by_shield_id: targetShield.id, refunded: true },
+              });
+            } catch {}
+            toast.error("🛡️ MALUS BLOCCATO DALLO SCUDO!", {
+              description: "La squadra bersaglio era protetta da uno Scudo. Hai ricevuto il rimborso dei token.",
+              duration: 6000,
+            });
+            setSelectedMalus(null);
+            setTargetTeamId("");
+            queryClient.invalidateQueries();
+            return;
+          }
+
+          // Log +10 cattiveria for attacker (logic #4 of 6)
+          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
+          try {
+            await (supabase as any).from("cattiveria_ledger").insert({
+              team_id: team?.id,
+              tipo: "MALUS_UTILIZZATO",
+              punti: 10,
+              motivo: `${itemConfig?.nome || itemId} lanciato contro ${targetName}`,
+              marketplace_item_id: itemId,
+            });
+          } catch {}
+        }
+
+        // Insert transaction to enforce single-use (logic #1 of 6)
+        try {
+          await (supabase as any).from("marketplace_transactions").insert({
+            team_id: team?.id,
+            marketplace_item_id: itemId,
+            target_team_id: targetId || null,
+            costo_token: itemCost,
+            stato: "completed",
+            dettagli: { executed_at: new Date().toISOString() },
+          });
+        } catch (txErr) {
+          console.warn("Failed to record transaction:", txErr);
+        }
+
+        // Show success toast per item (logic #5 of 6 — dashboard badges)
+        if (itemId === "moltiplicatore_2x") {
+          toast.success("✨ MOLTIPLICATORE 2X ATTIVATO!", {
+            description: "Il punteggio di ogni prova della tappa in corso sarà raddoppiato (x2)!",
+            duration: 7000,
+          });
+        } else if (itemId === "polizza_diretta") {
+          toast.success("🛡️ POLIZZA RIMBORSO 50% ATTIVATA!", {
+            description: "Riceverai automaticamente il 50% di rimborso sui punti persi dal prossimo malus subito.",
+            duration: 7000,
+          });
+        } else if (itemId === "blackout_mercato") {
+          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
+          toast.success("🔒 BLACKOUT MERCATO ATTIVATO!", {
+            description: `Il Marketplace della squadra "${targetName}" è stato bloccato per 6 minuti!`,
+            duration: 7000,
+          });
+        } else if (itemId === "dimezza_punti") {
+          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
+          toast.success("⚡ MALUS DIMEZZA PUNTI INVIATO!", {
+            description: `Il punteggio della prossima sfida completata da "${targetName}" sarà dimezzato (-50%)!`,
+            duration: 7000,
+          });
+        }
+
+        setSelectedMalus(null);
+        setTargetTeamId("");
+        queryClient.invalidateQueries();
+        return;
+      }
+
+      // ================================================================
+      // PATH B: Legacy items — try Supabase RPC first, fallback to client
+      // ================================================================
       let rpcSuccess = false;
       let rpcData: any = null;
       try {
@@ -515,12 +649,12 @@ function MarketplacePage() {
           p_item_id: itemId,
           p_target_team_id: targetId || null,
         });
-        if (!error && data) {
+        if (!error && data != null) {
           rpcSuccess = true;
           rpcData = data;
         }
       } catch (rpcErr) {
-        console.warn("RPC failed, using robust client handler:", rpcErr);
+        console.warn("RPC failed, using client fallback:", rpcErr);
       }
 
       if (rpcSuccess && rpcData) {
@@ -596,66 +730,42 @@ function MarketplacePage() {
           if (data?.transaction_id) {
             setUsePassaparolaTx({ id: data.transaction_id });
           }
-        } else if (itemId === "moltiplicatore_2x") {
-          toast.success("✨ MOLTIPLICATORE 2X ATTIVATO!", {
-            description: "Il punteggio totale ottenuto nelle prove della tappa corrente sarà raddoppiato (x2)!",
-            duration: 6000,
-          });
-        } else if (itemId === "polizza_diretta") {
-          toast.success("🛡️ POLIZZA RIMBORSO 50% ATTIVATA!", {
-            description: "Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito.",
-            duration: 6000,
-          });
-        } else if (itemId === "blackout_mercato") {
-          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
-          toast.success("🔒 BLACKOUT MERCATO ATTIVATO!", {
-            description: `L'accesso al Marketplace della squadra "${targetName}" è stato bloccato per 6 minuti!`,
-            duration: 6000,
-          });
-        } else if (itemId === "dimezza_punti") {
-          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
-          toast.success("⚡ MALUS DIMEZZA PUNTI INVIATO!", {
-            description: `Il punteggio della prossima sfida completata da "${targetName}" sarà dimezzato del 50%!`,
-            duration: 6000,
-          });
         } else {
           toast.success("Acquisto completato con successo!");
         }
       } else {
-        // 2. Direct client-side execution fallback
+        // Client-side fallback for legacy items
         const newBalance = Math.max(0, balance - itemCost);
         if (team?.id) {
           try {
             await (supabase as any).from("teams").update({ token_balance: newBalance }).eq("id", team.id);
-            localStorage.setItem(`pechino_team_tokens_${team.id}`, String(newBalance));
           } catch {}
         }
 
-        // Check if target has active shield
+        // Shield check for legacy malus items
         if (targetId) {
           const targetShield = transactions.find(
             (t: any) => t.buyer_team_id === targetId && t.item_id === "bonus_scudo" && t.stato === "completed"
           );
-
           if (targetShield) {
-            // Shield blocks the malus!
             try {
               await (supabase as any).from("marketplace_transactions").update({ stato: "used" }).eq("id", targetShield.id);
             } catch {}
-
-            const txId = crypto.randomUUID();
+            if (team?.id) {
+              try {
+                await (supabase as any).from("teams").update({ token_balance: balance }).eq("id", team.id);
+              } catch {}
+            }
             try {
               await (supabase as any).from("marketplace_transactions").insert({
-                id: txId,
                 team_id: team?.id,
                 marketplace_item_id: itemId,
                 target_team_id: targetId,
-                costo_token: itemCost,
+                costo_token: 0,
                 stato: "expired",
                 dettagli: { blocked_by_shield_id: targetShield.id },
               });
             } catch {}
-
             toast.error("🛡️ MALUS BLOCCATO DALLO SCUDO!", {
               description: "La squadra bersaglio era protetta da uno Scudo. Il tuo Malus è stato neutralizzato!",
               duration: 6000,
@@ -667,68 +777,7 @@ function MarketplacePage() {
           }
         }
 
-        // Execute specific item effects
-        const txId = crypto.randomUUID();
-        const txPayload: any = {
-          id: txId,
-          team_id: team?.id,
-          marketplace_item_id: itemId,
-          target_team_id: targetId || null,
-          costo_token: itemCost,
-          stato: "completed",
-          dettagli: {},
-        };
-
-        if (itemId === "moltiplicatore_2x") {
-          toast.success("✨ MOLTIPLICATORE 2X ATTIVATO!", {
-            description: "Il punteggio totale ottenuto nelle prove della tappa corrente sarà raddoppiato (x2)!",
-            duration: 6000,
-          });
-        } else if (itemId === "polizza_diretta") {
-          toast.success("🛡️ POLIZZA RIMBORSO 50% ATTIVATA!", {
-            description: "Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito.",
-            duration: 6000,
-          });
-        } else if (itemId === "blackout_mercato") {
-          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
-          if (targetId) {
-            const freezeUntil = new Date(Date.now() + 360 * 1000).toISOString();
-            try {
-              await (supabase as any).from("teams").update({ marketplace_freeze_expires_at: freezeUntil }).eq("id", targetId);
-              localStorage.setItem(`pechino_marketplace_freeze_${targetId}`, freezeUntil);
-            } catch {}
-            try {
-              await (supabase as any).from("cattiveria_ledger").insert({
-                team_id: team?.id,
-                tipo: "MALUS_UTILIZZATO",
-                punti: 10,
-                motivo: `Blackout Mercato 6 Min lanciato contro ${targetName}`,
-                marketplace_item_id: itemId,
-              });
-            } catch {}
-          }
-          toast.success("🔒 BLACKOUT MERCATO ATTIVATO!", {
-            description: `L'accesso al Marketplace della squadra "${targetName}" è stato bloccato per 6 minuti!`,
-            duration: 6000,
-          });
-        } else if (itemId === "dimezza_punti") {
-          const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
-          if (targetId) {
-            try {
-              await (supabase as any).from("cattiveria_ledger").insert({
-                team_id: team?.id,
-                tipo: "MALUS_UTILIZZATO",
-                punti: 10,
-                motivo: `Dimezza Punti lanciato contro ${targetName}`,
-                marketplace_item_id: itemId,
-              });
-            } catch {}
-          }
-          toast.success("⚡ MALUS DIMEZZA PUNTI INVIATO!", {
-            description: `Il punteggio della prossima sfida completata da "${targetName}" sarà dimezzato del 50%!`,
-            duration: 6000,
-          });
-        } else if (itemId === "bonus_punti") {
+        if (itemId === "bonus_punti") {
           try {
             await (supabase as any).from("scores").insert({
               team_id: team?.id,
@@ -738,15 +787,23 @@ function MarketplacePage() {
             });
           } catch {}
           toast.success("✨ +20 PT ✨ BONUS PUNTI ATTIVATO!", {
-            description: `Il tuo punteggio è stato aggiornato: ${(currentPoints + 20)} PT. Saldo residuo: ${(newBalance)} Token.`,
+            description: `Il tuo punteggio è stato aggiornato. Saldo residuo: ${newBalance} Token.`,
             duration: 6000,
           });
         } else {
           toast.success("Acquisto completato con successo!");
         }
 
+        // Always insert transaction for single-use enforcement
         try {
-          await (supabase as any).from("marketplace_transactions").insert(txPayload);
+          await (supabase as any).from("marketplace_transactions").insert({
+            team_id: team?.id,
+            marketplace_item_id: itemId,
+            target_team_id: targetId || null,
+            costo_token: itemCost,
+            stato: "completed",
+            dettagli: {},
+          });
         } catch {}
       }
 
@@ -847,7 +904,21 @@ function MarketplacePage() {
               </p>
             </div>
           </div>
-        )}
+        )}\n
+        {/* BLACKOUT MERCATO ALERT — shown when this team is frozen */}
+        {activeBlackout && (
+          <div className="surface p-5 border border-rose-500/40 bg-rose-900/10 rounded-2xl flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top duration-300">
+            <div className="size-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400 shrink-0 border border-rose-500/30">
+              <Lock className="size-6 animate-pulse text-rose-400" />
+            </div>
+            <div className="text-center md:text-left space-y-1 flex-1">
+              <h3 className="font-extrabold text-sm text-rose-400 uppercase tracking-wide">🔒 BLACKOUT MERCATO ATTIVO</h3>
+              <p className="text-xs text-zinc-300">
+                Un avversario ha attivato il <strong>Malus Blackout Mercato</strong> contro di voi. Non potete effettuare acquisti per ancora circa <strong>{blackoutRemainingMin} minut{blackoutRemainingMin === 1 ? "o" : "i"}</strong>.
+              </p>
+            </div>
+          </div>
+        )}\n
 
         {/* CATEGORY FILTER PILLS (HeroUI Chip variant="dot" Style) */}
         <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md py-2.5 -mx-3 px-3 sm:-mx-4 sm:px-4 border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-lg">

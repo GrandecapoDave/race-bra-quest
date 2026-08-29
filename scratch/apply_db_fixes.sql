@@ -1,0 +1,316 @@
+BEGIN;
+
+-- 1. Inserimento delle 5 domande per "Quiz Bra" se non già presenti
+INSERT INTO public.quiz_questions (id, challenge_id, question, options, correct_answer_index, order_index, points)
+VALUES 
+  (
+    'a1111111-1111-1111-1111-111111111111',
+    'c4e6c385-69ba-4f17-a6d0-36b78776d527',
+    'Qual è il piatto tipico a base di carne cruda di Bra?',
+    '["Salsiccia di Bra", "Prosciutto di Cuneo", "Vitello Tonnato", "Battuta di Fassona"]'::jsonb,
+    0,
+    1,
+    3
+  ),
+  (
+    'a2222222-2222-2222-2222-222222222222',
+    'c4e6c385-69ba-4f17-a6d0-36b78776d527',
+    'In quale regione italiana si trova Bra?',
+    '["Lombardia", "Piemonte", "Liguria", "Veneto"]'::jsonb,
+    1,
+    2,
+    3
+  ),
+  (
+    'a3333333-3333-3333-3333-333333333333',
+    'c4e6c385-69ba-4f17-a6d0-36b78776d527',
+    'Quale importante movimento internazionale è nato a Bra?',
+    '["Slow Food", "WWF", "Greenpeace", "Caritas"]'::jsonb,
+    0,
+    3,
+    3
+  ),
+  (
+    'a4444444-4444-4444-4444-444444444444',
+    'c4e6c385-69ba-4f17-a6d0-36b78776d527',
+    'Quale celebre scrittore piemontese nacque nei pressi di Bra?',
+    '["Cesare Pavese", "Beppe Fenoglio", "Giovanni Arpino", "Italo Calvino"]'::jsonb,
+    2,
+    4,
+    3
+  ),
+  (
+    'a5555555-5555-5555-5555-555555555555',
+    'c4e6c385-69ba-4f17-a6d0-36b78776d527',
+    'Che tipo di formaggio DOP prende il nome da questa città?',
+    '["Castelmagno", "Murazzano", "Raschera", "Bra DOP"]'::jsonb,
+    3,
+    5,
+    3
+  )
+ON CONFLICT (id) DO UPDATE SET 
+  question = EXCLUDED.question,
+  options = EXCLUDED.options,
+  correct_answer_index = EXCLUDED.correct_answer_index,
+  points = EXCLUDED.points;
+
+-- 2. Correzione RPC buy_marketplace_item (fix v_item.tipo = 'malus')
+CREATE OR REPLACE FUNCTION public.buy_marketplace_item(
+  p_item_id TEXT,
+  p_target_team_id UUID DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_team_id UUID;
+  v_team RECORD;
+  v_item RECORD;
+  v_settings RECORD;
+  v_shield_tx RECORD;
+  v_target_shield RECORD;
+  v_target_team_name TEXT;
+  v_stage_id UUID;
+  v_roll INTEGER;
+  v_label TEXT := '';
+  v_points INTEGER := 0;
+  v_tokens INTEGER := 0;
+  v_dave_help BOOLEAN := false;
+  v_dettagli JSONB := '{}'::jsonb;
+  v_tx_id UUID := gen_random_uuid();
+  v_target_points INTEGER := 0;
+  v_buyer_points INTEGER := 0;
+  v_points_stolen INTEGER := 0;
+  v_points_deducted INTEGER := 0;
+  v_buyer_diff INTEGER := 0;
+  v_target_diff INTEGER := 0;
+BEGIN
+  -- 1. Autenticazione
+  v_team_id := public.current_team_id();
+  IF v_team_id IS NULL THEN
+    RAISE EXCEPTION 'Non autenticato';
+  END IF;
+
+  -- 2. Squadra acquirente
+  SELECT * INTO v_team FROM public.teams WHERE id = v_team_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Squadra non trovata';
+  END IF;
+
+  -- 3. Verifica stato marketplace da game_settings
+  SELECT * INTO v_settings FROM public.game_settings LIMIT 1;
+  IF FOUND AND (NOT v_settings.marketplace_active OR NOT v_settings.marketplace_visible) THEN
+    RAISE EXCEPTION 'Il Marketplace è attualmente chiuso';
+  END IF;
+
+  -- 4. Recupero articolo
+  SELECT * INTO v_item FROM public.marketplace_items WHERE id = p_item_id AND disponibile = true;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Articolo non disponibile o inesistente';
+  END IF;
+
+  -- 5. Verifica saldo token
+  IF v_team.token_balance < v_item.costo_token THEN
+    RAISE EXCEPTION 'Token insufficienti';
+  END IF;
+
+  -- 6. Tappa corrente
+  SELECT id INTO v_stage_id FROM public.stages WHERE active = true ORDER BY numero_tappa LIMIT 1;
+
+  -- 7. Validazione bersaglio per i malus
+  IF LOWER(v_item.tipo) = 'malus' THEN
+    IF p_target_team_id IS NULL THEN
+      RAISE EXCEPTION 'Devi selezionare una squadra bersaglio per questo Malus';
+    END IF;
+    IF p_target_team_id = v_team_id THEN
+      RAISE EXCEPTION 'Non puoi lanciare un Malus contro la tua stessa squadra';
+    END IF;
+
+    SELECT nome_squadra INTO v_target_team_name FROM public.teams WHERE id = p_target_team_id AND active = true;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Squadra bersaglio non trovata o non attiva';
+    END IF;
+  END IF;
+
+  -- 8. Detrazione token
+  UPDATE public.teams
+  SET token_balance = token_balance - v_item.costo_token
+  WHERE id = v_team_id;
+
+  -- GESTIONE SCUDO
+  IF LOWER(v_item.tipo) = 'malus' THEN
+    SELECT * INTO v_target_shield 
+    FROM public.marketplace_transactions
+    WHERE team_id = p_target_team_id 
+      AND marketplace_item_id = 'bonus_scudo' 
+      AND stato = 'completed'
+    ORDER BY created_at ASC 
+    LIMIT 1;
+
+    IF FOUND THEN
+      -- Consumiamo lo scudo del bersaglio
+      UPDATE public.marketplace_transactions
+      SET stato = 'used', dettagli = jsonb_build_object('consumed_at', now(), 'blocked_attacker_id', v_team_id)
+      WHERE id = v_target_shield.id;
+
+      -- Inseriamo la transazione dell'attaccante come bloccata
+      INSERT INTO public.marketplace_transactions (id, team_id, marketplace_item_id, target_team_id, costo_token, stato, dettagli)
+      VALUES (v_tx_id, v_team_id, p_item_id, p_target_team_id, v_item.costo_token, 'blocked', jsonb_build_object('blocked_by_shield', true, 'target_team_id', p_target_team_id));
+
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('malus_blocked', v_team_id, jsonb_build_object('message', 'Il Malus "' || v_item.nome || '" lanciato da "' || v_team.nome_squadra || '" contro "' || v_target_team_name || '" è stato BLOCCATO dallo Scudo.'));
+
+      RETURN jsonb_build_object('success', true, 'shielded', true, 'new_balance', v_team.token_balance - v_item.costo_token);
+    END IF;
+  END IF;
+
+  -- PREPARAZIONE DETTAGLI SPECIFICI
+  IF p_item_id = 'ruota_fortuna' THEN
+    v_roll := floor(random() * 100) + 1;
+    
+    IF v_roll <= 3 THEN
+      v_label := '🏆 JACKPOT'; v_points := 20;
+    ELSIF v_roll <= 6 THEN
+      v_label := '🧠 AIUTO EXTRA DI DAVE'; v_dave_help := true;
+    ELSIF v_roll <= 13 THEN
+      v_label := '💎 MEGA BONUS'; v_points := 15;
+    ELSIF v_roll <= 25 THEN
+      v_label := '⭐ BONUS'; v_points := 10;
+    ELSIF v_roll <= 45 THEN
+      v_label := '🎁 PICCOLO BONUS'; v_points := 5;
+    ELSIF v_roll <= 55 THEN
+      v_label := '🪙 GETTONI BONUS'; v_tokens := 10;
+    ELSIF v_roll <= 65 THEN
+      v_label := '🎯 DOPPIO PREMIO'; v_points := 5; v_tokens := 5;
+    ELSIF v_roll <= 80 THEN
+      v_label := '🍀 FORTUNA'; v_tokens := 5;
+    ELSE
+      v_label := '🎉 SORPRESA'; v_points := 3;
+    END IF;
+
+    v_dettagli := jsonb_build_object(
+      'roll', v_roll, 
+      'outcome_label', v_label, 
+      'outcome_points', v_points, 
+      'outcome_tokens', v_tokens,
+      'dave_help', v_dave_help
+    );
+  ELSIF p_item_id = 'enigma_extra' THEN
+    v_dettagli := jsonb_build_object(
+      'enigma_name', 'Il Codice del Viaggiatore',
+      'assigned_at', now(),
+      'solution', 'LANTERNA',
+      'solved_at', NULL
+    );
+  END IF;
+
+  -- INSERIMENTO TRANSAZIONE COMPLETATA
+  INSERT INTO public.marketplace_transactions (id, team_id, marketplace_item_id, target_team_id, costo_token, stato, dettagli)
+  VALUES (v_tx_id, v_team_id, p_item_id, p_target_team_id, v_item.costo_token, 'completed', v_dettagli);
+
+  -- APPLICAZIONE EFFETTI IMMEDIATI BONUS
+  IF p_item_id = 'bonus_punti' THEN
+    INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+    VALUES (v_team_id, v_stage_id, 20, 'bonus_punti', 'Bonus Punti acquistato (+20 PT)');
+  END IF;
+
+  IF p_item_id = 'ruota_fortuna' THEN
+    IF v_points > 0 THEN
+      INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+      VALUES (v_team_id, v_stage_id, v_points, 'bonus_punti', 'Ruota della Fortuna: ' || v_label);
+    END IF;
+    IF v_tokens > 0 THEN
+      UPDATE public.teams 
+      SET token_balance = token_balance + v_tokens 
+      WHERE id = v_team_id;
+    END IF;
+    
+    INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+    VALUES ('ruota_fortuna_spin', v_team_id, jsonb_build_object('message', 'La squadra "' || v_team.nome_squadra || '" ha girato la Ruota della Fortuna ed ha ottenuto: ' || v_label));
+  END IF;
+
+  -- APPLICAZIONE EFFETTI IMMEDIATI MALUS
+  IF LOWER(v_item.tipo) = 'malus' THEN
+    -- Aggiungiamo 10 Punti Cattiveria a chi ha lanciato il malus
+    INSERT INTO public.cattiveria_ledger (team_id, stage_id, tipo, punti, motivo, riferimento_transazione, marketplace_item_id)
+    VALUES (v_team_id, v_stage_id, 'MALUS_UTILIZZATO', 10, 'Malus ' || v_item.nome || ' attivato.', v_tx_id, p_item_id);
+
+    -- 1. Freeze 2 Minuti
+    IF p_item_id = 'freeze_2min' THEN
+      UPDATE public.teams 
+      SET 
+        freeze_started_at = now(),
+        freeze_expires_at = now() + INTERVAL '120 seconds',
+        freeze_duration_seconds = 120
+      WHERE id = p_target_team_id;
+
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('team_frozen', p_target_team_id, jsonb_build_object('message', 'La squadra "' || v_target_team_name || '" è stata congelata da "' || v_team.nome_squadra || '" per 120 secondi!'));
+    
+    -- 2. Enigma Extra
+    ELSIF p_item_id = 'enigma_extra' THEN
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('enigma_extra_assigned', p_target_team_id, jsonb_build_object('message', 'La squadra "' || v_target_team_name || '" ha ricevuto un Enigma Extra da "' || v_team.nome_squadra || '"!'));
+
+    -- 3. Ruota Sfortunata
+    ELSIF p_item_id = 'ruota_sfortunata' THEN
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('ruota_sfortunata_assigned', p_target_team_id, jsonb_build_object('message', 'La squadra "' || v_target_team_name || '" ha subito un Malus Ruota Sfortunata da "' || v_team.nome_squadra || '"!'));
+
+    -- 4. Trappola (Ruba fino a 30 punti)
+    ELSIF p_item_id = 'trappola' THEN
+      SELECT COALESCE(SUM(punti), 0) INTO v_target_points FROM public.scores WHERE team_id = p_target_team_id;
+      v_points_stolen := LEAST(30, GREATEST(0, v_target_points));
+
+      IF v_points_stolen > 0 THEN
+        INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+        VALUES (p_target_team_id, v_stage_id, -v_points_stolen, 'penalty', 'Malus Trappola: sottratti −' || v_points_stolen::text || ' PT da ' || v_team.nome_squadra);
+
+        INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+        VALUES (v_team_id, v_stage_id, v_points_stolen, 'bonus_punti', 'Malus Trappola: rubati +' || v_points_stolen::text || ' PT a ' || v_target_team_name);
+      END IF;
+
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('trappola_used', v_team_id, jsonb_build_object('message', 'La squadra "' || v_team.nome_squadra || '" ha attivato la TRAPPOLA contro "' || v_target_team_name || '" rubando ' || v_points_stolen::text || ' PT.'));
+
+    -- 5. Penalità Punti (-20 PT)
+    ELSIF p_item_id = 'penalita_punti' THEN
+      SELECT COALESCE(SUM(punti), 0) INTO v_target_points FROM public.scores WHERE team_id = p_target_team_id;
+      v_points_deducted := LEAST(20, GREATEST(0, v_target_points));
+
+      IF v_points_deducted > 0 THEN
+        INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+        VALUES (p_target_team_id, v_stage_id, -v_points_deducted, 'penalty', 'Malus Penalità Punti: sottratti −' || v_points_deducted::text || ' PT da ' || v_team.nome_squadra);
+      END IF;
+
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('penalita_punti_used', v_team_id, jsonb_build_object('message', 'La squadra "' || v_team.nome_squadra || '" ha inflitto una PENALITÀ PUNTI contro "' || v_target_team_name || '" sottraendo ' || v_points_deducted::text || ' PT.'));
+
+    -- 6. Tassa di Passaggio (Scambio punti)
+    ELSIF p_item_id = 'tassa_passaggio' THEN
+      SELECT COALESCE(SUM(punti), 0) INTO v_buyer_points FROM public.scores WHERE team_id = v_team_id;
+      SELECT COALESCE(SUM(punti), 0) INTO v_target_points FROM public.scores WHERE team_id = p_target_team_id;
+
+      v_buyer_diff := v_target_points - v_buyer_points;
+      v_target_diff := v_buyer_points - v_target_points;
+
+      INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+      VALUES (v_team_id, v_stage_id, v_buyer_diff, 'bonus_punti', 'Tassa di Passaggio: scambiati ' || v_buyer_points::text || ' PT con ' || v_target_points::text || ' PT di ' || v_target_team_name);
+
+      INSERT INTO public.scores (team_id, stage_id, punti, tipo_modificatore, motivo)
+      VALUES (p_target_team_id, v_stage_id, v_target_diff, 'penalty', 'Tassa di Passaggio: scambiati ' || v_target_points::text || ' PT con ' || v_buyer_points::text || ' PT di ' || v_team.nome_squadra);
+
+      INSERT INTO public.activity_log (tipo_evento, team_id, dettagli)
+      VALUES ('tassa_passaggio_used', v_team_id, jsonb_build_object('message', 'La squadra "' || v_team.nome_squadra || '" ha attivato la TASSA DI PASSAGGIO scambiando i suoi ' || v_buyer_points::text || ' PT con i ' || v_target_points::text || ' PT di "' || v_target_team_name || '".'));
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'shielded', false, 'new_balance', v_team.token_balance - v_item.costo_token);
+END;
+$$;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;

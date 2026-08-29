@@ -1,0 +1,16 @@
+[
+  {
+    "file": "src/routes/_authenticated/admin.tsx",
+    "line": 106,
+    "table": "submissions",
+    "column": "stato",
+    "detail": "Selected column \"stato\" does not exist in table \"submissions\". Valid: id, team_id, challenge_id, latitude, longitude, created_at, url, stato_approvazione, note, tipo"
+  },
+  {
+    "file": "src/routes/_authenticated/admin.tsx",
+    "line": 106,
+    "table": "submissions",
+    "column": "completata_il",
+    "detail": "Selected column \"completata_il\" does not exist in table \"submissions\". Valid: id, team_id, challenge_id, latitude, longitude, created_at, url, stato_approvazione, note, tipo"
+  }
+]

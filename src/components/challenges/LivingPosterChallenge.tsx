@@ -61,17 +61,18 @@ export function LivingPosterChallenge({
   // Resolve team submission image URL
   const [subPhotoUrl, setSubPhotoUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (submission?.file_upload) {
+    const filePath = submission?.url || (submission as any)?.file_upload || (submission as any)?.file_url;
+    if (filePath) {
       supabase.storage
         .from("team-media")
-        .createSignedUrl(submission.file_upload, 3600)
+        .createSignedUrl(filePath, 3600)
         .then(({ data }: any) => {
           setSubPhotoUrl(data?.signedUrl ?? null);
         });
     } else {
       setSubPhotoUrl(null);
     }
-  }, [submission?.file_upload]);
+  }, [submission?.url, (submission as any)?.file_upload]);
 
   // Cleanup previewUrl on unmount
   useEffect(() => {

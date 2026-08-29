@@ -1,0 +1,28 @@
+[
+  {
+    "file": "src/components/challenges/EmojiMoviesChallenge.tsx",
+    "table": "team_emoji_movies",
+    "error": "Table \"team_emoji_movies\" does not exist in production DB",
+    "query": ".from(\"team_emoji_movies\")\n        .select(\"*\")"
+  },
+  {
+    "file": "src/routes/_authenticated/admin.tsx",
+    "table": "team_progress",
+    "column": "completata_at",
+    "error": "Column \"completata_at\" does not exist in table \"team_progress\" in production DB",
+    "rawSelect": "completata_at"
+  },
+  {
+    "file": "src/routes/_authenticated/admin.tsx",
+    "table": "team_progress",
+    "column": "started_at",
+    "error": "Column \"started_at\" does not exist in table \"team_progress\" in production DB",
+    "rawSelect": "started_at"
+  },
+  {
+    "file": "src/routes/_authenticated/admin.tsx",
+    "table": "team_emoji_movies",
+    "error": "Table \"team_emoji_movies\" does not exist in production DB",
+    "query": ".from(\"team_emoji_movies\")\n        .select(\"*\")"
+  }
+]

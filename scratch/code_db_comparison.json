@@ -1,0 +1,918 @@
+{
+  "dbSummary": {
+    "totalTables": 30,
+    "tables": [
+      "race_sessions",
+      "stages",
+      "team_answers",
+      "game_settings",
+      "team_members",
+      "team_social_submissions",
+      "enigma_solutions",
+      "enigma_attempts",
+      "team_code_parts",
+      "settings",
+      "boxe_matches",
+      "cornhole_matches",
+      "team_progress",
+      "scores",
+      "marketplace_items",
+      "marketplace_transactions",
+      "teams",
+      "challenges",
+      "game_report",
+      "jackpot_plays",
+      "activity_log",
+      "cattiveria_ledger",
+      "submissions",
+      "time_penalties",
+      "posters",
+      "team_posters",
+      "user_roles",
+      "quiz_questions_public",
+      "quiz_questions",
+      "game_final_code"
+    ],
+    "totalRpcs": 65,
+    "rpcs": [
+      "current_team_id",
+      "has_role",
+      "start_challenge",
+      "complete_challenge",
+      "submit_social_challenge",
+      "get_bank_state",
+      "submit_bank_answer",
+      "get_secret_code_state",
+      "buy_secret_code_part",
+      "submit_secret_code_pin",
+      "get_social_submission",
+      "evaluate_social_challenge",
+      "get_or_assign_poster",
+      "evaluate_poster",
+      "confirm_photo_score",
+      "submit_enigma_answer",
+      "submit_enigma_extra_answer",
+      "admin_edit_secret_code_match",
+      "spin_unlucky_wheel",
+      "open_classifica_bonus",
+      "consume_marketplace_transaction",
+      "mark_partenza_used",
+      "play_jackpot",
+      "admin_edit_secret_code_settings",
+      "get_secure_leaderboard",
+      "admin_add_points",
+      "admin_remove_points",
+      "admin_add_tokens",
+      "admin_remove_tokens",
+      "close_stage",
+      "reopen_stage",
+      "delete_team_auth_user",
+      "admin_force_complete_bank",
+      "admin_reset_bank",
+      "admin_edit_bank_answer",
+      "admin_force_complete_secret_code",
+      "toggle_marketplace",
+      "admin_get_secret_code_dashboard",
+      "sync_team_to_auth_user",
+      "after_sync_team_to_user",
+      "admin_get_enigma_dashboard",
+      "admin_update_enigma_solution",
+      "get_jackpot_plays",
+      "get_report_status",
+      "get_game_report",
+      "respond_passaparola_request",
+      "publish_game_report",
+      "initialize_secret_code_challenge",
+      "admin_adjust_team_tokens",
+      "get_cornhole_settings",
+      "get_boxe_settings",
+      "rollback_boxe_match_result",
+      "get_cornhole_tournament",
+      "get_boxe_tournament",
+      "generate_boxe_tournament",
+      "submit_cornhole_match_result",
+      "submit_boxe_match_result",
+      "rollback_cornhole_match_result",
+      "set_cornhole_special_bye",
+      "set_boxe_special_bye",
+      "buy_marketplace_item",
+      "get_enigma_state",
+      "get_jackpot_state",
+      "submit_passaparola_request",
+      "submit_quiz_answer"
+    ]
+  },
+  "tableFindings": [
+    {
+      "table": "teams",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/components/AppShell.tsx:145",
+        "src/components/challenges/BoxeChallenge.tsx:32",
+        "src/components/challenges/CornholeChallenge.tsx:32",
+        "src/components/challenges/TeamSetupChallenge.tsx:90",
+        "src/components/challenges/TeamSetupChallenge.tsx:126",
+        "src/lib/race.ts:167",
+        "src/lib/race.ts:187",
+        "src/routes/_authenticated/admin/partenze.tsx:34",
+        "src/routes/_authenticated/admin/passaparola.tsx:39",
+        "src/routes/_authenticated/admin/penalita.tsx:26",
+        "src/routes/_authenticated/admin/tassa.tsx:25",
+        "src/routes/_authenticated/admin/teams.tsx:84",
+        "src/routes/_authenticated/admin/teams.tsx:102",
+        "src/routes/_authenticated/admin/teams.tsx:120",
+        "src/routes/_authenticated/admin/teams.tsx:133",
+        "src/routes/_authenticated/admin.tsx:89",
+        "src/routes/_authenticated/classifica.tsx:41",
+        "src/routes/_authenticated/dashboard.tsx:116",
+        "src/routes/_authenticated/marketplace.tsx:310"
+      ]
+    },
+    {
+      "table": "marketplace_transactions",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/components/AppShell.tsx:157",
+        "src/components/AppShell.tsx:345",
+        "src/components/AppShell.tsx:366",
+        "src/routes/_authenticated/admin/partenze.tsx:48",
+        "src/routes/_authenticated/admin/passaparola.tsx:53",
+        "src/routes/_authenticated/admin/penalita.tsx:39",
+        "src/routes/_authenticated/admin/tassa.tsx:38",
+        "src/routes/_authenticated/admin.tsx:55",
+        "src/routes/_authenticated/classifica.tsx:60",
+        "src/routes/_authenticated/dashboard.tsx:98",
+        "src/routes/_authenticated/marketplace.tsx:342"
+      ]
+    },
+    {
+      "table": "game_settings",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/components/AppShell.tsx:317",
+        "src/routes/_authenticated/admin.tsx:72",
+        "src/routes/_authenticated/challenge.$challengeId.tsx:62",
+        "src/routes/_authenticated/marketplace.tsx:359"
+      ]
+    },
+    {
+      "table": "team_emoji_movies",
+      "existsInProduction": false,
+      "occurrences": [
+        "src/components/challenges/EmojiMoviesChallenge.tsx:41",
+        "src/components/challenges/EmojiMoviesChallenge.tsx:84",
+        "src/components/challenges/EmojiMoviesChallenge.tsx:97",
+        "src/routes/_authenticated/admin.tsx:310"
+      ]
+    },
+    {
+      "table": "scores",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/components/challenges/EmojiMoviesChallenge.tsx:114",
+        "src/lib/race.ts:244",
+        "src/routes/_authenticated/admin/teams.tsx:157",
+        "src/routes/_authenticated/admin/teams.tsx:176",
+        "src/routes/_authenticated/admin.tsx:173"
+      ]
+    },
+    {
+      "table": "submissions",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/components/challenges/LivingPosterChallenge.tsx:43",
+        "src/components/challenges/LivingPosterChallenge.tsx:122",
+        "src/components/challenges/PhotoChallenge.tsx:56",
+        "src/lib/race.ts:297",
+        "src/routes/_authenticated/admin.tsx:106"
+      ]
+    },
+    {
+      "table": "team-media",
+      "existsInProduction": false,
+      "occurrences": [
+        "src/components/challenges/LivingPosterChallenge.tsx:61",
+        "src/components/challenges/LivingPosterChallenge.tsx:117",
+        "src/components/challenges/PhotoChallenge.tsx:53",
+        "src/components/challenges/PhotoChallenge.tsx:142",
+        "src/components/challenges/SocialChallenge.tsx:61",
+        "src/components/challenges/SocialChallenge.tsx:72",
+        "src/components/challenges/SocialChallenge.tsx:126",
+        "src/components/challenges/SocialChallenge.tsx:136",
+        "src/routes/_authenticated/admin.tsx:902",
+        "src/routes/_authenticated/admin.tsx:1177",
+        "src/routes/_authenticated/admin.tsx:1348",
+        "src/routes/_authenticated/admin.tsx:1356"
+      ]
+    },
+    {
+      "table": "team_members",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/components/challenges/TeamSetupChallenge.tsx:103",
+        "src/components/challenges/TeamSetupChallenge.tsx:149",
+        "src/lib/race.ts:328"
+      ]
+    },
+    {
+      "table": "stages",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/lib/race.ts:139"
+      ]
+    },
+    {
+      "table": "challenges",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/lib/race.ts:156",
+        "src/routes/_authenticated/admin/boxe.tsx:20",
+        "src/routes/_authenticated/admin/cornhole.tsx:20",
+        "src/routes/_authenticated/admin/settings.tsx:35"
+      ]
+    },
+    {
+      "table": "team_progress",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/lib/race.ts:231",
+        "src/routes/_authenticated/admin/boxe.tsx:34",
+        "src/routes/_authenticated/admin/cornhole.tsx:34",
+        "src/routes/_authenticated/admin.tsx:138"
+      ]
+    },
+    {
+      "table": "quiz_questions_public",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/lib/race.ts:259",
+        "src/lib/race.ts:271"
+      ]
+    },
+    {
+      "table": "team_answers",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/lib/race.ts:284",
+        "src/routes/_authenticated/admin.tsx:248"
+      ]
+    },
+    {
+      "table": "race_sessions",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/lib/race.ts:315"
+      ]
+    },
+    {
+      "table": "cattiveria_ledger",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:155"
+      ]
+    },
+    {
+      "table": "team_social_submissions",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:213"
+      ]
+    },
+    {
+      "table": "quiz_questions",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:263"
+      ]
+    },
+    {
+      "table": "activity_log",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:278"
+      ]
+    },
+    {
+      "table": "settings",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:294",
+        "src/routes/_authenticated/admin.tsx:400"
+      ]
+    },
+    {
+      "table": "posters",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:324"
+      ]
+    },
+    {
+      "table": "team_posters",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:338"
+      ]
+    },
+    {
+      "table": "marketplace_items",
+      "existsInProduction": true,
+      "occurrences": [
+        "src/routes/_authenticated/marketplace.tsx:326"
+      ]
+    }
+  ],
+  "rpcFindings": [
+    {
+      "rpc": "submit_enigma_extra_answer",
+      "existsInProduction": true,
+      "productionArgs": "p_answer text",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/AppShell.tsx:217"
+      ]
+    },
+    {
+      "rpc": "spin_unlucky_wheel",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/AppShell.tsx:242"
+      ]
+    },
+    {
+      "rpc": "get_bank_state",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BancaChallenge.tsx:28",
+        "src/routes/_authenticated/admin.tsx:191"
+      ]
+    },
+    {
+      "rpc": "submit_bank_answer",
+      "existsInProduction": true,
+      "productionArgs": "p_question_number integer, p_answer text",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BancaChallenge.tsx:72"
+      ]
+    },
+    {
+      "rpc": "get_boxe_tournament",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BoxeChallenge.tsx:42"
+      ]
+    },
+    {
+      "rpc": "get_boxe_settings",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BoxeChallenge.tsx:52"
+      ]
+    },
+    {
+      "rpc": "set_boxe_special_bye",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BoxeChallenge.tsx:62"
+      ]
+    },
+    {
+      "rpc": "submit_boxe_match_result",
+      "existsInProduction": true,
+      "productionArgs": "p_match_id text, p_winner_id uuid, p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BoxeChallenge.tsx:93"
+      ]
+    },
+    {
+      "rpc": "rollback_boxe_match_result",
+      "existsInProduction": true,
+      "productionArgs": "p_match_id text, p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BoxeChallenge.tsx:121"
+      ]
+    },
+    {
+      "rpc": "generate_boxe_tournament",
+      "existsInProduction": true,
+      "productionArgs": "p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/BoxeChallenge.tsx:147"
+      ]
+    },
+    {
+      "rpc": "get_enigma_state",
+      "existsInProduction": true,
+      "productionArgs": "p_challenge_id uuid, p_team_id uuid DEFAULT NULL::uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CoordinateFinaliChallenge.tsx:45",
+        "src/components/challenges/EnigmaMusicaleChallenge.tsx:47",
+        "src/components/challenges/EnigmaTestoChallenge.tsx:28",
+        "src/components/challenges/LucchettoDirezionaleChallenge.tsx:63"
+      ]
+    },
+    {
+      "rpc": "submit_enigma_answer",
+      "existsInProduction": true,
+      "productionArgs": "p_challenge_id uuid, p_answer jsonb",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CoordinateFinaliChallenge.tsx:69",
+        "src/components/challenges/EnigmaMusicaleChallenge.tsx:74",
+        "src/components/challenges/EnigmaTestoChallenge.tsx:42",
+        "src/components/challenges/LucchettoDirezionaleChallenge.tsx:104"
+      ]
+    },
+    {
+      "rpc": "get_cornhole_tournament",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CornholeChallenge.tsx:42"
+      ]
+    },
+    {
+      "rpc": "get_cornhole_settings",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CornholeChallenge.tsx:52"
+      ]
+    },
+    {
+      "rpc": "set_cornhole_special_bye",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CornholeChallenge.tsx:62"
+      ]
+    },
+    {
+      "rpc": "submit_cornhole_match_result",
+      "existsInProduction": true,
+      "productionArgs": "p_match_id text, p_winner_id uuid, p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CornholeChallenge.tsx:93"
+      ]
+    },
+    {
+      "rpc": "rollback_cornhole_match_result",
+      "existsInProduction": true,
+      "productionArgs": "p_match_id text, p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/CornholeChallenge.tsx:121"
+      ]
+    },
+    {
+      "rpc": "get_jackpot_state",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/JackpotChallenge.tsx:22"
+      ]
+    },
+    {
+      "rpc": "play_jackpot",
+      "existsInProduction": true,
+      "productionArgs": "p_puntata integer",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/JackpotChallenge.tsx:53"
+      ]
+    },
+    {
+      "rpc": "get_or_assign_poster",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/LivingPosterChallenge.tsx:31"
+      ]
+    },
+    {
+      "rpc": "submit_quiz_answer",
+      "existsInProduction": true,
+      "productionArgs": "p_question uuid, p_selected integer",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/QuizChallenge.tsx:40"
+      ]
+    },
+    {
+      "rpc": "get_secret_code_state",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/SecretCodeChallenge.tsx:33"
+      ]
+    },
+    {
+      "rpc": "buy_secret_code_part",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/SecretCodeChallenge.tsx:60"
+      ]
+    },
+    {
+      "rpc": "submit_secret_code_pin",
+      "existsInProduction": true,
+      "productionArgs": "p_inserted_code text",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/SecretCodeChallenge.tsx:85"
+      ]
+    },
+    {
+      "rpc": "get_social_submission",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/SocialChallenge.tsx:36"
+      ]
+    },
+    {
+      "rpc": "submit_social_challenge",
+      "existsInProduction": true,
+      "productionArgs": "p_challenge_id uuid, p_url text",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/SocialChallenge.tsx:142"
+      ]
+    },
+    {
+      "rpc": "start_challenge",
+      "existsInProduction": true,
+      "productionArgs": "p_challenge uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/components/challenges/TeamSetupChallenge.tsx:105",
+        "src/hooks/useChallengeActions.ts:36"
+      ]
+    },
+    {
+      "rpc": "has_role",
+      "existsInProduction": true,
+      "productionArgs": "_user_id uuid, _role text",
+      "productionReturn": "boolean",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/hooks/useAuth.tsx:41"
+      ]
+    },
+    {
+      "rpc": "complete_challenge",
+      "existsInProduction": true,
+      "productionArgs": "p_challenge uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/hooks/useChallengeActions.ts:9"
+      ]
+    },
+    {
+      "rpc": "current_team_id",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "uuid",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/lib/race.ts:180"
+      ]
+    },
+    {
+      "rpc": "get_secure_leaderboard",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "TABLE(team_id uuid, name text, color text, avatar_url text, motto text, challenges_points numeric, modifier_points numeric, cattiveria_points numeric, total_points numeric, completed_challenges bigint, total_duration_seconds numeric, last_completion timestamp with time zone, active boolean, freeze_started_at timestamp with time zone, freeze_expires_at timestamp with time zone, rank integer)",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/lib/race.ts:213"
+      ]
+    },
+    {
+      "rpc": "get_report_status",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/lib/race.ts:394"
+      ]
+    },
+    {
+      "rpc": "get_game_report",
+      "existsInProduction": true,
+      "productionArgs": "p_user_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/lib/race.ts:406"
+      ]
+    },
+    {
+      "rpc": "admin_get_enigma_dashboard",
+      "existsInProduction": true,
+      "productionArgs": "p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/enigmi.tsx:53"
+      ]
+    },
+    {
+      "rpc": "admin_update_enigma_solution",
+      "existsInProduction": true,
+      "productionArgs": "p_challenge_id uuid, p_solution jsonb, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/enigmi.tsx:62"
+      ]
+    },
+    {
+      "rpc": "get_jackpot_plays",
+      "existsInProduction": true,
+      "productionArgs": "p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/jackpot.tsx:27"
+      ]
+    },
+    {
+      "rpc": "mark_partenza_used",
+      "existsInProduction": true,
+      "productionArgs": "p_transaction_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/partenze.tsx:70"
+      ]
+    },
+    {
+      "rpc": "respond_passaparola_request",
+      "existsInProduction": true,
+      "productionArgs": "p_transaction_id uuid, p_response text, p_nota_interna text, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/passaparola.tsx:87"
+      ]
+    },
+    {
+      "rpc": "publish_game_report",
+      "existsInProduction": true,
+      "productionArgs": "p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/resoconto.tsx:59"
+      ]
+    },
+    {
+      "rpc": "initialize_secret_code_challenge",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/secret-code.tsx:116"
+      ]
+    },
+    {
+      "rpc": "close_stage",
+      "existsInProduction": true,
+      "productionArgs": "p_stage_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/settings.tsx:54"
+      ]
+    },
+    {
+      "rpc": "reopen_stage",
+      "existsInProduction": true,
+      "productionArgs": "p_stage_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/settings.tsx:79"
+      ]
+    },
+    {
+      "rpc": "admin_adjust_team_tokens",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid, p_amount integer, p_reason text, p_admin_id uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin/teams.tsx:204"
+      ]
+    },
+    {
+      "rpc": "admin_get_secret_code_dashboard",
+      "existsInProduction": true,
+      "productionArgs": "",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:229"
+      ]
+    },
+    {
+      "rpc": "evaluate_poster",
+      "existsInProduction": true,
+      "productionArgs": "p_submission_id uuid, p_approved boolean, p_score integer",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:418"
+      ]
+    },
+    {
+      "rpc": "confirm_photo_score",
+      "existsInProduction": true,
+      "productionArgs": "p_submission_id uuid, p_score integer",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:443"
+      ]
+    },
+    {
+      "rpc": "toggle_marketplace",
+      "existsInProduction": true,
+      "productionArgs": "p_active boolean, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:467"
+      ]
+    },
+    {
+      "rpc": "admin_force_complete_bank",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:491"
+      ]
+    },
+    {
+      "rpc": "admin_reset_bank",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:514"
+      ]
+    },
+    {
+      "rpc": "admin_edit_bank_answer",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid, p_question_id integer, p_answer text, p_correct boolean, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:536"
+      ]
+    },
+    {
+      "rpc": "evaluate_social_challenge",
+      "existsInProduction": true,
+      "productionArgs": "p_submission_id uuid, p_approved boolean, p_score integer",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:562"
+      ]
+    },
+    {
+      "rpc": "admin_force_complete_secret_code",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:587"
+      ]
+    },
+    {
+      "rpc": "admin_edit_secret_code_match",
+      "existsInProduction": true,
+      "productionArgs": "p_team_id uuid, p_partner_id uuid, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:608"
+      ]
+    },
+    {
+      "rpc": "admin_edit_secret_code_settings",
+      "existsInProduction": true,
+      "productionArgs": "p_full_code text, p_destination text, p_admin_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/admin.tsx:634"
+      ]
+    },
+    {
+      "rpc": "consume_marketplace_transaction",
+      "existsInProduction": true,
+      "productionArgs": "p_transaction_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/classifica.tsx:79",
+        "src/routes/_authenticated/classifica.tsx:100",
+        "src/routes/_authenticated/marketplace.tsx:266"
+      ]
+    },
+    {
+      "rpc": "open_classifica_bonus",
+      "existsInProduction": true,
+      "productionArgs": "p_transaction_id uuid",
+      "productionReturn": "void",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/classifica.tsx:116"
+      ]
+    },
+    {
+      "rpc": "buy_marketplace_item",
+      "existsInProduction": true,
+      "productionArgs": "p_item_id text, p_target_team_id uuid DEFAULT NULL::uuid",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/marketplace.tsx:461"
+      ]
+    },
+    {
+      "rpc": "submit_passaparola_request",
+      "existsInProduction": true,
+      "productionArgs": "p_transaction_id uuid, p_request_text text",
+      "productionReturn": "jsonb",
+      "isSecurityDefiner": true,
+      "occurrences": [
+        "src/routes/_authenticated/marketplace.tsx:580"
+      ]
+    }
+  ],
+  "storageAudit": []
+}
