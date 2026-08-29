@@ -84,23 +84,19 @@ function AuthPage() {
       // Clear any cached query states before fresh login
       queryClient.clear();
 
-      let { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: parsed.data.password,
       });
 
       if (signInError) {
-        // Attempt sign up if team was registered in admin table
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: parsed.data.password,
-          options: {
-            data: { display_name: formattedUsername },
-          },
-        });
-        if (signUpError) {
-          throw signInError;
+        if (signInError.message?.toLowerCase().includes("invalid login credentials")) {
+          throw new Error("Username o password non corretti.");
         }
+        if (signInError.message?.toLowerCase().includes("email not confirmed")) {
+          throw new Error("Account non ancora attivato o credenziali non valide.");
+        }
+        throw signInError;
       }
 
       // Invalidate all queries to fetch brand new session state
