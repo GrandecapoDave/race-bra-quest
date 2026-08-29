@@ -2123,17 +2123,82 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           const bonus = 0;
           let stage_completed = false;
 
+          let multiplier_2x_bonus = 0;
+          let dimezza_penalty = 0;
+          let polizza_refund = 0;
+
           if (!already) {
+            let base_points = points;
+
+            // 1. Sfida punti base
             db.scores.push({
               id: uuid(),
               team_id: currentUserId,
               challenge_id: p_challenge,
-              punti: points,
+              punti: base_points,
               motivazione: isPhotoChallenge
                 ? `Foto consegnata — in attesa di valutazione: ${challenge?.titolo || "Sfida"}`
                 : `Completamento prova: ${challenge?.titolo || "Sfida"}`,
               created_at: new Date().toISOString(),
             });
+
+            if (base_points > 0) {
+              // 2. MODIFICATORE 2X
+              const tx2x = db.marketplace_transactions?.find(
+                (t: any) => (t.team_id === currentUserId || t.buyer_team_id === currentUserId) &&
+                            (t.marketplace_item_id === "moltiplicatore_2x" || t.item_id === "moltiplicatore_2x") &&
+                            t.stato === "completed"
+              );
+              if (tx2x) {
+                multiplier_2x_bonus = base_points;
+                db.scores.push({
+                  id: uuid(),
+                  team_id: currentUserId,
+                  challenge_id: p_challenge,
+                  punti: multiplier_2x_bonus,
+                  motivazione: `Moltiplicatore 2X Tappa (Raddoppio +${multiplier_2x_bonus} PT)`,
+                  created_at: new Date().toISOString(),
+                });
+                tx2x.stato = "used";
+                tx2x.data_utilizzo = new Date().toISOString();
+                tx2x.dettagli = {
+                  applied_to_challenge_id: p_challenge,
+                  challenge_title: challenge?.titolo || "Prova",
+                  base_points: base_points,
+                  multiplier: 2,
+                  doubled_points: multiplier_2x_bonus,
+                  final_points: base_points + multiplier_2x_bonus,
+                };
+              }
+
+              // 3. DIMEZZA PUNTI
+              const txDimezza = db.marketplace_transactions?.find(
+                (t: any) => t.target_team_id === currentUserId &&
+                            (t.marketplace_item_id === "dimezza_punti" || t.item_id === "dimezza_punti") &&
+                            t.stato === "completed"
+              );
+              if (txDimezza) {
+                dimezza_penalty = Math.floor(base_points / 2);
+                if (dimezza_penalty > 0) {
+                  db.scores.push({
+                    id: uuid(),
+                    team_id: currentUserId,
+                    challenge_id: p_challenge,
+                    punti: -dimezza_penalty,
+                    motivazione: `Malus Dimezza Punti: penalità −${dimezza_penalty} PT sulla prova ${challenge?.titolo || "Sfida"}`,
+                    created_at: new Date().toISOString(),
+                  });
+                }
+                txDimezza.stato = "used";
+                txDimezza.data_utilizzo = new Date().toISOString();
+                txDimezza.dettagli = {
+                  applied_to_challenge_id: p_challenge,
+                  points_deducted: dimezza_penalty,
+                };
+              }
+            }
+
+            points = base_points + multiplier_2x_bonus - dimezza_penalty + polizza_refund;
 
             if (challenge) {
               const allStageChs = db.challenges.filter(
@@ -2182,6 +2247,10 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             data: {
               already,
               points,
+              base_points: points - multiplier_2x_bonus + dimezza_penalty,
+              multiplier_2x_bonus,
+              dimezza_penalty,
+              polizza_refund,
               bonus,
               stage_completed,
             },
@@ -3155,15 +3224,28 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           const { p_transaction_id } = args;
           if (!currentUserId) return { data: null, error: { message: "Non autorizzato" } };
 
+          const isAdmin = db.user_roles?.some((ur: any) => ur.user_id === currentUserId && ur.role === "admin") || currentUserId === "11111111-1111-1111-1111-111111111111";
+
           const transaction = db.marketplace_transactions?.find(
-            (t: any) => t.id === p_transaction_id && t.buyer_team_id === currentUserId,
+            (t: any) => t.id === p_transaction_id && (t.buyer_team_id === currentUserId || t.target_team_id === currentUserId || isAdmin),
           );
 
           if (transaction) {
-            // Allow consuming from both "completed" and "viewing" states
-            if (transaction.stato === "completed" || transaction.stato === "viewing") {
+            // Allow consuming from completed, viewing, or pending states
+            if (transaction.stato === "completed" || transaction.stato === "viewing" || transaction.stato === "pending") {
               transaction.stato = "used";
+              transaction.data_utilizzo = new Date().toISOString();
               transaction.closed_at = new Date().toISOString();
+
+              if ((transaction.item_id === "freeze_2min" || transaction.marketplace_item_id === "freeze_2min") && transaction.target_team_id) {
+                const targetTeam = db.teams?.find((t: any) => t.id === transaction.target_team_id);
+                if (targetTeam) {
+                  targetTeam.freeze_expires_at = null;
+                  targetTeam.freeze_started_at = null;
+                  targetTeam.freeze_duration_seconds = 0;
+                }
+              }
+
               saveDb(db);
               return { data: { success: true }, error: null };
             }

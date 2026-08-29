@@ -222,34 +222,26 @@ function AppShellInner({
     }
   });
 
-  // Query all active malus transactions targeting this team (includes completed and used for dismissal/spin check)
+  // Query all active modal malus transactions targeting this team (strictly freeze_2min, enigma_extra, ruota_sfortunata)
   const activeMalusesQuery = useQuery({
-    queryKey: ["active-maluses-for-team", team.data?.id],
+    queryKey: ["active-modal-maluses-for-team", team.data?.id],
     enabled: !isAdmin && !!team.data?.id,
-    refetchInterval: 3000,
+    refetchInterval: 2000,
     queryFn: async () => {
       const { data } = await supabase
         .from("marketplace_transactions")
         .select("*,buyer_team_id:team_id,item_id:marketplace_item_id,timestamp:data_acquisto")
         .eq("target_team_id", team.data?.id)
-        .in("stato", ["completed", "used"]);
+        .in("marketplace_item_id", ["freeze_2min", "enigma_extra", "ruota_sfortunata"])
+        .eq("stato", "completed")
+        .order("data_acquisto", { ascending: true });
       return data ?? [];
     }
   });
 
   const handledFreezeIdsRef = useRef<Set<string>>(new Set());
-  const [locallyConsumedMalusIds, setLocallyConsumedMalusIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("locally_consumed_maluses");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
 
-  const pendingMaluses = (activeMalusesQuery.data ?? []).filter(
-    (t: any) => t.stato === "completed" && !locallyConsumedMalusIds.includes(t.id)
-  );
+  const pendingMaluses = activeMalusesQuery.data ?? [];
   const queuedMalusesCount = pendingMaluses.length;
   const currentActiveMalusTx = pendingMaluses[0] || null;
 
@@ -271,21 +263,9 @@ function AppShellInner({
       return;
     }
 
-    const key = `freeze_started_${txId}`;
-    let startMs = 0;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        startMs = parseInt(saved);
-      }
-    } catch {}
-
-    if (!startMs || isNaN(startMs)) {
-      startMs = Date.now();
-      try {
-        localStorage.setItem(key, String(startMs));
-      } catch {}
-    }
+    const startMs = currentActiveMalusTx.data_acquisto
+      ? new Date(currentActiveMalusTx.data_acquisto).getTime()
+      : (currentActiveMalusTx.timestamp ? new Date(currentActiveMalusTx.timestamp).getTime() : Date.now());
 
     const durationMs = 120 * 1000;
     const targetExpiryMs = startMs + durationMs;
@@ -299,17 +279,6 @@ function AppShellInner({
       if (remaining <= 0) {
         handledFreezeIdsRef.current.add(txId);
         setSecondsLeft(0);
-        try {
-          localStorage.removeItem(key);
-        } catch {}
-
-        setLocallyConsumedMalusIds((prev) => {
-          const next = [...prev, txId];
-          try {
-            localStorage.setItem("locally_consumed_maluses", JSON.stringify(next));
-          } catch {}
-          return next;
-        });
 
         toast.success("❄️ FREEZE TERMINATO! Siete di nuovo operativi.");
 
@@ -352,13 +321,6 @@ function AppShellInner({
         setEnigmaError(error.message || "Errore di verifica.");
       } else if (data && data.is_correct) {
         const txId = currentActiveMalusTx.id;
-        setLocallyConsumedMalusIds((prev) => {
-          const next = [...prev, txId];
-          try {
-            localStorage.setItem("locally_consumed_maluses", JSON.stringify(next));
-          } catch {}
-          return next;
-        });
 
         await supabase.rpc("consume_marketplace_transaction", {
           p_transaction_id: txId,
@@ -423,21 +385,18 @@ function AppShellInner({
     }
   };
 
-  const handleDismissUnluckyWheel = () => {
+  const handleDismissUnluckyWheel = async () => {
     triggerHaptic("light");
     if (pendingUnluckyWheelTx) {
       const txId = pendingUnluckyWheelTx.id;
-      setLocallyConsumedMalusIds((prev) => {
-        const next = [...prev, txId];
-        try {
-          localStorage.setItem("locally_consumed_maluses", JSON.stringify(next));
-        } catch {}
-        return next;
+      await supabase.rpc("consume_marketplace_transaction", {
+        p_transaction_id: txId,
       });
     }
     setUnluckyRotation(0);
     setIsUnluckySpinning(false);
     setShowUnluckyPrize(false);
+    setUnluckyOutcome(null);
     queryClient.invalidateQueries();
   };
 

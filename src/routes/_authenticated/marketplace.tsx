@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Coins,
@@ -309,8 +309,8 @@ function MarketplacePage() {
     if (isSpinning || !wheelOutcome) return;
 
     let sliceIndex = WHEEL_SLICES.findIndex((s) => s.id === wheelOutcome.id || s.id === wheelOutcome.outcome_id);
-    if (sliceIndex === -1 && wheelOutcome.outcome_label) {
-      const labelLower = String(wheelOutcome.outcome_label).toLowerCase();
+    if (sliceIndex === -1 && (wheelOutcome.outcome_label || wheelOutcome.label)) {
+      const labelLower = String(wheelOutcome.outcome_label || wheelOutcome.label).toLowerCase();
       sliceIndex = WHEEL_SLICES.findIndex((s) => labelLower.includes(s.id) || labelLower.includes(s.label.toLowerCase().slice(2, 7)));
     }
     if (sliceIndex === -1) {
@@ -487,10 +487,44 @@ function MarketplacePage() {
     (t.timestamp || t.data_acquisto) &&
     (Date.now() - new Date(t.timestamp || t.data_acquisto).getTime()) < 360 * 1000
   );
-  const blackoutRemainingMs = activeBlackout 
-    ? Math.max(0, 360 * 1000 - (Date.now() - new Date(activeBlackout.timestamp || activeBlackout.data_acquisto).getTime()))
-    : 0;
-  const blackoutRemainingMin = Math.ceil(blackoutRemainingMs / 60000);
+
+  const [blackoutRemainingSeconds, setBlackoutRemainingSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!activeBlackout) {
+      setBlackoutRemainingSeconds(0);
+      return;
+    }
+
+    const startMs = new Date(activeBlackout.timestamp || activeBlackout.data_acquisto).getTime();
+    const durationMs = 360 * 1000;
+    const targetExpiryMs = startMs + durationMs;
+
+    const updateTimer = async () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((targetExpiryMs - now) / 1000));
+      setBlackoutRemainingSeconds(remaining);
+
+      if (remaining <= 0) {
+        // Auto-consume blackout on DB when timer expires
+        await supabase.rpc("consume_marketplace_transaction", {
+          p_transaction_id: activeBlackout.id,
+        });
+        toast.success("🛒 BLACKOUT MERCATO TERMINATO! Il Marketplace è di nuovo accessibile.");
+        queryClient.invalidateQueries();
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [activeBlackout?.id, queryClient]);
+
+  const formatBlackoutTime = (sec: number) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   const balance = team?.token_balance ?? 50;
 
@@ -502,9 +536,9 @@ function MarketplacePage() {
     }
 
     // Block purchases during active blackout
-    if (activeBlackout) {
+    if (activeBlackout && blackoutRemainingSeconds > 0) {
       toast.error("🔒 BLACKOUT MERCATO ATTIVO!", {
-        description: `Non puoi effettuare acquisti. Attendi ancora circa ${blackoutRemainingMin} minut${blackoutRemainingMin === 1 ? "o" : "i"}.`,
+        description: `Non puoi effettuare acquisti. Attendi lo scadere del timer (${formatBlackoutTime(blackoutRemainingSeconds)}).`,
         duration: 5000,
       });
       return;
@@ -559,7 +593,37 @@ function MarketplacePage() {
       // Handle specific items
       if (itemId === "ruota_fortuna") {
         if (data.outcome) {
-          setWheelOutcome(data.outcome);
+          const raw = data.outcome;
+          const label = raw.outcome_label || raw.label || "PREMIO RUOTA";
+          const points = raw.outcome_points ?? raw.points ?? 0;
+          const tokens = raw.outcome_tokens ?? raw.tokens ?? 0;
+          const isJackpot = label.toLowerCase().includes("jackpot") || raw.id === "jackpot" || raw.outcome_id === "jackpot";
+          const isDave = raw.dave_help === true || label.toLowerCase().includes("dave") || raw.id === "dave_help";
+
+          let sliceId = raw.id || raw.outcome_id;
+          if (!sliceId) {
+            if (isJackpot) sliceId = "jackpot";
+            else if (isDave) sliceId = "dave_help";
+            else if (points >= 15) sliceId = "mega_bonus";
+            else if (points === 10) sliceId = "bonus";
+            else if (points === 5 && tokens === 5) sliceId = "doppio_premio";
+            else if (points === 5) sliceId = "piccolo_bonus";
+            else if (tokens === 10) sliceId = "gettoni_bonus";
+            else if (tokens === 5) sliceId = "fortuna";
+            else sliceId = "sorpresa";
+          }
+
+          const normalizedOutcome = {
+            ...raw,
+            id: sliceId,
+            label: label,
+            points: points,
+            tokens: tokens,
+            isJackpot: isJackpot,
+            isDave: isDave,
+          };
+
+          setWheelOutcome(normalizedOutcome);
           setWheelRotation(0);
           if (isSpinning) setIsSpinning(false);
           if (showPrize) setShowPrize(false);
@@ -753,17 +817,27 @@ function MarketplacePage() {
             </div>
           </div>
         )}\n
-        {/* BLACKOUT MERCATO ALERT — shown when this team is frozen */}
+        {/* BLACKOUT MERCATO ALERT — shown when this team has active blackout */}
         {activeBlackout && (
-          <div className="surface p-5 border border-rose-500/40 bg-rose-900/10 rounded-2xl flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top duration-300">
-            <div className="size-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400 shrink-0 border border-rose-500/30">
-              <Lock className="size-6 animate-pulse text-rose-400" />
+          <div className="surface p-5 border border-rose-500/50 bg-rose-950/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top duration-300 shadow-xl shadow-rose-950/20">
+            <div className="flex items-center gap-4 text-center md:text-left">
+              <div className="size-12 rounded-2xl bg-rose-500/20 flex items-center justify-center text-rose-400 shrink-0 border border-rose-500/30">
+                <Lock className="size-6 animate-pulse text-rose-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-sm text-rose-400 uppercase tracking-wider flex items-center gap-2">
+                  <span>🔒 BLACKOUT MERCATO ATTIVO</span>
+                </h3>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  Un avversario ha attivato il Malus Blackout. L'accesso al Marketplace è temporaneamente bloccato per la vostra squadra.
+                </p>
+              </div>
             </div>
-            <div className="text-center md:text-left space-y-1 flex-1">
-              <h3 className="font-extrabold text-sm text-rose-400 uppercase tracking-wide">🔒 BLACKOUT MERCATO ATTIVO</h3>
-              <p className="text-xs text-zinc-300">
-                Un avversario ha attivato il <strong>Malus Blackout Mercato</strong> contro di voi. Non potete effettuare acquisti per ancora circa <strong>{blackoutRemainingMin} minut{blackoutRemainingMin === 1 ? "o" : "i"}</strong>.
-              </p>
+            <div className="bg-zinc-950/80 px-4 py-2 rounded-xl border border-rose-500/30 text-center shrink-0">
+              <span className="text-[9px] uppercase tracking-wider text-rose-400 font-extrabold block">Mercato bloccato</span>
+              <span className="font-mono text-xl font-black text-rose-400 tracking-wider">
+                {formatBlackoutTime(blackoutRemainingSeconds)}
+              </span>
             </div>
           </div>
         )}\n
@@ -1698,6 +1772,36 @@ function MarketplacePage() {
                         >
                           📞 CHIAMA DAVE
                         </a>
+                      </div>
+                    </div>
+                  ) : wheelOutcome.isJackpot || wheelOutcome.id === "jackpot" ? (
+                    <div className="space-y-5 animate-in zoom-in-95 duration-300">
+                      <div className="size-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-yellow-500/40 text-yellow-400 animate-bounce shadow-lg shadow-yellow-500/20">
+                        <span className="text-4xl select-none">🏆</span>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-[10px] uppercase font-black tracking-widest text-yellow-400 font-mono bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/25">
+                          COLPO GROSSO!
+                        </span>
+                        <h4 className="text-2xl font-display font-black text-yellow-400 uppercase tracking-wider">
+                          🏆 JACKPOT (+20 PUNTI)!
+                        </h4>
+                        <p className="text-xs text-zinc-300">
+                          Avete sbancato la Ruota della Fortuna! +20 Punti accreditati alla squadra!
+                        </p>
+                      </div>
+                      
+                      <div className="bg-zinc-900/80 p-4 rounded-xl border border-yellow-500/30 text-left space-y-2 max-w-xs mx-auto text-xs shadow-md">
+                        <div className="flex justify-between items-center border-b border-zinc-800 pb-1.5">
+                          <span className="text-zinc-400 font-medium">Bonus Vinto:</span>
+                          <span className="font-black text-emerald-400">+20 PUNTI</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400 font-medium">Nuovo Punteggio:</span>
+                          <span className="font-extrabold text-gold text-sm">
+                            {(currentPoints + (wheelOutcome.points || 20))} PT
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ) : (

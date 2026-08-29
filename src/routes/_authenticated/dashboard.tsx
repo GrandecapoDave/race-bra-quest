@@ -554,27 +554,46 @@ function Dashboard() {
         )}
 
         {/* 8. USED BONUS / MALUS COMPLETED SUMMARIES (DISMISSABLE) */}
-        {used2xList.map((u2x) => (
-          <div key={u2x.id} className="bg-amber-950/25 border border-amber-500/40 text-amber-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <Zap className="size-5 text-amber-400" />
+        {used2xList.map((u2x) => {
+          const outcome = u2x.outcome || u2x.dettagli || {};
+          const doubled = outcome.doubled_points ?? 20;
+          const base = outcome.base_points ?? doubled;
+          const final = outcome.final_points ?? (base + doubled);
+          const challengeTitle = outcome.challenge_title || "Prova completata";
+
+          return (
+            <div key={u2x.id} className="bg-amber-950/25 border border-amber-500/40 text-amber-300 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="size-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <Zap className="size-5 text-amber-400" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">✨ MOLTIPLICATORE 2X APPLICATO</h4>
+                    <span className="text-[9px] font-mono font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">×2</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300">
+                    Applicato a: <strong className="text-white">{challengeTitle}</strong>
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-zinc-300 bg-zinc-950/50 px-3 py-1.5 rounded-lg border border-amber-500/20">
+                    <span>Punti base: <strong className="text-white">{base} PT</strong></span>
+                    <span className="text-zinc-600">→</span>
+                    <span>Moltiplicatore: <strong className="text-amber-400">×2</strong></span>
+                    <span className="text-zinc-600">→</span>
+                    <span>Punti finali: <strong className="text-gold font-bold">{final} PT</strong></span>
+                    <span className="text-emerald-400 font-bold">(+{doubled} PT bonus)</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">✅ MOLTIPLICATORE 2X UTILIZZATO</h4>
-                <p className="text-[11px] text-zinc-300">
-                  Il moltiplicatore 2X è stato applicato con successo alla prova completata, raddoppiando i punti ottenuti!
-                </p>
-              </div>
+              <button
+                onClick={() => handleDismissNotification(u2x.id)}
+                className="text-xs font-black hover:text-white px-3 py-2 rounded-xl bg-amber-900/40 border border-amber-500/30 hover:bg-amber-800/50 transition-all shrink-0 cursor-pointer text-center sm:self-center"
+              >
+                ✕ Chiudi
+              </button>
             </div>
-            <button
-              onClick={() => handleDismissNotification(u2x.id)}
-              className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-amber-900/40 border border-amber-500/30 hover:bg-amber-800/50 transition-all shrink-0 cursor-pointer"
-            >
-              ✕ Chiudi
-            </button>
-          </div>
-        ))}
+          );
+        })}
 
         {usedPolizzaList.map((up) => {
           const refund = up.outcome?.refunded_points ?? up.dettagli?.refunded_points ?? 10;
