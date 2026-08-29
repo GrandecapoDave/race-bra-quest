@@ -8,15 +8,38 @@ export function useSession() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Safety fallback timeout to prevent infinite loading state
+    const timer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 2000);
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event: any, next: any) => {
-      setSession(next);
-      setLoading(false);
+      if (mounted) {
+        setSession(next);
+        setLoading(false);
+      }
     });
-    supabase.auth.getSession().then(({ data }: any) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
+
+    supabase.auth
+      .getSession()
+      .then(({ data }: any) => {
+        if (mounted) {
+          setSession(data?.session ?? null);
+          setLoading(false);
+        }
+      })
+      .catch((err: any) => {
+        console.warn("[useSession] getSession error:", err);
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   return { session, user: session?.user ?? null, loading };

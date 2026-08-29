@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 
 function AdminLayout() {
-  const { user } = useSession();
+  const { user, loading } = useSession();
   const isAdmin = useIsAdmin(user);
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -412,7 +412,18 @@ function AdminLayout() {
   const [isTogglingMarketplace, setIsTogglingMarketplace] = useState(false);
   const [isProcessingBank, setIsProcessingBank] = useState(false);
 
-  if (isAdmin.isLoading) return <AppShell isAdmin><div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-primary size-8" /></div></AppShell>;
+  if (loading || isAdmin.isLoading || (isAdmin.isPending && Boolean(user?.id))) {
+    return (
+      <AppShell isAdmin>
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+          <Loader2 className="animate-spin text-primary size-8" />
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Verifica permessi regia...
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!isAdmin.data) {
     return (

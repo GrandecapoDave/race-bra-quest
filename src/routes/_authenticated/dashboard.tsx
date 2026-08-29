@@ -101,10 +101,18 @@ function Dashboard() {
     }
     const notifKey = `dismissed_notifications_${user.id}`;
     const rewardsKey = `dismissed_stage_rewards_${user.id}`;
-    const storedNotifs = localStorage.getItem(notifKey);
-    setDismissedNotifications(storedNotifs ? JSON.parse(storedNotifs) : []);
-    const stored = localStorage.getItem(rewardsKey);
-    setDismissedRewards(stored ? JSON.parse(stored) : []);
+    try {
+      const storedNotifs = localStorage.getItem(notifKey);
+      setDismissedNotifications(storedNotifs ? JSON.parse(storedNotifs) : []);
+    } catch {
+      setDismissedNotifications([]);
+    }
+    try {
+      const stored = localStorage.getItem(rewardsKey);
+      setDismissedRewards(stored ? JSON.parse(stored) : []);
+    } catch {
+      setDismissedRewards([]);
+    }
   }, [user?.id]);
 
   const team = useQuery(myTeamQuery);
