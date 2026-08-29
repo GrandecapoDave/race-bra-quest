@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
+import { CircularProgress } from "@/components/ui/circular-progress";
 import { RaceTimer } from "@/components/RaceTimer";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -377,34 +378,39 @@ function Dashboard() {
             borderColor: team.data?.color ? `${team.data.color}66` : undefined,
           }}
         >
-          {/* BADGES CONTAINER (Floating top-right) */}
+          {/* BADGES CONTAINER (HeroUI Chip variant="dot" style) */}
           {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || activeShield || activePassaparola || pendingPassaparola || activePartenza || usedPartenza) && (
             <div className="flex flex-wrap items-center gap-1.5 mb-3 sm:absolute sm:top-5 sm:right-5 sm:mb-0 sm:flex-col sm:items-end z-10">
               {activeEnigma && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                  <span>🧩 ENIGMA EXTRA</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-purple-400 animate-ping" />
+                  <span>🧩 Enigma Extra</span>
                 </div>
               )}
               {activeRuota && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                  <span>🎡 RUOTA SFORTUNATA</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+                  <span>🎡 Ruota Sfortunata</span>
                 </div>
               )}
               {isTeamFrozen && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
-                  <span>❄️ CONGELATO</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
+                  <span>❄️ Congelato</span>
                 </div>
               )}
               {activeShield && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-blue-400 animate-ping" />
                   <Shield className="size-3 text-blue-300 stroke-[3]" />
-                  <span>SCUDO ATTIVO</span>
+                  <span>Scudo Attivo</span>
                 </div>
               )}
               {activePassaparola && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-950/60 border border-orange-500/40 text-orange-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-orange-400 animate-ping" />
                   <PhoneCall className="size-3 stroke-[3]" />
-                  <span>PASSAPAROLA DISP.</span>
+                  <span>Passaparola Disp.</span>
                 </div>
               )}
             </div>
@@ -413,7 +419,7 @@ function Dashboard() {
           {/* TEAM PROFILE ROW */}
           <div className="flex items-center gap-3.5 sm:gap-5 min-w-0">
             <div
-              className="grid size-16 sm:size-20 shrink-0 place-items-center rounded-2xl text-3xl sm:text-4xl shadow-xl border-2"
+              className="grid size-16 sm:size-20 shrink-0 place-items-center rounded-2xl text-3xl sm:text-4xl shadow-xl border-2 transition-transform hover:scale-105"
               style={{ 
                 backgroundColor: (team.data?.color ?? "#f97316") + "26",
                 borderColor: team.data?.color ?? "#f97316",
@@ -432,11 +438,11 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* GAME METERS / GAUGES (Punti, Token, Tempo) */}
+          {/* GAME METERS / GAUGES (HeroUI isBordered style with glow) */}
           <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
             {/* PUNTI */}
-            <div className="rounded-xl bg-secondary/60 border border-border/50 p-3 sm:p-4 text-center flex flex-col justify-between shadow-inner">
-              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+            <div className="group rounded-2xl bg-secondary/50 hover:bg-secondary/70 border border-border/60 hover:border-primary/40 p-3 sm:p-4 text-center flex flex-col justify-between shadow-sm transition-all duration-200">
+              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
                 <Sparkles className="size-3.5 text-primary" />
                 <span>Punti</span>
               </div>
@@ -446,8 +452,8 @@ function Dashboard() {
             </div>
 
             {/* TOKEN */}
-            <div className="rounded-xl bg-secondary/60 border border-border/50 p-3 sm:p-4 text-center flex flex-col justify-between shadow-inner">
-              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+            <div className="group rounded-2xl bg-secondary/50 hover:bg-secondary/70 border border-border/60 hover:border-amber-500/40 p-3 sm:p-4 text-center flex flex-col justify-between shadow-sm transition-all duration-200">
+              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground group-hover:text-amber-400 transition-colors">
                 <Coins className="size-3.5 text-amber-400" />
                 <span>Token</span>
               </div>
@@ -457,8 +463,8 @@ function Dashboard() {
             </div>
 
             {/* TEMPO */}
-            <div className="rounded-xl bg-secondary/60 border border-border/50 p-3 sm:p-4 text-center flex flex-col justify-between shadow-inner">
-              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground">
+            <div className="group rounded-2xl bg-secondary/50 hover:bg-secondary/70 border border-border/60 hover:border-cyan-500/40 p-3 sm:p-4 text-center flex flex-col justify-between shadow-sm transition-all duration-200">
+              <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground group-hover:text-cyan-400 transition-colors">
                 <Timer className="size-3.5 text-accent" />
                 <span>Tempo</span>
               </div>
@@ -468,15 +474,31 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* OVERALL RACE PROGRESS */}
-          <div className="mt-5 pt-4 border-t border-border/40">
-            <div className="flex justify-between items-center text-xs font-black text-muted-foreground">
-              <span className="uppercase tracking-widest text-[10px]">Avanzamento Tappe</span>
-              <span className="text-foreground">
-                {completedCount}/{allChallenges.length} prove ({Math.round(percent)}%)
-              </span>
+          {/* OVERALL RACE PROGRESS WITH CIRCULARPROGRESS RING (HeroUI CircularProgress Style) */}
+          <div className="mt-5 pt-4 border-t border-border/40 flex items-center justify-between gap-4">
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="uppercase tracking-widest text-[10px] font-black text-muted-foreground">Avanzamento Tappe</span>
+                <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  {completedCount}/{allChallenges.length} Prove
+                </span>
+              </div>
+              <ProgressBar value={percent} className="h-2.5 rounded-full bg-zinc-900" />
             </div>
-            <ProgressBar value={percent} className="mt-2 h-3" />
+
+            <div className="shrink-0">
+              <CircularProgress
+                value={percent}
+                size={52}
+                strokeWidth={5}
+                color="text-primary"
+                trackColor="text-zinc-800"
+              >
+                <span className="text-[11px] font-black text-foreground font-display">
+                  {Math.round(percent)}%
+                </span>
+              </CircularProgress>
+            </div>
           </div>
         </section>
 
@@ -542,7 +564,7 @@ function Dashboard() {
           </div>
         )}
 
-        {/* MEGA-CARD: MISSIONE ATTIVA / PROVA CORRENTE (Ergonomica a 58px) */}
+        {/* MEGA-CARD: MISSIONE ATTIVA (HeroUI Card isFooterBlurred & Button variant="shadow") */}
         <section className="space-y-2.5">
           <div className="flex items-center justify-between pl-1">
             <h2 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
@@ -550,45 +572,52 @@ function Dashboard() {
               Missione Attiva
             </h2>
             {nextChallenge && (
-              <span className="text-[11px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
+                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
                 +{nextChallenge.points} Punti
               </span>
             )}
           </div>
 
           {nextChallenge && currentStage ? (
-            <div className="hud-panel-glow p-5 sm:p-6 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1 min-w-0">
-                  <span className="text-[10px] font-black tracking-widest text-accent uppercase bg-accent/15 px-2 py-0.5 rounded border border-accent/30">
+            <div className="relative overflow-hidden rounded-3xl bg-zinc-950/70 border border-primary/30 p-5 sm:p-6 shadow-2xl shadow-black/60 space-y-4">
+              {/* Top ambient glow */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex items-start justify-between gap-3 relative z-10">
+                <div className="space-y-1.5 min-w-0">
+                  <span className="text-[10px] font-black tracking-widest text-accent uppercase bg-accent/15 px-2.5 py-0.5 rounded-full border border-accent/30 inline-block">
                     {currentStage.title}
                   </span>
-                  <h3 className="text-xl sm:text-2xl font-black text-foreground pt-1 tracking-tight leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-black text-foreground pt-0.5 tracking-tight leading-tight">
                     {nextChallenge.title}
                   </h3>
-                  <p className="text-xs text-muted-foreground font-semibold">
+                  <p className="text-xs text-muted-foreground font-semibold leading-relaxed">
                     {nextChallenge.description || (nextChallenge.type === "jackpot" ? "Scommessa Bonus (Facoltativa)" : "Completa la prova per sbloccare il prossimo checkpoint.")}
                   </p>
                 </div>
-                <span className="primary-gradient grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg shadow-primary/30">
+                <span className="primary-gradient grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg shadow-primary/30 border border-white/20">
                   {nextChallenge.type === "jackpot" ? "🎰" : <Flag className="size-6" />}
                 </span>
               </div>
 
-              {/* GIANT THUMB-FRIENDLY CTA (58px) */}
-              <Link
-                to="/challenge/$challengeId"
-                params={{ challengeId: nextChallenge.id }}
-                onClick={() => triggerHaptic("medium")}
-                className="w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-black text-base uppercase tracking-wider shadow-lg shadow-primary/30 hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer"
-              >
-                <span>VAI ALLA PROVA</span>
-                <ChevronRight className="size-5 stroke-[3]" />
-              </Link>
+              {/* HEROUI ISFOOTERBLURRED ACTION BAR WITH GLOW BUTTON */}
+              <div className="relative z-10 pt-2">
+                <Link
+                  to="/challenge/$challengeId"
+                  params={{ challengeId: nextChallenge.id }}
+                  onClick={() => triggerHaptic("medium")}
+                  className="group relative w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-display font-black text-base uppercase tracking-wider shadow-lg shadow-primary/35 hover:shadow-primary/50 hover:brightness-110 active:scale-[0.97] transition-all duration-200 cursor-pointer overflow-hidden border border-white/20"
+                >
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <span>VAI ALLA PROVA</span>
+                  <ChevronRight className="size-5 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
             </div>
           ) : (
-            <div className="hud-panel p-6 flex items-center gap-3.5 bg-emerald-950/20 border-emerald-500/30">
-              <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30">
+            <div className="rounded-3xl p-6 flex items-center gap-3.5 bg-emerald-950/30 border border-emerald-500/30 shadow-lg backdrop-blur-md">
+              <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30 shadow-sm">
                 <Check className="size-5 stroke-[3]" />
               </div>
               <p className="text-sm font-bold text-emerald-300">

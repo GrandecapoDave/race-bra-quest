@@ -658,17 +658,18 @@ function MarketplacePage() {
           </div>
         )}
 
-        {/* CATEGORY FILTER PILLS (Sticky Floating Bar) */}
+        {/* CATEGORY FILTER PILLS (HeroUI Chip variant="dot" Style) */}
         <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md py-2.5 -mx-3 px-3 sm:-mx-4 sm:px-4 border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-lg">
           <button
             type="button"
             onClick={() => setCategoryFilter("ALL")}
-            className={`min-h-[44px] px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`min-h-[44px] px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-2 ${
               categoryFilter === "ALL"
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-2 ring-primary/40 scale-[1.02]"
                 : "bg-zinc-900/90 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
             }`}
           >
+            <span className={`size-2 rounded-full ${categoryFilter === "ALL" ? "bg-white" : "bg-zinc-500"} animate-pulse`} />
             <span>Tutti</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/25 font-bold">
               {bonusItems.length + malusItems.length}
@@ -677,13 +678,14 @@ function MarketplacePage() {
           <button
             type="button"
             onClick={() => setCategoryFilter("BONUS")}
-            className={`min-h-[44px] px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`min-h-[44px] px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-2 ${
               categoryFilter === "BONUS"
                 ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-500/40 scale-[1.02]"
                 : "bg-zinc-900/90 border border-zinc-800 text-emerald-400/90 hover:text-emerald-300 hover:bg-zinc-800"
             }`}
           >
-            <span>🟢 Bonus</span>
+            <span className={`size-2 rounded-full ${categoryFilter === "BONUS" ? "bg-black" : "bg-emerald-400"} animate-pulse`} />
+            <span>Bonus</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/25 font-bold">
               {bonusItems.length}
             </span>
@@ -691,13 +693,14 @@ function MarketplacePage() {
           <button
             type="button"
             onClick={() => setCategoryFilter("MALUS")}
-            className={`min-h-[44px] px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`min-h-[44px] px-5 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center justify-center gap-2 ${
               categoryFilter === "MALUS"
                 ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 ring-2 ring-rose-500/40 scale-[1.02]"
                 : "bg-zinc-900/90 border border-zinc-800 text-rose-400/90 hover:text-rose-300 hover:bg-zinc-800"
             }`}
           >
-            <span>🔴 Malus</span>
+            <span className={`size-2 rounded-full ${categoryFilter === "MALUS" ? "bg-white" : "bg-rose-400"} animate-pulse`} />
+            <span>Malus</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/25 font-bold">
               {malusItems.length}
             </span>
@@ -1153,10 +1156,13 @@ function MarketplacePage() {
         </div>
       </div>
 
-      {/* TARGET TEAM SELECTION MODAL */}
+      {/* TARGET TEAM SELECTION MODAL (HeroUI Drawer / Bottom Sheet Style) */}
       {selectedMalus && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="surface border border-zinc-800 bg-[#070d1e] max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-6 relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="surface border-t sm:border border-zinc-800 bg-[#070d1e] max-w-md w-full rounded-t-3xl sm:rounded-3xl p-6 pb-8 sm:pb-6 shadow-2xl space-y-5 relative overflow-hidden animate-in slide-in-from-bottom duration-300">
+            {/* Mobile Drawer Drag Handle Pill */}
+            <div className="w-12 h-1.5 bg-zinc-700/80 rounded-full mx-auto mb-2 sm:hidden" />
+
             <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="space-y-2">
@@ -1622,8 +1628,11 @@ function MarketplacePage() {
           : "Confermi l'acquisto del Passaparola? Potrai utilizzare la Regia una sola volta per ottenere un aiuto SÌ/NO. Questa azione non può essere annullata.";
         
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="surface max-w-sm w-full rounded-2xl p-6 shadow-2xl border border-zinc-800 bg-[#070d1e] space-y-6 relative overflow-hidden text-center">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="surface max-w-sm w-full rounded-t-3xl sm:rounded-3xl p-6 pb-8 sm:pb-6 shadow-2xl border-t sm:border border-zinc-800 bg-[#070d1e] space-y-5 relative overflow-hidden text-center animate-in slide-in-from-bottom duration-300">
+              {/* Mobile Drawer Drag Handle Pill */}
+              <div className="w-12 h-1.5 bg-zinc-700/80 rounded-full mx-auto mb-2 sm:hidden" />
+
               <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none" />
               <div className="size-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto border border-yellow-500/20 text-yellow-500 animate-pulse">
                 {isPunti ? <Sparkles className="size-8" /> : <PhoneCall className="size-8 text-orange-500" />}
@@ -1636,7 +1645,7 @@ function MarketplacePage() {
                   {descText}
                 </p>
               </div>
-              <div className="bg-zinc-900/40 p-3 rounded-xl border border-zinc-800 text-left text-xs space-y-1.5 max-w-xs mx-auto">
+              <div className="bg-zinc-900/40 p-3.5 rounded-2xl border border-zinc-800 text-left text-xs space-y-1.5 max-w-xs mx-auto shadow-inner">
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Costo:</span>
                   <span className="font-extrabold text-orange-400">{costStr}</span>
@@ -1652,7 +1661,7 @@ function MarketplacePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmBonusItem(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-xs font-black uppercase text-muted-foreground transition-all cursor-pointer"
+                  className="flex-1 py-3 rounded-2xl border border-zinc-800 hover:bg-zinc-900 text-xs font-black uppercase text-muted-foreground transition-all cursor-pointer active:scale-95"
                 >
                   Annulla
                 </button>
@@ -1661,7 +1670,7 @@ function MarketplacePage() {
                     handlePurchase(confirmBonusItem.id);
                     setConfirmBonusItem(null);
                   }}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer"
                 >
                   Conferma
                 </button>

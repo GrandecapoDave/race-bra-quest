@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Lock, Unlock, Key, Coins, Loader2, MapPin, Sparkles, AlertCircle, Delete } from "lucide-react";
+import { Lock, Unlock, Key, Coins, Loader2, MapPin, Sparkles, AlertCircle, Delete, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { triggerHaptic } from "@/lib/haptics";
 import type { Challenge, Team } from "@/lib/race";
 
 export function SecretCodeChallenge({
@@ -23,6 +24,7 @@ export function SecretCodeChallenge({
   const [buying, setBuying] = useState(false);
   const [submittingPin, setSubmittingPin] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const codeStateQuery = useQuery({
     queryKey: ["secret-code-state", team?.id],
@@ -202,16 +204,41 @@ export function SecretCodeChallenge({
       <section className="surface p-5 sm:p-6 bg-zinc-950 border border-zinc-800/40 rounded-2xl text-center space-y-6 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-primary" />
         
-        <div className="space-y-2">
+        <div className="space-y-3">
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Frammenti in vostro possesso</span>
-          <div className="flex justify-center items-center gap-3 sm:gap-4 text-lg sm:text-2xl font-mono font-black tracking-wider py-3 px-4 sm:px-6 bg-zinc-900/60 rounded-xl border border-zinc-800/60 inline-flex mx-auto">
-            <span className={myPart?.part_type === "FIRST_5" ? "text-primary font-bold" : (hasPurchased ? "text-emerald-400" : "text-zinc-600")}>
-              {first5Str}
-            </span>
-            <span className="text-zinc-700 font-sans text-lg">·</span>
-            <span className={myPart?.part_type === "LAST_5" ? "text-primary font-bold" : (hasPurchased ? "text-emerald-400" : "text-zinc-600")}>
-              {last5Str}
-            </span>
+          
+          {/* HeroUI Snippet Component with 1-Tap Copy */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+            <div className="flex justify-center items-center gap-3 sm:gap-4 text-lg sm:text-2xl font-mono font-black tracking-wider py-3 px-5 bg-zinc-900/80 rounded-2xl border border-zinc-800 shadow-inner">
+              <span className={myPart?.part_type === "FIRST_5" ? "text-primary font-bold" : (hasPurchased ? "text-emerald-400" : "text-zinc-600")}>
+                {first5Str}
+              </span>
+              <span className="text-zinc-700 font-sans text-lg">·</span>
+              <span className={myPart?.part_type === "LAST_5" ? "text-primary font-bold" : (hasPurchased ? "text-emerald-400" : "text-zinc-600")}>
+                {last5Str}
+              </span>
+            </div>
+
+            {myPart?.code_part && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(myPart.code_part);
+                  triggerHaptic("light");
+                  setCopied(true);
+                  toast.success(`📋 Frammento ${myPart.code_part} copiato negli appunti!`);
+                  setTimeout(() => setCopied(false), 2500);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md ${
+                  copied
+                    ? "bg-emerald-500 text-black border border-emerald-400 scale-105"
+                    : "bg-secondary/70 hover:bg-secondary border border-border/60 text-foreground active:scale-95"
+                }`}
+              >
+                {copied ? <Check className="size-4 stroke-[3]" /> : <Copy className="size-4" />}
+                <span>{copied ? "Copiato!" : "Copia"}</span>
+              </button>
+            )}
           </div>
         </div>
 
