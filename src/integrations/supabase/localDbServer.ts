@@ -2947,13 +2947,8 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               `La squadra "${team.nome_squadra}" ha inflitto una PENALITÀ PUNTI contro "${targetTeam.nome_squadra}" sottraendo ${pointsDeducted} PT.`,
             );
           } else if (item.id === "tassa_passaggio" && targetTeam) {
-            const buyerScoreSum = db.scores.filter((s: any) => s.team_id === currentUserId).reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
-            const buyerCattiveriaSum = (db.cattiveria_ledger || []).filter((c: any) => c.team_id === currentUserId).reduce((sum: number, c: any) => sum + (c.punti || 0), 0);
-            const buyerCurrentPoints = buyerScoreSum + buyerCattiveriaSum;
-
-            const targetScoreSum = db.scores.filter((s: any) => s.team_id === targetTeam.id).reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
-            const targetCattiveriaSum = (db.cattiveria_ledger || []).filter((c: any) => c.team_id === targetTeam.id).reduce((sum: number, c: any) => sum + (c.punti || 0), 0);
-            const targetCurrentPoints = targetScoreSum + targetCattiveriaSum;
+            const buyerCurrentPoints = db.scores.filter((s: any) => s.team_id === currentUserId).reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
+            const targetCurrentPoints = db.scores.filter((s: any) => s.team_id === targetTeam.id).reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
 
             const buyerDiff = targetCurrentPoints - buyerCurrentPoints;
             const targetDiff = buyerCurrentPoints - targetCurrentPoints;
@@ -3306,18 +3301,20 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             transaction.stato = "viewing";
             transaction.viewed_at = new Date().toISOString();
 
-            // Deduct -3 Punti Cattiveria
-            const stageId = getTeamCurrentStageId(db, currentUserId);
-            addCattiveriaPoints(
-              db,
-              currentUserId,
-              stageId,
-              "bonus",
-              "bonus_classifica",
-              transaction.id,
-              -3,
-              "Utilizzo Bonus Classifica",
-            );
+            const snapshot = (db.teams || []).map((t: any) => ({
+              team_id: t.id,
+              name: t.nome_squadra || t.name,
+              nome_squadra: t.nome_squadra || t.name,
+              color: t.colore || t.color,
+              avatar_url: t.avatar_url,
+              total_points: (db.scores || []).filter((s: any) => s.team_id === t.id).reduce((sum: number, s: any) => sum + (s.punti || 0), 0)
+            })).sort((a: any, b: any) => b.total_points - a.total_points);
+
+            transaction.dettagli = {
+              snapshot,
+              snapshot_timestamp: new Date().toISOString()
+            };
+            transaction.outcome = transaction.dettagli;
 
             saveDb(db);
             return { data: { success: true }, error: null };

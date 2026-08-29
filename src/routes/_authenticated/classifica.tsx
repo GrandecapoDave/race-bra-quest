@@ -75,37 +75,55 @@ function ClassificaPage() {
     queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
   };
 
-  // ─── Realtime Timer & Expiration Calculation ──────────────────────────────
-  const unlockedAt = tx?.data_acquisto || tx?.created_at || (tx as any)?.timestamp;
-  const durationSeconds = tx?.dettagli?.duration_seconds || (tx as any)?.outcome?.duration_seconds || 180;
-  const expiresAtMs = unlockedAt ? new Date(unlockedAt).getTime() + durationSeconds * 1000 : 0;
-
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    if (!expiresAtMs) return 0;
-    return Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
-  });
-
+  // ─── Auto-consume on unmount (navigating away, sidebar click, back button, etc.) ─────
   useEffect(() => {
-    if (!expiresAtMs || tx?.stato === "used") return;
+    const currentTxId = tx?.id;
+    if (!currentTxId) return;
 
-    const tick = () => {
-      const remaining = Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
-      setTimeLeft(remaining);
-      if (remaining <= 0 && tx?.id && !consumedRef.current) {
-        closeLeaderboardBonus(tx.id);
+    return () => {
+      if (!consumedRef.current) {
+        consumedRef.current = true;
+        (supabase as any).rpc("consume_marketplace_transaction", {
+          p_transaction_id: currentTxId,
+        });
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus"] });
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail"] });
       }
     };
+  }, [tx?.id, queryClient]);
 
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAtMs, tx?.id, tx?.stato]);
+  // ─── Auto-consume on window/tab close ─────────────────────────────────────
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (tx?.id && !consumedRef.current) {
+        (supabase as any).rpc("consume_marketplace_transaction", {
+          p_transaction_id: tx.id,
+        });
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [tx?.id]);
 
-  const formatCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
+  // ─── Step: transition completed → viewing on first render ─────────────────
+  useEffect(() => {
+    if (!tx?.id || !team?.id) return;
+    if (tx.stato !== "completed") return;
+
+    (async () => {
+      const { error } = await (supabase as any).rpc("open_classifica_bonus", {
+        p_transaction_id: tx.id,
+      });
+
+      if (error) {
+        setOpenError(error.message);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["team-classification-bonus-detail", team?.id] });
+      }
+    })();
+  }, [tx?.id, tx?.stato, team?.id, queryClient]);
 
   // ─── Explicit close button ─────────────────────────────────────────────────
   const handleCloseClassifica = async () => {
@@ -169,8 +187,8 @@ function ClassificaPage() {
     );
   }
 
-  // ─── Already consumed or time expired ──────────────────────────────────────
-  if (tx.stato === "used" || (timeLeft <= 0 && expiresAtMs > 0)) {
+  // ─── Already consumed or blocked due to second access attempt ─────────────
+  if (tx.stato === "used" || (tx.stato === "viewing" && openError)) {
     return (
       <AppShell isAdmin={false}>
         <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-zinc-800 rounded-3xl mt-12 bg-zinc-950/30">
@@ -182,8 +200,8 @@ function ClassificaPage() {
               Classifica non disponibile
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Il tempo di visualizzazione del <strong>Bonus Classifica</strong> è terminato. Come da
-              regolamento, la classifica poteva essere visualizzata temporaneamente durante la finestra del bonus.
+              Hai già utilizzato il <strong>Bonus Classifica</strong> durante questa gara. Come da
+              regolamento, la classifica poteva essere visualizzata <strong>una sola volta</strong>.
             </p>
           </div>
           <div className="pt-2 flex justify-center">
@@ -200,24 +218,31 @@ function ClassificaPage() {
     );
   }
 
-  // ─── Active viewing state with LIVE Realtime Data ──────────────────────────
-  const displayRows: any[] = (boardQuery.data && boardQuery.data.length > 0) 
-    ? boardQuery.data 
-    : (tx.outcome?.snapshot || tx.dettagli?.snapshot || []);
+  // ─── Transitioning: "completed" → waiting for "viewing" snapshot ──────────
+  if (tx.stato === "completed") {
+    return (
+      <AppShell isAdmin={false}>
+        <div className="flex h-[50vh] items-center justify-center flex-col gap-4">
+          <Trophy className="size-10 text-yellow-500 animate-bounce" />
+          <p className="text-sm text-muted-foreground">Caricamento snapshot classifica in corso…</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // ─── Active viewing state with FROZEN SNAPSHOT Data ────────────────────────
+  const snapshot: any[] = tx.outcome?.snapshot || tx.dettagli?.snapshot || [];
+  const displayRows: any[] = snapshot.length > 0 ? snapshot : (boardQuery.data || []);
+  const timestamp: string | undefined = tx.outcome?.snapshot_timestamp || tx.dettagli?.snapshot_timestamp;
 
   return (
     <AppShell isAdmin={false}>
       <div className="space-y-5 max-w-lg mx-auto pb-10">
         {/* Top Sticky/Prominent Action Bar */}
         <div className="flex items-center justify-between bg-zinc-950/90 backdrop-blur-md p-3 px-4 rounded-2xl border border-zinc-800/80 shadow-lg sticky top-3 z-30">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black uppercase text-amber-500 tracking-wider flex items-center gap-1.5">
-              <Trophy className="size-4" /> LIVE
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono font-black text-xs flex items-center gap-1.5 animate-pulse">
-              <Clock className="size-3.5" /> {formatCountdown(timeLeft)}
-            </span>
-          </div>
+          <span className="text-[11px] font-black uppercase text-amber-500 tracking-wider flex items-center gap-1.5">
+            <Trophy className="size-4" /> Bonus Attivo (View-Once)
+          </span>
           <button
             onClick={handleCloseClassifica}
             disabled={isClosing}
@@ -234,12 +259,19 @@ function ClassificaPage() {
             <Trophy className="size-8" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground">
-            Classifica Live
+            Classifica Generale
           </h1>
-          <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest flex items-center justify-center gap-1.5 bg-emerald-950/40 py-1.5 px-3.5 rounded-full border border-emerald-500/30 w-fit mx-auto shadow-inner">
-            <span className="size-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-            Dati sincronizzati in tempo reale
-          </p>
+          {timestamp && (
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest flex items-center justify-center gap-1.5 bg-secondary/80 py-1.5 px-3.5 rounded-full border border-border/50 w-fit mx-auto shadow-inner">
+              <Clock className="size-3.5 text-primary" />
+              Snapshot live delle{" "}
+              {new Date(timestamp).toLocaleTimeString("it-IT", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </p>
+          )}
         </div>
 
         {/* TOP 3 PODIUM (Se ci sono almeno 3 squadre) */}

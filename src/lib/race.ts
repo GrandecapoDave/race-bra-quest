@@ -266,8 +266,8 @@ export const leaderboardQuery = queryOptions({
 
           const chPts = teamScores.filter((s: any) => s.challenge_id).reduce((acc: number, s: any) => acc + (s.punti || 0), 0);
           const modPts = teamScores.filter((s: any) => !s.challenge_id).reduce((acc: number, s: any) => acc + (s.punti || 0), 0);
-          const cattPts = teamCatt.reduce((acc: number, c: any) => acc + (c.punti || 0), 0);
-          const totPts = teamScores.reduce((acc: number, s: any) => acc + (s.punti || 0), 0) + cattPts;
+          const cattPts = 0; // Private for Admin / Final Report only
+          const totPts = teamScores.reduce((acc: number, s: any) => acc + (s.punti || 0), 0);
           const duration = teamPen.reduce((acc: number, p: any) => acc + (p.minuti_penalita || 0) * 60, 0);
 
           return {
