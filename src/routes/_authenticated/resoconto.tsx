@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/hooks/useAuth";
 import { gameReportQuery, reportStatusQuery, formatDuration } from "@/lib/race";
+import { HeroAvatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   Trophy,
@@ -237,24 +239,27 @@ function TeamResocontoPage() {
                         </span>
                       </td>
 
-                      {/* TEAM */}
+                      {/* TEAM (HeroUI Avatar & Typography) */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <span
-                            className="size-8 rounded-xl text-sm flex items-center justify-center shadow-inner border shrink-0"
+                          <HeroAvatar
+                            emoji={t.avatar_url ?? "🏳️"}
+                            color={t.color ?? "#f97316"}
+                            isBordered
+                            size="sm"
+                            radius="md"
+                            isHoverable
+                            className="size-8 text-sm"
                             style={{
                               backgroundColor: (t.color ?? "#f97316") + "22",
-                              borderColor: (t.color ?? "#f97316") + "55",
                             }}
-                          >
-                            {t.avatar_url ?? "🏳️"}
-                          </span>
+                          />
                           <div>
                             <p className="font-extrabold text-sm text-foreground uppercase tracking-wide">
                               {teamName}
                             </p>
                             {t.motto && (
-                              <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">
+                              <p className="text-[10px] text-muted-foreground italic truncate max-w-[200px]">
                                 "{t.motto}"
                               </p>
                             )}

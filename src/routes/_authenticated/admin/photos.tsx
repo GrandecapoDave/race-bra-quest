@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { Camera, CheckCircle, Clock, Filter, Image as ImageIcon, Layers } from "lucide-react";
 import { ApprovalCard, useAdminContext } from "../admin";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin/photos")({
   component: AdminPhotosPage,
@@ -83,40 +84,63 @@ function AdminPhotosPage() {
           </p>
         </div>
 
-        {/* STATUS TABS */}
-        <div className="flex bg-zinc-900/90 p-1.5 rounded-xl border border-zinc-800/80 w-fit shrink-0 self-start md:self-auto gap-1">
+        {/* STATUS TABS (HeroUI Pill Tabs with Badge) */}
+        <div className="flex bg-zinc-900/90 p-1.5 rounded-2xl border border-zinc-800/80 w-fit shrink-0 self-start md:self-auto gap-1.5 shadow-lg backdrop-blur-md">
           <button
             onClick={() => setPhotoFilter("pending")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
               photoFilter === "pending"
-                ? "bg-primary text-primary-foreground shadow-md"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-[1.02]"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Clock className="size-3.5" />
-            <span>Da Valutare ({pendingCount})</span>
+            <span>Da Valutare</span>
+            <Badge
+              color={photoFilter === "pending" ? "default" : "warning"}
+              variant="solid"
+              size="sm"
+              className="bg-black/30 text-white font-bold"
+            >
+              {pendingCount}
+            </Badge>
           </button>
           <button
             onClick={() => setPhotoFilter("confirmed")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
               photoFilter === "confirmed"
-                ? "bg-emerald-500 text-white shadow-md"
+                ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30 scale-[1.02]"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <CheckCircle className="size-3.5" />
-            <span>Valutate ({confirmedCount})</span>
+            <span>Confermate</span>
+            <Badge
+              color="success"
+              variant="solid"
+              size="sm"
+              className="bg-black/30 text-white font-bold"
+            >
+              {confirmedCount}
+            </Badge>
           </button>
           <button
             onClick={() => setPhotoFilter("all")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
               photoFilter === "all"
-                ? "bg-zinc-700 text-white shadow-md"
+                ? "bg-zinc-800 text-white shadow-md scale-[1.02]"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <ImageIcon className="size-3.5" />
-            <span>Tutte ({allPhotoSubmissions.length})</span>
+            <span>Tutte</span>
+            <Badge
+              color="default"
+              variant="solid"
+              size="sm"
+              className="bg-black/30 text-white font-bold"
+            >
+              {allPhotoSubmissions.length}
+            </Badge>
           </button>
         </div>
       </div>

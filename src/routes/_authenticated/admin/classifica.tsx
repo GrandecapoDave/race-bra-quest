@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trophy, Clock, ShieldAlert, Award } from "lucide-react";
 import { leaderboardQuery, formatDuration } from "@/lib/race";
+import { HeroAvatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin/classifica")({
   head: () => ({
@@ -165,12 +167,18 @@ function AdminLiveLeaderboardPage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <span
-                            className="size-9 rounded-full bg-zinc-900 border border-border flex items-center justify-center text-lg select-none shadow-inner"
-                            style={{ borderColor: row.color + "40", boxShadow: `0 0 8px ${row.color}15` }}
-                          >
-                            {row.avatar_url || "🏳️"}
-                          </span>
+                          <HeroAvatar
+                            emoji={row.avatar_url || "🏳️"}
+                            color={row.color}
+                            isBordered
+                            size="sm"
+                            radius="full"
+                            isHoverable
+                            className="size-9 text-lg"
+                            style={{
+                              backgroundColor: (row.color || "#f97316") + "26",
+                            }}
+                          />
                           <div>
                             <div className="flex items-center gap-1.5 font-bold text-foreground text-sm">
                               <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: row.color }} />

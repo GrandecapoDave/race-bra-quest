@@ -5,6 +5,7 @@ import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shi
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { HeroAvatar } from "@/components/ui/avatar";
 import { RaceTimer } from "@/components/RaceTimer";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -416,18 +417,21 @@ function Dashboard() {
             </div>
           )}
 
-          {/* TEAM PROFILE ROW */}
-          <div className="flex items-center gap-3.5 sm:gap-5 min-w-0">
-            <div
-              className="grid size-16 sm:size-20 shrink-0 place-items-center rounded-2xl text-3xl sm:text-4xl shadow-xl border-2 transition-transform hover:scale-105"
-              style={{ 
+          {/* TEAM PROFILE ROW (HeroUI Avatar & Typography) */}
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+            <HeroAvatar
+              emoji={team.data?.avatar_url ?? "🏳️"}
+              color={team.data?.color ?? "#f97316"}
+              isBordered
+              radius="lg"
+              size="xl"
+              isHoverable
+              className="size-16 sm:size-20 text-3xl sm:text-4xl shadow-xl transition-all duration-300"
+              style={{
                 backgroundColor: (team.data?.color ?? "#f97316") + "26",
-                borderColor: team.data?.color ?? "#f97316",
-                boxShadow: `0 0 20px -3px ${(team.data?.color ?? "#f97316")}55`
+                boxShadow: `0 0 25px -2px ${(team.data?.color ?? "#f97316")}55`,
               }}
-            >
-              {team.data?.avatar_url ?? "🏳️"}
-            </div>
+            />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground drop-shadow-sm">
                 {team.data?.name ?? "Nessuna squadra"}

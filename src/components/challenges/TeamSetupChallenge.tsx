@@ -6,6 +6,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { allTeamsQuery, myTeamQuery, membersQuery, type Challenge, type Team } from "@/lib/race";
 import { triggerHaptic } from "@/lib/haptics";
+import { HeroAvatar } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 const COLORS = [
   // Toni vivaci – uno per famiglia cromatica
@@ -367,44 +369,51 @@ export function TeamSetupChallenge({
           </span>
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-2.5">
           {AVATARS.map((a) => {
             const isMine  = avatar === a;
             const isTaken = !isMine && takenAvatars.has(a);
             const owner   = isTaken ? avatarOwner(a) : null;
 
             return (
-              <button
+              <div
                 key={a}
-                type="button"
-                disabled={completed || isTaken}
+                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : undefined}
                 onClick={() => {
                   if (!completed && !isTaken) {
                     setAvatar(a);
                     triggerHaptic("light");
                   }
                 }}
-                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : undefined}
-                style={{
-                  cursor: completed ? "not-allowed" : isTaken ? "not-allowed" : "pointer",
-                  pointerEvents: "all",
-                }}
-                className={[
-                  "relative grid size-12 place-items-center rounded-2xl border text-2xl transition-all duration-200",
-                  isMine
-                    ? "border-primary bg-primary/20 scale-110 shadow-lg shadow-primary/30 ring-2 ring-primary"
-                    : isTaken || completed
-                    ? "border-border/30 bg-secondary/40 opacity-40 grayscale"
-                    : "border-border bg-secondary/60 hover:scale-105 hover:border-primary/50",
-                ].join(" ")}
+                className="cursor-pointer"
               >
-                {a}
-                {isTaken && (
-                  <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-zinc-700 ring-1 ring-background">
-                    <Lock className="size-2.5 text-zinc-300" />
-                  </span>
-                )}
-              </button>
+                <HeroAvatar
+                  emoji={a}
+                  size="md"
+                  radius="md"
+                  color={color}
+                  isBordered={isMine}
+                  isDisabled={completed || isTaken}
+                  isHoverable={!completed && !isTaken}
+                  isPressable={!completed && !isTaken}
+                  className={cn(
+                    "size-12 text-2xl transition-all duration-200",
+                    isMine && "bg-primary/25 scale-110 shadow-lg shadow-primary/35 ring-2 ring-primary ring-offset-2 ring-offset-zinc-950",
+                    !isMine && !isTaken && "bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700"
+                  )}
+                  badge={
+                    isTaken ? (
+                      <span className="flex size-4 items-center justify-center rounded-full bg-zinc-800 ring-1 ring-zinc-700 shadow-sm">
+                        <Lock className="size-2.5 text-zinc-300" />
+                      </span>
+                    ) : isMine ? (
+                      <span className="flex size-4 items-center justify-center rounded-full bg-primary text-black ring-1 ring-white shadow-sm">
+                        <Check className="size-2.5 stroke-[3]" />
+                      </span>
+                    ) : null
+                  }
+                />
+              </div>
             );
           })}
         </div>
