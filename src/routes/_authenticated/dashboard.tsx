@@ -256,6 +256,7 @@ function Dashboard() {
   const usedPartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "used");
   const activePassaparola = myPurchases.find((t) => t.item_id === "passaparola" && (t.stato === "completed" || t.stato === "pending"));
   const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
+  const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used");
 
   const activeDimezza = myReceivedMaluses.find((t) => t.item_id === "dimezza_punti" && t.stato === "completed");
   const blackoutTx = myReceivedMaluses.find((t) => 
