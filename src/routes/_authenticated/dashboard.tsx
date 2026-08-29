@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock } from "lucide-react";
+import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock, ArrowDownCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { CircularProgress } from "@/components/ui/circular-progress";
@@ -521,7 +521,7 @@ function Dashboard() {
                   )}
                 </h4>
                 <p className="text-[11px] text-zinc-300">
-                  Attenzione: la <strong>TAPPA {activeDimezza.dettagli?.stage_number || stages.data?.find((s: any) => s.id === activeDimezza.stage_id)?.numero_tappa || ""}</strong> è stata presa di mira! Riceverete il <strong>50% del punteggio complessivo</strong> al suo completamento.
+                  Attenzione: la <strong>TAPPA {activeDimezza.dettagli?.stage_number || (stages.data as any[])?.find((s: any) => s.id === activeDimezza.stage_id)?.numero_tappa || (stages.data as any[])?.find((s: any) => s.id === activeDimezza.stage_id)?.order_index || ""}</strong> è stata presa di mira! Riceverete il <strong>50% del punteggio complessivo</strong> al suo completamento.
                 </p>
               </div>
             </div>
@@ -533,7 +533,7 @@ function Dashboard() {
 
         {/* 6.B USED DIMEZZA PUNTI TAPPA CARDS */}
         {usedDimezzaList.map((tx: any) => {
-          const sNum = tx.dettagli?.stage_number || stages.data?.find((s: any) => s.id === tx.stage_id)?.numero_tappa || "Tappa";
+          const sNum = tx.dettagli?.stage_number || (stages.data as any[])?.find((s: any) => s.id === tx.stage_id)?.numero_tappa || (stages.data as any[])?.find((s: any) => s.id === tx.stage_id)?.order_index || "Tappa";
           const attacker = allTeams.find((t: any) => t.id === (tx.buyer_team_id || tx.team_id))?.nome_squadra || tx.dettagli?.attacker_name || "un avversario";
           const ptsBefore = tx.dettagli?.stage_score_before ?? "--";
           const penalty = tx.dettagli?.penalty_applied ?? "--";

@@ -543,7 +543,7 @@ function MarketplacePage() {
   const balance = team?.token_balance ?? 50;
 
   // Handle Purchase — Unified Atomic RPC for all 16 items
-  const handlePurchase = async (itemId: string, targetId?: string) => {
+  const handlePurchase = async (itemId: string, targetId?: string, targetStageId?: string) => {
     if (!isMarketplaceActive) {
       toast.error("Il Marketplace è chiuso. Non puoi effettuare acquisti.");
       return;

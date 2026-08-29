@@ -12,6 +12,7 @@ function AdminMarketplacePage() {
     marketplaceTransactions,
     gameSettings,
     allTeams,
+    stages,
     handleToggleMarketplace,
     isTogglingMarketplace
   } = useAdminContext();
