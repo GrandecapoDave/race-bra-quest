@@ -5,7 +5,7 @@ import { Crown, Sparkles, Coins, ArrowUpRight, ArrowDownRight, Check, ShieldAler
 import { triggerHaptic } from "@/lib/haptics";
 import { scoreEventsQuery, myTeamQuery } from "@/lib/race";
 
-export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
+export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean | undefined }) {
   // Only regular player teams should see notifications about admin actions on their team
   if (isAdmin) return null;
 

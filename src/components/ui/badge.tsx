@@ -40,7 +40,7 @@ const badgeVariants = cva(
 );
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "color" | "content">,
     VariantProps<typeof badgeVariants> {
   content?: React.ReactNode;
   isInvisible?: boolean;
@@ -88,7 +88,7 @@ function Badge({
       className={cn(badgeVariants({ color, variant, size, shape }), className)}
       {...props}
     >
-      {variant === "dot" ? null : content || props.children}
+      {variant === "dot" ? null : content}
     </div>
   );
 }

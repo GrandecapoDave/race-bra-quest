@@ -247,6 +247,14 @@ function Dashboard() {
   const allTeams = teamsQuery.data ?? [];
   const myPurchases = team.data?.id ? transactions.filter((t) => t.buyer_team_id === team.data?.id) : [];
   const myReceivedMaluses = team.data?.id ? transactions.filter((t) => t.target_team_id === team.data?.id) : [];
+  const myBonuses = myPurchases.filter((t) => {
+    const item = MARKETPLACE_ITEMS.find((i) => i.id === t.item_id);
+    return item?.categoria === "BONUS";
+  });
+  const mySentMaluses = myPurchases.filter((t) => {
+    const item = MARKETPLACE_ITEMS.find((i) => i.id === t.item_id);
+    return item?.categoria === "MALUS";
+  });
 
   const activeShield = myPurchases.find((t) => t.item_id === "bonus_scudo" && t.stato === "completed");
   const active2x = myPurchases.find((t) => t.item_id === "moltiplicatore_2x" && t.stato === "completed");

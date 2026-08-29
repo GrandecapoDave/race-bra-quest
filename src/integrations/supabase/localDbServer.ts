@@ -3833,20 +3833,21 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               );
             }
 
-            saveDb(db);
-            return {
-              data: {
-                correct: true,
-                letter: q.extracted_letter,
-                challenge_completed: progress.status === "COMPLETED",
-              },
-              error: null,
-            };
-          }
+            if (isCorrect) {
+              saveDb(db);
+              return {
+                data: {
+                  correct: true,
+                  letter: q.extracted_letter,
+                  challenge_completed: progress.status === "COMPLETED",
+                },
+                error: null,
+              };
+            }
 
-          saveDb(db);
-          return { data: { correct: false }, error: null };
-        }
+            saveDb(db);
+            return { data: { correct: false }, error: null };
+          }
 
         if (fnName === "admin_force_complete_bank") {
           const { p_team_id, p_admin_id } = args;
