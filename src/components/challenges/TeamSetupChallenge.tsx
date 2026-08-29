@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2, Save, Lock } from "lucide-react";
+import { Check, Loader2, Save, Lock, Users, AlertCircle, Trash2, Plus, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { allTeamsQuery, myTeamQuery, membersQuery, type Challenge, type Team } from "@/lib/race";
+import { triggerHaptic } from "@/lib/haptics";
 
 const COLORS = [
-  // Toni vivaci – uno per famiglia cromatica (hue ben spaziati)
+  // Toni vivaci – uno per famiglia cromatica
   "#ef4444", // Rosso
   "#f97316", // Arancione
   "#eab308", // Giallo
@@ -20,7 +21,7 @@ const COLORS = [
   "#8b5cf6", // Viola
   "#d946ef", // Fucsia
   "#ec4899", // Rosa
-  // Versioni scure – stessa famiglia, luminosità nettamente inferiore
+  // Versioni scure – stessa famiglia, luminosità inferiore
   "#dc2626", // Rosso Scuro
   "#ea580c", // Arancio Bruciato
   "#ca8a04", // Oro Antico
@@ -42,8 +43,8 @@ const AVATARS = [
 ];
 
 const teamSchema = z.object({
-  name: z.string().trim().min(2, "Nome troppo corto").max(40, "Massimo 40 caratteri"),
-  motto: z.string().trim().max(120, "Massimo 120 caratteri"),
+  name: z.string().trim().min(2, "Il nome della squadra è obbligatorio (minimo 2 caratteri)").max(40, "Massimo 40 caratteri"),
+  motto: z.string().trim().min(2, "Il motto della squadra è obbligatorio (minimo 2 caratteri)").max(120, "Massimo 120 caratteri"),
 });
 
 export function TeamSetupChallenge({
@@ -63,7 +64,13 @@ export function TeamSetupChallenge({
   const [name, setName] = useState(team?.name ?? "");
   const [motto, setMotto] = useState(team?.motto ?? "");
   const [color, setColor] = useState(team?.color ?? COLORS[0]!);
-  const [avatar, setAvatar] = useState(team?.avatar_url ?? AVATARS[0]!);
+  const [avatar, setAvatar] = useState(team?.avatar_url ?? "");
+  
+  // Registration form participants inputs (for new team creation)
+  const [member1, setMember1] = useState("");
+  const [member2, setMember2] = useState("");
+  
+  // Single member add input (for existing team)
   const [memberName, setMemberName] = useState("");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const firstRender = useRef(true);
@@ -84,13 +91,26 @@ export function TeamSetupChallenge({
 
   const createTeam = useMutation({
     mutationFn: async () => {
+      if (!name.trim() || name.trim().length < 2) {
+        throw new Error("Inserisci il nome della squadra (minimo 2 caratteri)!");
+      }
+      if (!motto.trim() || motto.trim().length < 2) {
+        throw new Error("Il motto della squadra è obbligatorio (minimo 2 caratteri)!");
+      }
+      if (!avatar) {
+        throw new Error("Devi selezionare obbligatoriamente un avatar per la tua squadra!");
+      }
+      if (!member1.trim() || member1.trim().length < 2 || !member2.trim() || member2.trim().length < 2) {
+        throw new Error("Devi inserire obbligatoriamente i nomi di entrambi i 2 partecipanti!");
+      }
+
       const parsed = teamSchema.parse({ name, motto });
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await (supabase as any)
         .from("teams")
         .insert({
           nome_squadra: parsed.name,
-          motto: parsed.motto || null,
+          motto: parsed.motto,
           color,
           colore: color,
           avatar_url: avatar,
@@ -98,20 +118,25 @@ export function TeamSetupChallenge({
         })
         .select("id")
         .single();
-      await supabase
-        .from("team_members")
-        .insert({ team_id: data.id, name: parsed.name + " · capitano" });
+      if (error) throw new Error(error.message);
+
+      // Insert both required team members
+      await supabase.from("team_members").insert([
+        { team_id: data.id, name: member1.trim().slice(0, 60) },
+        { team_id: data.id, name: member2.trim().slice(0, 60) },
+      ]);
+
       await supabase.rpc("start_challenge", { p_challenge: challenge.id });
       return data.id;
     },
     onSuccess: async () => {
-      toast.success("Squadra creata!");
+      toast.success("Squadra configurata con successo!");
       await queryClient.invalidateQueries();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Errore"),
   });
 
-  // Autosave: any edit to an existing team is persisted to the database only if challenge is not completed.
+  // Autosave: persist changes to existing team if valid
   useEffect(() => {
     if (!team || completed) return;
     if (firstRender.current) {
@@ -125,10 +150,10 @@ export function TeamSetupChallenge({
         .from("teams")
         .update({
           nome_squadra: parsed.data.name,
-          motto: parsed.data.motto || null,
+          motto: parsed.data.motto,
           color,
           colore: color,
-          avatar_url: avatar,
+          avatar_url: avatar || team.avatar_url || null,
         })
         .eq("id", team.id);
       if (error) {
@@ -148,50 +173,200 @@ export function TeamSetupChallenge({
       .from("team_members")
       .insert({ team_id: team.id, name: memberName.trim().slice(0, 60) });
     if (error) {
-      toast.error("Impossibile aggiungere il membro");
+      toast.error("Impossibile aggiungere il partecipante");
       return;
     }
     setMemberName("");
     members.refetch();
   }
 
+  async function removeMember(memberId: string) {
+    if (!team || completed) return;
+    const { error } = await supabase
+      .from("team_members")
+      .delete()
+      .eq("id", memberId);
+    if (error) {
+      toast.error("Impossibile rimuovere il partecipante");
+      return;
+    }
+    members.refetch();
+  }
+
+  // Handle stage 1 challenge completion with strict validation
+  function handleConfirmCompletion() {
+    if (!name.trim() || name.trim().length < 2) {
+      toast.error("Inserisci il nome della squadra (minimo 2 caratteri)!");
+      return;
+    }
+    if (!motto.trim() || motto.trim().length < 2) {
+      toast.error("Il motto della squadra è obbligatorio (minimo 2 caratteri)!");
+      return;
+    }
+    if (!avatar) {
+      toast.error("Devi selezionare obbligatoriamente un avatar per la squadra!");
+      return;
+    }
+    const currentMembersCount = members.data?.length ?? 0;
+    if (currentMembersCount < 2) {
+      toast.error("Devi inserire obbligatoriamente i nomi di almeno 2 partecipanti per la squadra!");
+      return;
+    }
+
+    triggerHaptic("success");
+    onComplete();
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {completed && (
-        <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-xs font-bold text-success animate-pop-in">
+        <div className="flex items-center gap-2 rounded-2xl border border-success/30 bg-success/10 p-4 text-xs font-bold text-success animate-pop-in">
           <Lock className="size-4 shrink-0" />
           <span>Configurazione squadra salvata e bloccata per la durata della gara.</span>
         </div>
       )}
 
-      <div className="grid gap-3">
-        <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-          Nome squadra
-        </label>
-        <input
-          value={name}
-          maxLength={40}
-          disabled={completed}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Es. I Lupi del Roero"
-          className="rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
-        />
-        <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-          Motto
-        </label>
-        <input
-          value={motto}
-          maxLength={120}
-          disabled={completed}
-          onChange={(e) => setMotto(e.target.value)}
-          placeholder="Es. Corriamo con il cuore"
-          className="rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
-        />
+      {/* TEAM BASIC INFO */}
+      <div className="grid gap-4 bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg">
+        <div>
+          <label className="text-xs font-black tracking-widest text-muted-foreground uppercase flex items-center justify-between">
+            <span>Nome squadra *</span>
+            <span className="text-[10px] text-zinc-500 font-semibold">Minimo 2 caratteri</span>
+          </label>
+          <input
+            value={name}
+            maxLength={40}
+            disabled={completed}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Es. I Lupi del Roero"
+            className="mt-1.5 w-full rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 font-semibold"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-black tracking-widest text-muted-foreground uppercase flex items-center justify-between">
+            <span>Motto della squadra *</span>
+            <span className="text-[10px] text-primary font-bold">Obbligatorio</span>
+          </label>
+          <input
+            value={motto}
+            maxLength={120}
+            disabled={completed}
+            onChange={(e) => setMotto(e.target.value)}
+            placeholder="Scrivi qui il vostro motto di gara..."
+            className="mt-1.5 w-full rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 font-semibold"
+          />
+        </div>
       </div>
 
-      {/* ── AVATAR GRID ── */}
-      <div>
-        <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Avatar</p>
+      {/* ── PARTICIPANTS (OBBLIGATORIO ALMENO 2) ── */}
+      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-black tracking-widest text-muted-foreground uppercase flex items-center gap-2">
+            <Users className="size-4 text-primary" />
+            <span>Partecipanti della Squadra *</span>
+          </label>
+          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+            (!team && member1.trim() && member2.trim()) || ((members.data?.length ?? 0) >= 2)
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              : "bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse"
+          }`}>
+            {!team
+              ? `${(member1.trim() ? 1 : 0) + (member2.trim() ? 1 : 0)}/2 (Obbligatori 2)`
+              : `${members.data?.length ?? 0}/2 (Obbligatori 2)`}
+          </span>
+        </div>
+
+        {!team ? (
+          /* REGISTRATION INPUTS FOR 2 PARTICIPANTS */
+          <div className="space-y-3">
+            <div>
+              <span className="text-[11px] font-bold text-zinc-400">Partecipante 1 (Nome e Cognome) *</span>
+              <input
+                value={member1}
+                maxLength={60}
+                onChange={(e) => setMember1(e.target.value)}
+                placeholder="Es. Mario Rossi"
+                className="mt-1 w-full rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <span className="text-[11px] font-bold text-zinc-400">Partecipante 2 (Nome e Cognome) *</span>
+              <input
+                value={member2}
+                maxLength={60}
+                onChange={(e) => setMember2(e.target.value)}
+                placeholder="Es. Luca Bianchi"
+                className="mt-1 w-full rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+        ) : (
+          /* EXISTING TEAM MEMBERS LIST */
+          <div className="space-y-3">
+            <ul className="space-y-2 text-sm">
+              {(members.data ?? []).map((m, idx) => (
+                <li
+                  key={m.id}
+                  className="rounded-xl bg-secondary/60 border border-border/40 px-4 py-2.5 flex items-center justify-between font-semibold"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="size-6 rounded-full bg-primary/15 text-primary text-xs font-black flex items-center justify-center border border-primary/25">
+                      {idx + 1}
+                    </span>
+                    <span>{m.name}</span>
+                  </div>
+                  {!completed && (members.data?.length ?? 0) > 2 && (
+                    <button
+                      onClick={() => removeMember(m.id)}
+                      className="text-zinc-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
+                      title="Rimuovi partecipante"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {!completed && (
+              <div className="pt-2 flex gap-2">
+                <input
+                  value={memberName}
+                  maxLength={60}
+                  onChange={(e) => setMemberName(e.target.value)}
+                  placeholder="Nome e Cognome partecipante..."
+                  className="flex-1 rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={addMember}
+                  className="rounded-xl primary-gradient px-4 text-xs font-black text-primary-foreground uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md hover:brightness-110 active:scale-95"
+                >
+                  <Plus className="size-4 stroke-[3]" />
+                  Aggiungi
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── AVATAR GRID (OBBLIGATORIO) ── */}
+      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">
+            Scegli Avatar *
+          </p>
+          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+            avatar
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              : "bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse"
+          }`}>
+            {avatar ? `Scelto: ${avatar}` : "Obbligatorio"}
+          </span>
+        </div>
+
         <div className="mt-2 flex flex-wrap gap-2">
           {AVATARS.map((a) => {
             const isMine  = avatar === a;
@@ -201,20 +376,26 @@ export function TeamSetupChallenge({
             return (
               <button
                 key={a}
+                type="button"
                 disabled={completed || isTaken}
-                onClick={() => !completed && !isTaken && setAvatar(a)}
-                title={completed ? "Prova completata (modifiche bloccate)" : isTaken ? `Già scelto da: ${owner}` : undefined}
+                onClick={() => {
+                  if (!completed && !isTaken) {
+                    setAvatar(a);
+                    triggerHaptic("light");
+                  }
+                }}
+                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : undefined}
                 style={{
                   cursor: completed ? "not-allowed" : isTaken ? "not-allowed" : "pointer",
                   pointerEvents: "all",
                 }}
                 className={[
-                  "relative grid size-12 place-items-center rounded-xl border text-2xl transition-all",
+                  "relative grid size-12 place-items-center rounded-2xl border text-2xl transition-all duration-200",
                   isMine
-                    ? "border-primary bg-primary/15 scale-105 shadow-md shadow-primary/20"
+                    ? "border-primary bg-primary/20 scale-110 shadow-lg shadow-primary/30 ring-2 ring-primary"
                     : isTaken || completed
                     ? "border-border/30 bg-secondary/40 opacity-40 grayscale"
-                    : "border-border bg-secondary hover:scale-105 hover:border-primary/50",
+                    : "border-border bg-secondary/60 hover:scale-105 hover:border-primary/50",
                 ].join(" ")}
               >
                 {a}
@@ -230,8 +411,8 @@ export function TeamSetupChallenge({
       </div>
 
       {/* ── COLOR GRID ── */}
-      <div>
-        <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Colore</p>
+      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-3">
+        <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">Colore Squadra</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {COLORS.map((c) => {
             const isMine  = color === c;
@@ -241,9 +422,15 @@ export function TeamSetupChallenge({
             return (
               <button
                 key={c}
+                type="button"
                 disabled={completed || isTaken}
-                onClick={() => !completed && !isTaken && setColor(c)}
-                title={completed ? "Prova completata (modifiche bloccate)" : isTaken ? `Già scelto da: ${owner}` : c}
+                onClick={() => {
+                  if (!completed && !isTaken) {
+                    setColor(c);
+                    triggerHaptic("light");
+                  }
+                }}
+                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : c}
                 style={{
                   backgroundColor: c,
                   cursor: completed ? "not-allowed" : isTaken ? "not-allowed" : "pointer",
@@ -252,7 +439,7 @@ export function TeamSetupChallenge({
                   outlineOffset: "2px",
                 }}
                 className={[
-                  "relative size-10 rounded-full border-2 transition-all",
+                  "relative size-10 rounded-full border-2 transition-all duration-200",
                   isMine
                     ? "border-white scale-110 shadow-lg"
                     : isTaken || completed
@@ -272,65 +459,38 @@ export function TeamSetupChallenge({
         </div>
       </div>
 
-      {team && (
-        <div>
-          <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-            Membri
-          </p>
-          <ul className="mt-2 space-y-1 text-sm">
-            {(members.data ?? []).map((m) => (
-              <li key={m.id} className="rounded-lg bg-secondary/60 px-3 py-2">
-                {m.name}
-              </li>
-            ))}
-          </ul>
-          {!completed && (
-            <div className="mt-2 flex gap-2">
-              <input
-                value={memberName}
-                maxLength={60}
-                onChange={(e) => setMemberName(e.target.value)}
-                placeholder="Aggiungi membro"
-                className="flex-1 rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                onClick={addMember}
-                className="rounded-xl border border-border bg-secondary px-4 text-sm font-bold"
-              >
-                Aggiungi
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
       {!completed && savedAt && (
-        <p className="flex items-center gap-1.5 text-xs text-success">
+        <p className="flex items-center gap-1.5 text-xs text-success font-semibold pl-1">
           <Save className="size-3.5" /> Salvato automaticamente alle {savedAt}
         </p>
       )}
 
+      {/* ACTION BUTTON */}
       {!team ? (
         <button
           onClick={() => createTeam.mutate()}
           disabled={createTeam.isPending}
-          className="primary-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-extrabold text-primary-foreground disabled:opacity-60"
+          className="group relative w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-display font-black text-base uppercase tracking-wider shadow-lg shadow-primary/30 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
         >
-          {createTeam.isPending && <Loader2 className="size-4 animate-spin" />} Crea la squadra
+          {createTeam.isPending ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
+          <span>CREA LA SQUADRA E INIZIA</span>
         </button>
       ) : completed ? (
-        <p className="flex items-center gap-2 rounded-xl bg-success/15 px-4 py-3 text-sm font-bold text-success">
-          <Check className="size-4" /> Prova completata
-        </p>
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-success/15 border border-success/30 px-4 py-4 text-sm font-black text-success">
+          <Check className="size-5 stroke-[3]" />
+          <span>PROVA COMPLETATA CON SUCCESSO</span>
+        </div>
       ) : (
         <button
-          onClick={onComplete}
+          onClick={handleConfirmCompletion}
           disabled={completing}
-          className="primary-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-extrabold text-primary-foreground disabled:opacity-60"
+          className="group relative w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-display font-black text-base uppercase tracking-wider shadow-lg shadow-primary/30 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
         >
-          {completing && <Loader2 className="size-4 animate-spin" />} Conferma e sblocca la prova 2
+          {completing ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5 stroke-[3]" />}
+          <span>CONFERMA E SBLOCCA LA PROVA 2</span>
         </button>
       )}
     </div>
   );
 }
+

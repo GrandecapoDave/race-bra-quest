@@ -116,14 +116,40 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean }) {
     return [];
   });
 
-  // Combine unread score adjustments and token adjustments
+  // Combine unread score adjustments and token adjustments (strictly manual Admin/Regia adjustments)
   const pendingScoreDecisions = (scoreEvents.data || [])
     .filter(
-      (s: any) =>
-        (!s.challenge_id || s.tipo_modificatore === "admin_adjustment" || s.tipo_modificatore === "bonus" || s.tipo_modificatore === "penalty") &&
-        s.reason &&
-        s.reason.trim().length > 0 &&
-        !dismissedIds.includes(s.id)
+      (s: any) => {
+        if (!s.reason || s.reason.trim().length === 0 || dismissedIds.includes(s.id)) return false;
+        
+        const rLower = s.reason.toLowerCase();
+        // Exclude marketplace, wheel, challenges, and game mechanics
+        if (
+          rLower.includes("ruota") ||
+          rLower.includes("marketplace") ||
+          rLower.includes("trappola") ||
+          rLower.includes("passaparola") ||
+          rLower.includes("tassa") ||
+          rLower.includes("jackpot") ||
+          rLower.includes("sfida") ||
+          rLower.includes("tappa") ||
+          s.tipo_modificatore === "marketplace" ||
+          s.tipo_modificatore === "ruota" ||
+          s.tipo_modificatore === "jackpot" ||
+          s.tipo_modificatore === "challenge"
+        ) {
+          return false;
+        }
+
+        // Only include explicit admin adjustments
+        return (
+          s.tipo_modificatore === "admin_adjustment" ||
+          s.tipo_modificatore === "admin" ||
+          rLower.includes("regia") ||
+          rLower.includes("admin") ||
+          (!s.challenge_id && (s.tipo_modificatore === "bonus" || s.tipo_modificatore === "penalty"))
+        );
+      }
     )
     .map((s) => ({
       id: s.id,

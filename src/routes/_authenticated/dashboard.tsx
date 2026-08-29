@@ -432,9 +432,11 @@ function Dashboard() {
               <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground drop-shadow-sm">
                 {team.data?.name ?? "Nessuna squadra"}
               </h1>
-              <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold">
-                {team.data?.motto ?? "In corsa per la vittoria"}
-              </p>
+              {team.data?.motto && (
+                <p className="truncate text-xs sm:text-sm text-muted-foreground font-semibold italic">
+                  "{team.data.motto}"
+                </p>
+              )}
             </div>
           </div>
 
