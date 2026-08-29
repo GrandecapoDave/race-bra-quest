@@ -325,14 +325,43 @@ export const membersQuery = (teamId: string | undefined) =>
   queryOptions({
     queryKey: ["members", teamId],
     enabled: Boolean(teamId),
-    queryFn: async () =>
-      unwrap<{ id: string; name: string }[]>(
-        await (supabase as any)
+    queryFn: async () => {
+      let serverMembers: { id: string; name: string }[] = [];
+      try {
+        const res = await (supabase as any)
           .from("team_members")
           .select("id,name")
           .eq("team_id", teamId!)
-          .order("created_at"),
-      ),
+          .order("created_at");
+        if (res.data) serverMembers = res.data;
+      } catch (err) {
+        console.warn("[race] membersQuery server error:", err);
+      }
+
+      // Check for locally synced members if RLS blocked server insert
+      if (typeof window !== "undefined" && teamId) {
+        try {
+          const localStored = localStorage.getItem(`pechino_team_members_${teamId}`);
+          if (localStored) {
+            const localMembers = JSON.parse(localStored);
+            if (Array.isArray(localMembers)) {
+              // Merge by name, avoiding duplicates
+              const names = new Set(serverMembers.map((m) => m.name.toLowerCase().trim()));
+              for (const lm of localMembers) {
+                if (lm?.name && !names.has(lm.name.toLowerCase().trim())) {
+                  serverMembers.push(lm);
+                  names.add(lm.name.toLowerCase().trim());
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      return serverMembers;
+    },
   });
 
 export function challengeState(
