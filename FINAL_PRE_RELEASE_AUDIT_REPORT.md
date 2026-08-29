@@ -51,6 +51,7 @@ PRODUCTION DATA TOUCHED: NO
 | **BUG-03** | 🟠 HIGH | Mancanza pulsante (X) per chiudere notifica *Dimezza Punti Tappa* | Notifiche senza aggancio all'handler di dismiss | Integrate in `dismissedNotifications` con persistenza `localStorage` | UI dismissal test (PASS) |
 | **BUG-04** | 🟡 MEDIUM | Overload RPC duplicati su `complete_challenge` e `close_stage` | Vecchie firme PostgREST ambigue | `DROP FUNCTION` sugli overload obsoleti | Postgres routine inspection (PASS) |
 | **BUG-05** | 🟠 HIGH | Policy permissiva `Team Update Self Team` su tabella `teams` | Policy UPDATE permetteva teorica modifica token da console browser | Rimossa policy `Team Update Self Team`; update token/stato riservato solo alle RPC `SECURITY DEFINER` e ad Admin | Test di penetrazione RLS (PASS) |
+| **BUG-06** | 🔴 CRITICAL | "Email not confirmed" su login squadra con Username/Password | Account creati senza `email_confirmed_at` e fallback a `signUp` client | `sync_team_to_auth_user` aggiornato per impostare automaticamente `email_confirmed_at = now()`, rimosso `signUp` non confermato da `auth.tsx` | `test_auth_flow.cjs` (PASS) |
 
 ---
 
