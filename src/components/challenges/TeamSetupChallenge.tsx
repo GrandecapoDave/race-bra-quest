@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2, Save, Lock, Users, AlertCircle, Trash2, Plus, Sparkles } from "lucide-react";
+import { Check, Loader2, Save, Lock, Users, AlertCircle, Trash2, Plus, Sparkles, Shield } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { allTeamsQuery, myTeamQuery, membersQuery, type Challenge, type Team } from "@/lib/race";
@@ -45,8 +45,7 @@ const AVATARS = [
 ];
 
 const teamSchema = z.object({
-  name: z.string().trim().min(2, "Il nome della squadra è obbligatorio (minimo 2 caratteri)").max(40, "Massimo 40 caratteri"),
-  motto: z.string().trim().min(2, "Il motto della squadra è obbligatorio (minimo 2 caratteri)").max(120, "Massimo 120 caratteri"),
+  motto: z.string().trim().min(2, { message: "Motto obbligatorio (minimo 2 caratteri)" }).max(120),
 });
 
 export function TeamSetupChallenge({
@@ -93,9 +92,6 @@ export function TeamSetupChallenge({
 
   const createTeam = useMutation({
     mutationFn: async () => {
-      if (!name.trim() || name.trim().length < 2) {
-        throw new Error("Inserisci il nome della squadra (minimo 2 caratteri)!");
-      }
       if (!motto.trim() || motto.trim().length < 2) {
         throw new Error("Il motto della squadra è obbligatorio (minimo 2 caratteri)!");
       }
@@ -106,12 +102,12 @@ export function TeamSetupChallenge({
         throw new Error("Devi inserire obbligatoriamente i nomi di entrambi i 2 partecipanti!");
       }
 
-      const parsed = teamSchema.parse({ name, motto });
+      const parsed = teamSchema.parse({ motto });
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await (supabase as any)
         .from("teams")
         .insert({
-          nome_squadra: parsed.name,
+          nome_squadra: name.trim() || "Squadra " + (userData.user?.email?.split("@")[0] || "Gara"),
           motto: parsed.motto,
           color,
           colore: color,
@@ -122,11 +118,28 @@ export function TeamSetupChallenge({
         .single();
       if (error) throw new Error(error.message);
 
+      // Save locally
+      if (typeof window !== "undefined") {
+        try {
+          const initialMembers = [
+            { id: "local_1_" + Date.now(), name: member1.trim().slice(0, 60) },
+            { id: "local_2_" + Date.now(), name: member2.trim().slice(0, 60) },
+          ];
+          localStorage.setItem(`pechino_team_members_${data.id}`, JSON.stringify(initialMembers));
+        } catch {
+          // ignore
+        }
+      }
+
       // Insert both required team members
-      await supabase.from("team_members").insert([
-        { team_id: data.id, name: member1.trim().slice(0, 60) },
-        { team_id: data.id, name: member2.trim().slice(0, 60) },
-      ]);
+      try {
+        await supabase.from("team_members").insert([
+          { team_id: data.id, name: member1.trim().slice(0, 60) },
+          { team_id: data.id, name: member2.trim().slice(0, 60) },
+        ]);
+      } catch {
+        // ignore
+      }
 
       await supabase.rpc("start_challenge", { p_challenge: challenge.id });
       return data.id;
@@ -138,7 +151,7 @@ export function TeamSetupChallenge({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Errore"),
   });
 
-  // Autosave: persist changes to existing team if valid
+  // Autosave: persist ONLY avatar, color and motto to existing team without changing official team name
   useEffect(() => {
     if (!team || completed) return;
     if (firstRender.current) {
@@ -146,12 +159,11 @@ export function TeamSetupChallenge({
       return;
     }
     const timeout = setTimeout(async () => {
-      const parsed = teamSchema.safeParse({ name, motto });
+      const parsed = teamSchema.safeParse({ motto });
       if (!parsed.success) return;
       const { error } = await (supabase as any)
         .from("teams")
         .update({
-          nome_squadra: parsed.data.name,
           motto: parsed.data.motto,
           color,
           colore: color,
@@ -167,7 +179,7 @@ export function TeamSetupChallenge({
       queryClient.invalidateQueries({ queryKey: allTeamsQuery.queryKey });
     }, 800);
     return () => clearTimeout(timeout);
-  }, [name, motto, color, avatar, team, completed, queryClient]);
+  }, [motto, color, avatar, team, completed, queryClient]);
 
   async function addMember() {
     if (!team || completed) return;
@@ -247,10 +259,6 @@ export function TeamSetupChallenge({
 
   // Handle stage 1 challenge completion with strict validation
   function handleConfirmCompletion() {
-    if (!name.trim() || name.trim().length < 2) {
-      toast.error("Inserisci il nome della squadra (minimo 2 caratteri)!");
-      return;
-    }
     if (!motto.trim() || motto.trim().length < 2) {
       toast.error("Il motto della squadra è obbligatorio (minimo 2 caratteri)!");
       return;
@@ -282,23 +290,28 @@ export function TeamSetupChallenge({
       <div className="grid gap-4 bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg">
         <div>
           <label className="text-xs font-black tracking-widest text-muted-foreground uppercase flex items-center justify-between">
-            <span>Nome squadra *</span>
-            <span className="text-[10px] text-zinc-500 font-semibold">Minimo 2 caratteri</span>
+            <span className="flex items-center gap-1.5">
+              <Shield className="size-3.5 text-primary" />
+              Nome Squadra Ufficiale
+            </span>
+            <span className="text-[10px] text-primary font-bold uppercase tracking-wider bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <Lock className="size-2.5" />
+              Identità Assegnata
+            </span>
           </label>
-          <input
-            value={name}
-            maxLength={40}
-            disabled={completed}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Es. I Lupi del Roero"
-            className="mt-1.5 w-full rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 font-semibold"
-          />
+          <div className="mt-1.5 w-full rounded-xl border border-border/50 bg-secondary/40 px-4 py-3 font-display font-extrabold uppercase text-foreground text-sm flex items-center justify-between">
+            <span>{team?.name || name || "Squadra in Gara"}</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Invariabile</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Il nome ufficiale della squadra è assegnato dalla Regia e rimane intatto nella Dashboard.
+          </p>
         </div>
 
         <div>
           <label className="text-xs font-black tracking-widest text-muted-foreground uppercase flex items-center justify-between">
             <span>Motto della squadra *</span>
-            <span className="text-[10px] text-primary font-bold">Obbligatorio</span>
+            <span className="text-[10px] text-primary font-bold">Obbligatorio (minimo 2 caratteri)</span>
           </label>
           <input
             value={motto}
@@ -306,7 +319,7 @@ export function TeamSetupChallenge({
             disabled={completed}
             onChange={(e) => setMotto(e.target.value)}
             placeholder="Scrivi qui il vostro motto di gara..."
-            className="mt-1.5 w-full rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 font-semibold"
+            className="mt-1.5 w-full rounded-xl border border-input bg-input/40 px-4 py-3 outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 font-semibold text-sm"
           />
         </div>
       </div>
