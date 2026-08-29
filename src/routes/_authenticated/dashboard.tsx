@@ -253,6 +253,7 @@ function Dashboard() {
   const activePolizza = myPurchases.find((t) => t.item_id === "polizza_diretta" && t.stato === "completed");
   const activeClassifica = myPurchases.find((t) => t.item_id === "bonus_classifica" && t.stato === "completed");
   const activePartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "completed");
+  const usedPartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "used");
   const activePassaparola = myPurchases.find((t) => t.item_id === "passaparola" && (t.stato === "completed" || t.stato === "pending"));
   const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
 
@@ -734,6 +735,25 @@ function Dashboard() {
                   <span className="size-2 rounded-full bg-orange-400 animate-ping" />
                   <PhoneCall className="size-3 stroke-[3]" />
                   <span>Passaparola Disp.</span>
+                </div>
+              )}
+              {activePartenza && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+                  <Zap className="size-3 text-amber-300 stroke-[3]" />
+                  <span>Partenza -2m</span>
+                </div>
+              )}
+              {usedPartenza && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-600/40 text-zinc-400 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <Check className="size-3 text-zinc-400 stroke-[3]" />
+                  <span>Partenza Usata</span>
+                </div>
+              )}
+              {activeClassifica && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>👁️ Classifica</span>
                 </div>
               )}
             </div>
