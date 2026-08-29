@@ -17,18 +17,22 @@ function AdminMarketplacePage() {
   } = useAdminContext();
 
   const MARKETPLACE_ITEMS = [
-    { id: "bonus_punti", nome: "BONUS PUNTI", categoria: "BONUS" },
-    { id: "bonus_scudo", nome: "BONUS SCUDO", categoria: "BONUS" },
-    { id: "ruota_fortuna", nome: "RUOTA DELLA FORTUNA", categoria: "BONUS" },
-    { id: "passaparola", nome: "PASSAPAROLA", categoria: "BONUS" },
-    { id: "bonus_classifica", nome: "BONUS CLASSIFICA", categoria: "BONUS" },
-    { id: "partenza_anticipata", nome: "PARTENZA ANTICIPATA", categoria: "BONUS" },
-    { id: "freeze_2min", nome: "FREEZE 2 MINUTI", categoria: "MALUS" },
-    { id: "enigma_extra", nome: "ENIGMA EXTRA", categoria: "MALUS" },
-    { id: "ruota_sfortunata", nome: "RUOTA SFORTUNATA", categoria: "MALUS" },
-    { id: "trappola", nome: "TRAPPOLA", categoria: "MALUS" },
-    { id: "penalita_punti", nome: "PENALITÀ PUNTI (-20 PT)", categoria: "MALUS" },
-    { id: "tassa_passaggio", nome: "TASSA DI PASSAGGIO", categoria: "MALUS" },
+    { id: "bonus_punti", nome: "BONUS PUNTI (+20 PT)", categoria: "BONUS", costo: 40, desc: "Aggiunge +20 PT alla classifica." },
+    { id: "bonus_scudo", nome: "BONUS SCUDO", categoria: "BONUS", costo: 35, desc: "Protegge la squadra da un malus attivo." },
+    { id: "ruota_fortuna", nome: "RUOTA DELLA FORTUNA", categoria: "BONUS", costo: 25, desc: "Gira la ruota per vincere premi immediati." },
+    { id: "passaparola", nome: "PASSAPAROLA", categoria: "BONUS", costo: 20, desc: "Ricevi un aiuto dalla regia (Sì/No)." },
+    { id: "bonus_classifica", nome: "BONUS CLASSIFICA", categoria: "BONUS", costo: 30, desc: "Visualizza temporaneamente la classifica generale." },
+    { id: "partenza_anticipata", nome: "PARTENZA ANTICIPATA", categoria: "BONUS", costo: 35, desc: "Riduce di 2 minuti il tempo di partenza." },
+    { id: "moltiplicatore_2x", nome: "MOLTIPLICATORE 2X TAPPA", categoria: "BONUS", costo: 45, desc: "Raddoppia (x2) il punteggio della tappa." },
+    { id: "polizza_diretta", nome: "POLIZZA RIMBORSO 50%", categoria: "BONUS", costo: 30, desc: "Rimborsa il 50% dei punti persi da un malus." },
+    { id: "freeze_2min", nome: "FREEZE 2 MINUTI", categoria: "MALUS", costo: 20, desc: "Blocca una squadra avversaria per 2 minuti." },
+    { id: "enigma_extra", nome: "ENIGMA EXTRA", categoria: "MALUS", costo: 25, desc: "Obbliga gli avversari a risolvere un enigma aggiuntivo." },
+    { id: "ruota_sfortunata", nome: "RUOTA SFORTUNATA", categoria: "MALUS", costo: 20, desc: "Obbliga gli avversari a fare uno spin sfortunato." },
+    { id: "trappola", nome: "TRAPPOLA", categoria: "MALUS", costo: 40, desc: "Ruba fino a 30 punti alla squadra bersaglio." },
+    { id: "penalita_punti", nome: "PENALITÀ PUNTI (-20 PT)", categoria: "MALUS", costo: 30, desc: "Sottrae 20 punti ad una squadra avversaria." },
+    { id: "tassa_passaggio", nome: "TASSA DI PASSAGGIO", categoria: "MALUS", costo: 70, desc: "Scambia il punteggio con la squadra bersaglio." },
+    { id: "blackout_mercato", nome: "BLACKOUT MERCATO 6 MINUTI", categoria: "MALUS", costo: 35, desc: "Blocca il Marketplace al bersaglio per 6 minuti." },
+    { id: "dimezza_punti", nome: "DIMEZZA PUNTI PROSSIMA SFIDA", categoria: "MALUS", costo: 40, desc: "Dimezza del 50% i punti della prossima sfida superata dal bersaglio." },
   ];
   
   const [time, setTime] = useState(Date.now());
@@ -623,6 +627,47 @@ function AdminMarketplacePage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* CATALOGO ARTICOLI & LISTINO UFFICIALE */}
+      <div className="surface p-6 border rounded-2xl bg-zinc-950/40 border-zinc-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/10 pb-4">
+          <div>
+            <h3 className="font-extrabold text-sm uppercase tracking-wider text-primary flex items-center gap-2">
+              <ShoppingBag className="size-4 text-orange-500" /> 📦 Catalogo Articoli & Listino Ufficiale
+            </h3>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Tutti i 16 articoli ufficiali del Marketplace (8 Bonus e 8 Malus) con relative tariffe e regole di funzionamento.
+            </p>
+          </div>
+          <span className="text-xs font-black bg-zinc-900 px-3 py-1 rounded-xl border border-zinc-800 text-zinc-300">
+            16 Articoli Attivi
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {MARKETPLACE_ITEMS.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 flex items-start justify-between gap-3"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+                    item.categoria === "BONUS" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
+                  }`}>
+                    {item.categoria}
+                  </span>
+                  <h4 className="text-xs font-extrabold text-foreground">{item.nome}</h4>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+              <span className="text-xs font-black font-mono px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 shrink-0">
+                {item.costo} 🪙
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

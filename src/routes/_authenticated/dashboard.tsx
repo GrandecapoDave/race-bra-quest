@@ -32,12 +32,16 @@ const MARKETPLACE_ITEMS = [
   { id: "passaparola", nome: "PASSAPAROLA", categoria: "BONUS" },
   { id: "bonus_classifica", nome: "BONUS CLASSIFICA", categoria: "BONUS" },
   { id: "partenza_anticipata", nome: "PARTENZA ANTICIPATA", categoria: "BONUS" },
+  { id: "moltiplicatore_2x", nome: "MOLTIPLICATORE 2X TAPPA", categoria: "BONUS" },
+  { id: "polizza_diretta", nome: "POLIZZA RIMBORSO 50%", categoria: "BONUS" },
   { id: "freeze_2min", nome: "FREEZE 2 MINUTI", categoria: "MALUS" },
   { id: "enigma_extra", nome: "ENIGMA EXTRA", categoria: "MALUS" },
   { id: "ruota_sfortunata", nome: "RUOTA SFORTUNATA", categoria: "MALUS" },
   { id: "trappola", nome: "TRAPPOLA", categoria: "MALUS" },
   { id: "penalita_punti", nome: "PENALITÀ PUNTI (-20 PT)", categoria: "MALUS" },
   { id: "tassa_passaggio", nome: "TASSA DI PASSAGGIO", categoria: "MALUS" },
+  { id: "blackout_mercato", nome: "BLACKOUT MERCATO 6 MINUTI", categoria: "MALUS" },
+  { id: "dimezza_punti", nome: "DIMEZZA PUNTI PROSSIMA SFIDA", categoria: "MALUS" },
 ];
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -288,10 +292,14 @@ function Dashboard() {
   };
 
   const isTeamFrozen = team.data?.freeze_expires_at && new Date(team.data.freeze_expires_at).getTime() > Date.now();
+  const isMarketplaceFrozen = Boolean(team.data?.marketplace_freeze_expires_at && new Date(team.data.marketplace_freeze_expires_at).getTime() > Date.now());
   const activeEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "completed");
   const solvedEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "used");
   const activeRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "completed");
   const solvedRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "used");
+  const active2x = myPurchases.find((t) => t.item_id === "moltiplicatore_2x" && t.stato === "completed");
+  const activePolizza = myPurchases.find((t) => t.item_id === "polizza_diretta" && t.stato === "completed");
+  const activeDimezza = myReceivedMaluses.find((t) => t.item_id === "dimezza_punti" && t.stato === "completed");
 
   // Find any closed stage rewards that need to be shown to the team
   const closedStageRewards = (stages.data ?? [])
@@ -378,6 +386,84 @@ function Dashboard() {
             </button>
           </div>
         )}
+        {/* ACTIVE 2X MULTIPLIER NOTIFICATION */}
+        {active2x && (
+          <div className="bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border border-amber-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-amber-950/20 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                <Zap className="size-5 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider">✨ MOLTIPLICATORE 2X ATTIVO</h4>
+                <p className="text-[11px] text-zinc-300">Il punteggio totale delle prove della tappa in corso sarà raddoppiato (x2)!</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+              Attivo
+            </span>
+          </div>
+        )}
+
+        {/* ACTIVE POLIZZA NOTIFICATION */}
+        {activePolizza && (
+          <div className="bg-gradient-to-r from-emerald-500/15 to-teal-500/10 border border-emerald-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-emerald-950/20 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                <Shield className="size-5 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider">🛡️ POLIZZA RIMBORSO 50% ATTIVA</h4>
+                <p className="text-[11px] text-zinc-300">Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito.</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+              Pronta
+            </span>
+          </div>
+        )}
+
+        {/* RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
+        {activeDimezza && (
+          <div className="bg-gradient-to-r from-red-500/20 to-rose-950/30 border border-red-500/50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-red-950/30 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                <AlertTriangle className="size-5 text-red-400 animate-bounce" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⚠️ MALUS DIMEZZA PUNTI RICEVUTO</span>
+                  {activeDimezza.buyer_team_id && (
+                    <span className="text-zinc-400 font-normal">
+                      da <strong>{(allTeams.find((t: any) => t.id === activeDimezza.buyer_team_id)?.nome_squadra || "un avversario")}</strong>
+                    </span>
+                  )}
+                </h4>
+                <p className="text-[11px] text-zinc-300">Attenzione: il punteggio della tua prossima sfida completata sarà dimezzato del 50%!</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 shrink-0">
+              In Corso
+            </span>
+          </div>
+        )}
+
+        {/* MARKETPLACE BLACKOUT NOTIFICATION */}
+        {isMarketplaceFrozen && (
+          <div className="bg-gradient-to-r from-zinc-800/40 to-stone-900/60 border border-zinc-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-black/40 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-zinc-800 border border-zinc-600 flex items-center justify-center text-zinc-300 shrink-0">
+                <Lock className="size-5 text-zinc-300" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-zinc-300 uppercase tracking-wider">🔒 BLACKOUT MERCATO IN CORSO</h4>
+                <p className="text-[11px] text-zinc-400">L'accesso al Marketplace è momentaneamente congelato a causa di un malus avversario.</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700 shrink-0">
+              Bloccato
+            </span>
+          </div>
+        )}
 
         {/* TEAM COCKPIT HERO (UI/UX Pro Max Edition) */}
         <section
@@ -387,8 +473,36 @@ function Dashboard() {
           }}
         >
           {/* BADGES CONTAINER (HeroUI Chip variant="dot" style) */}
-          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || activeShield || activePassaparola || pendingPassaparola || activePartenza || usedPartenza) && (
+          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || isMarketplaceFrozen || activeShield || activePassaparola || pendingPassaparola || activePartenza || usedPartenza || active2x || activePolizza || activeDimezza) && (
             <div className="flex flex-wrap items-center gap-1.5 mb-3 sm:absolute sm:top-5 sm:right-5 sm:mb-0 sm:flex-col sm:items-end z-10">
+              {active2x && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-amber-400 animate-ping" />
+                  <Zap className="size-3 text-amber-300 stroke-[3]" />
+                  <span>2X Attivo</span>
+                </div>
+              )}
+              {activePolizza && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                  <Shield className="size-3 text-emerald-300 stroke-[3]" />
+                  <span>Polizza 50%</span>
+                </div>
+              )}
+              {activeDimezza && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/60 border border-red-500/40 text-red-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-red-400 animate-ping" />
+                  <AlertTriangle className="size-3 text-red-300 stroke-[3]" />
+                  <span>Dimezza Punti</span>
+                </div>
+              )}
+              {isMarketplaceFrozen && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950/80 border border-zinc-500/40 text-zinc-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
+                  <span className="size-2 rounded-full bg-zinc-400 animate-ping" />
+                  <Lock className="size-3 text-zinc-300 stroke-[3]" />
+                  <span>Mercato Bloccato</span>
+                </div>
+              )}
               {activeEnigma && (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
                   <span className="size-2 rounded-full bg-purple-400 animate-ping" />
