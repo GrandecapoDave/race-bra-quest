@@ -32,7 +32,7 @@ function AdminMarketplacePage() {
     { id: "penalita_punti", nome: "PENALITÀ PUNTI (-20 PT)", categoria: "MALUS", costo: 30, desc: "Sottrae 20 punti ad una squadra avversaria." },
     { id: "tassa_passaggio", nome: "TASSA DI PASSAGGIO", categoria: "MALUS", costo: 70, desc: "Scambia il punteggio con la squadra bersaglio." },
     { id: "blackout_mercato", nome: "BLACKOUT MERCATO 6 MINUTI", categoria: "MALUS", costo: 35, desc: "Blocca il Marketplace al bersaglio per 6 minuti." },
-    { id: "dimezza_punti", nome: "DIMEZZA PUNTI PROSSIMA SFIDA", categoria: "MALUS", costo: 40, desc: "Dimezza del 50% i punti della prossima sfida superata dal bersaglio." },
+    { id: "dimezza_punti", nome: "DIMEZZA PUNTI TAPPA", categoria: "MALUS", costo: 40, desc: "Dimezza del 50% il punteggio complessivo di una tappa a scelta (Tappe 1–4) del bersaglio." },
   ];
   
   const [time, setTime] = useState(Date.now());
@@ -580,6 +580,48 @@ function AdminMarketplacePage() {
                                               <span>Punti bersaglio dopo:</span>
                                               <span className="text-red-400 font-bold">{tr.outcome.target_points_after} PT</span>
                                             </div>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                              {tr.item_id === "dimezza_punti" && (
+                                <div className="space-y-0.5 mt-1 text-[9px] text-zinc-500 font-medium">
+                                  {(() => {
+                                    if (tr.stato === "blocked" || tr.stato === "expired") return null;
+                                    const isUsed = tr.stato === "used";
+                                    const sNum = tr.outcome?.stage_number || tr.dettagli?.stage_number || (stages.data ?? []).find((s: any) => s.id === (tr.stage_id || tr.outcome?.target_stage_id || tr.dettagli?.target_stage_id))?.numero_tappa || "1–4";
+                                    return (
+                                      <>
+                                        <span className={`block font-black uppercase ${
+                                          isUsed ? "text-emerald-400" : "text-amber-500 animate-pulse"
+                                        }`}>
+                                          {isUsed ? "🟢 APPLICATO ALLA TAPPA" : "🟡 IN ATTESA TAPPA"} {sNum}
+                                        </span>
+                                        {(tr.outcome || tr.dettagli) && (
+                                          <div className="text-[8px] text-zinc-500 space-y-0.5 leading-normal mt-1 bg-zinc-950/40 p-2 rounded-lg border border-zinc-900/60 max-w-[240px]">
+                                            <div className="flex justify-between text-zinc-400 font-bold border-b border-zinc-900 pb-0.5">
+                                              <span>Tappa target:</span>
+                                              <span className="text-white">TAPPA {sNum}</span>
+                                            </div>
+                                            {isUsed && (
+                                              <>
+                                                <div className="flex justify-between">
+                                                  <span>Punti prima:</span>
+                                                  <span>{tr.outcome?.stage_score_before ?? tr.dettagli?.stage_score_before ?? "--"} PT</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                  <span>Penalità −50%:</span>
+                                                  <span className="text-red-400 font-bold">−{tr.outcome?.penalty_applied ?? tr.dettagli?.penalty_applied ?? "--"} PT</span>
+                                                </div>
+                                                <div className="flex justify-between border-t border-zinc-900 pt-0.5">
+                                                  <span>Punti effettivi:</span>
+                                                  <span className="text-emerald-400 font-bold">{tr.outcome?.stage_score_after ?? tr.dettagli?.stage_score_after ?? "--"} PT</span>
+                                                </div>
+                                              </>
+                                            )}
                                           </div>
                                         )}
                                       </>

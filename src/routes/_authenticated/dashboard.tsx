@@ -41,7 +41,7 @@ const MARKETPLACE_ITEMS = [
   { id: "penalita_punti", nome: "PENALITÀ PUNTI (-20 PT)", categoria: "MALUS" },
   { id: "tassa_passaggio", nome: "TASSA DI PASSAGGIO", categoria: "MALUS" },
   { id: "blackout_mercato", nome: "BLACKOUT MERCATO 6 MINUTI", categoria: "MALUS" },
-  { id: "dimezza_punti", nome: "DIMEZZA PUNTI PROSSIMA SFIDA", categoria: "MALUS" },
+  { id: "dimezza_punti", nome: "DIMEZZA PUNTI TAPPA", categoria: "MALUS" },
 ];
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -266,7 +266,8 @@ function Dashboard() {
   const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
   const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used");
 
-  const activeDimezza = myReceivedMaluses.find((t) => t.item_id === "dimezza_punti" && t.stato === "completed");
+  const activeDimezza = myReceivedMaluses.find((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "completed");
+  const usedDimezzaList = myReceivedMaluses.filter((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "used");
   const blackoutTx = myReceivedMaluses.find((t) => 
     t.item_id === "blackout_mercato" && 
     t.stato === "completed" && 
@@ -505,28 +506,60 @@ function Dashboard() {
 
         {/* 6. RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
         {activeDimezza && (
-          <div className="bg-gradient-to-r from-red-500/20 to-rose-950/30 border border-red-500/50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-red-950/30 animate-in slide-in-from-top-4 duration-300">
+          <div className="bg-gradient-to-r from-rose-950/40 via-red-900/30 to-zinc-950/80 border border-rose-500/50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-red-950/30 animate-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
-                <AlertTriangle className="size-5 text-red-400 animate-bounce" />
+              <div className="size-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                <AlertTriangle className="size-5 text-rose-400 animate-bounce" />
               </div>
               <div>
-                <h4 className="text-xs font-black text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>⚠️ MALUS DIMEZZA PUNTI RICEVUTO</span>
-                  {activeDimezza.buyer_team_id && (
+                <h4 className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⚠️ MALUS DIMEZZA PUNTI TAPPA</span>
+                  {(activeDimezza.buyer_team_id || activeDimezza.team_id) && (
                     <span className="text-zinc-400 font-normal">
-                      da <strong>{(allTeams.find((t: any) => t.id === activeDimezza.buyer_team_id)?.nome_squadra || "un avversario")}</strong>
+                      da <strong>{(allTeams.find((t: any) => t.id === (activeDimezza.buyer_team_id || activeDimezza.team_id))?.nome_squadra || activeDimezza.dettagli?.attacker_name || "un avversario")}</strong>
                     </span>
                   )}
                 </h4>
-                <p className="text-[11px] text-zinc-300">Attenzione: il punteggio della tua prossima sfida completata sarà dimezzato del 50%!</p>
+                <p className="text-[11px] text-zinc-300">
+                  Attenzione: la <strong>TAPPA {activeDimezza.dettagli?.stage_number || stages.data?.find((s: any) => s.id === activeDimezza.stage_id)?.numero_tappa || ""}</strong> è stata presa di mira! Riceverete il <strong>50% del punteggio complessivo</strong> al suo completamento.
+                </p>
               </div>
             </div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 shrink-0">
-              In Corso
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+              In Attesa
             </span>
           </div>
         )}
+
+        {/* 6.B USED DIMEZZA PUNTI TAPPA CARDS */}
+        {usedDimezzaList.map((tx: any) => {
+          const sNum = tx.dettagli?.stage_number || stages.data?.find((s: any) => s.id === tx.stage_id)?.numero_tappa || "Tappa";
+          const attacker = allTeams.find((t: any) => t.id === (tx.buyer_team_id || tx.team_id))?.nome_squadra || tx.dettagli?.attacker_name || "un avversario";
+          const ptsBefore = tx.dettagli?.stage_score_before ?? "--";
+          const penalty = tx.dettagli?.penalty_applied ?? "--";
+          const ptsAfter = tx.dettagli?.stage_score_after ?? "--";
+
+          return (
+            <div key={tx.id} className="bg-gradient-to-r from-red-950/20 to-zinc-900/60 border border-red-500/30 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-md animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                  <ArrowDownCircle className="size-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-red-300 uppercase tracking-wide">
+                    ⚡ TAPPA {sNum}: PUNTEGGIO DIMEZZATO
+                  </h4>
+                  <p className="text-[11px] text-zinc-400">
+                    Punti base tappa: <strong className="text-zinc-200">{ptsBefore} PT</strong> → Penalità: <strong className="text-red-400">−{penalty} PT</strong> → Punti effettivi: <strong className="text-emerald-400">{ptsAfter} PT</strong> (da {attacker})
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
+                Applicato
+              </span>
+            </div>
+          );
+        })}
 
         {/* 7. MARKETPLACE BLACKOUT NOTIFICATION */}
         {isMarketplaceFrozen && (

@@ -2171,31 +2171,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
                 };
               }
 
-              // 3. DIMEZZA PUNTI
-              const txDimezza = db.marketplace_transactions?.find(
-                (t: any) => t.target_team_id === currentUserId &&
-                            (t.marketplace_item_id === "dimezza_punti" || t.item_id === "dimezza_punti") &&
-                            t.stato === "completed"
-              );
-              if (txDimezza) {
-                dimezza_penalty = Math.floor(base_points / 2);
-                if (dimezza_penalty > 0) {
-                  db.scores.push({
-                    id: uuid(),
-                    team_id: currentUserId,
-                    challenge_id: p_challenge,
-                    punti: -dimezza_penalty,
-                    motivazione: `Malus Dimezza Punti: penalità −${dimezza_penalty} PT sulla prova ${challenge?.titolo || "Sfida"}`,
-                    created_at: new Date().toISOString(),
-                  });
-                }
-                txDimezza.stato = "used";
-                txDimezza.data_utilizzo = new Date().toISOString();
-                txDimezza.dettagli = {
-                  applied_to_challenge_id: p_challenge,
-                  points_deducted: dimezza_penalty,
-                };
-              }
+              // 3. DIMEZZA PUNTI: Rimossa la gestione per singola sfida, spostata al completamento della tappa
             }
 
             points = base_points + multiplier_2x_bonus - dimezza_penalty + polizza_refund;
@@ -2216,6 +2192,64 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               }
               if (allStageChs.length > 0 && newlyCompleted.length >= allStageChs.length) {
                 stage_completed = true;
+
+                // Handle Dimezza Punti Tappa on stage completion
+                const txStageDimezza = db.marketplace_transactions?.find(
+                  (t: any) =>
+                    t.target_team_id === currentUserId &&
+                    (t.marketplace_item_id === "dimezza_punti" || t.item_id === "dimezza_punti") &&
+                    (t.stage_id === challenge.stage_id || t.dettagli?.target_stage_id === challenge.stage_id) &&
+                    t.stato === "completed",
+                );
+
+                if (txStageDimezza) {
+                  const stageScores = db.scores.filter(
+                    (s: any) => s.team_id === currentUserId && s.stage_id === challenge.stage_id && s.tipo_modificatore !== "penalty_dimezza_tappa",
+                  );
+                  const fullStageScore = stageScores.reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
+                  if (fullStageScore > 0) {
+                    dimezza_penalty = Math.floor(fullStageScore / 2);
+                    db.scores.push({
+                      id: uuid(),
+                      team_id: currentUserId,
+                      stage_id: challenge.stage_id,
+                      punti: -dimezza_penalty,
+                      tipo_modificatore: "penalty_dimezza_tappa",
+                      motivo: `Malus Dimezza Punti Tappa: penalità −${dimezza_penalty} PT (50% del punteggio complessivo della tappa)`,
+                      created_at: new Date().toISOString(),
+                    });
+
+                    // Polizza Diretta refund 50%
+                    const txPolizza = db.marketplace_transactions?.find(
+                      (t: any) => t.team_id === currentUserId && (t.marketplace_item_id === "polizza_diretta" || t.item_id === "polizza_diretta") && t.stato === "completed",
+                    );
+                    if (txPolizza && dimezza_penalty > 0) {
+                      polizza_refund = Math.ceil(dimezza_penalty / 2);
+                      db.scores.push({
+                        id: uuid(),
+                        team_id: currentUserId,
+                        stage_id: challenge.stage_id,
+                        punti: polizza_refund,
+                        tipo_modificatore: "bonus_polizza",
+                        motivo: `Polizza Diretta: Rimborso 50% penalità Dimezza Tappa (+${polizza_refund} PT)`,
+                        created_at: new Date().toISOString(),
+                      });
+                      txPolizza.stato = "used";
+                      txPolizza.data_utilizzo = new Date().toISOString();
+                      txPolizza.dettagli = { refunded_points: polizza_refund, source_malus: "dimezza_punti", target_stage_id: challenge.stage_id };
+                    }
+                  }
+
+                  txStageDimezza.stato = "used";
+                  txStageDimezza.data_utilizzo = new Date().toISOString();
+                  txStageDimezza.dettagli = {
+                    ...(txStageDimezza.dettagli || {}),
+                    stage_score_before: fullStageScore,
+                    penalty_applied: dimezza_penalty,
+                    stage_score_after: fullStageScore - dimezza_penalty,
+                    applied_at_stage_completion: true,
+                  };
+                }
               }
             }
 
@@ -2959,6 +2993,82 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               db,
               currentUserId,
               `La squadra "${team.nome_squadra}" ha utilizzato la TASSA DI PASSAGGIO scambiando i punteggi con "${targetTeam.nome_squadra}" (${buyerCurrentPoints} PT ↔ ${targetCurrentPoints} PT).`,
+            );
+          } else if (item.id === "dimezza_punti" && targetTeam) {
+            const p_target_stage_id = args.p_target_stage_id;
+            const targetStage = db.stages?.find((s: any) => s.id === p_target_stage_id);
+            const stageChallenges = db.challenges.filter((c: any) => c.stage_id === p_target_stage_id);
+            const compChallenges = db.team_progress.filter(
+              (p: any) => p.team_id === targetTeam.id && p.stage_id === p_target_stage_id && p.stato === "completed",
+            );
+            const isCompleted = stageChallenges.length > 0 && compChallenges.length >= stageChallenges.length;
+
+            if (isCompleted) {
+              const stageScores = db.scores.filter(
+                (s: any) => s.team_id === targetTeam.id && s.stage_id === p_target_stage_id && s.tipo_modificatore !== "penalty_dimezza_tappa",
+              );
+              const fullStageScore = stageScores.reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
+              let penalty = 0;
+              if (fullStageScore > 0) {
+                penalty = Math.floor(fullStageScore / 2);
+                db.scores.push({
+                  id: uuid(),
+                  team_id: targetTeam.id,
+                  stage_id: p_target_stage_id,
+                  punti: -penalty,
+                  tipo_modificatore: "penalty_dimezza_tappa",
+                  motivo: `Malus Dimezza Punti Tappa ${targetStage?.numero_tappa || ""}: penalità −${penalty} PT (punteggio tappa dimezzato)`,
+                  created_at: new Date().toISOString(),
+                });
+
+                // Polizza check
+                const polizzaTx = db.marketplace_transactions?.find(
+                  (t: any) => t.team_id === targetTeam.id && (t.marketplace_item_id === "polizza_diretta" || t.item_id === "polizza_diretta") && t.stato === "completed",
+                );
+                if (polizzaTx && penalty > 0) {
+                  const refund = Math.ceil(penalty / 2);
+                  db.scores.push({
+                    id: uuid(),
+                    team_id: targetTeam.id,
+                    stage_id: p_target_stage_id,
+                    punti: refund,
+                    tipo_modificatore: "bonus_polizza",
+                    motivo: `Polizza Diretta: Rimborso 50% penalità Dimezza Tappa (+${refund} PT)`,
+                    created_at: new Date().toISOString(),
+                  });
+                  polizzaTx.stato = "used";
+                  polizzaTx.data_utilizzo = new Date().toISOString();
+                }
+              }
+
+              outcome = {
+                target_stage_id: p_target_stage_id,
+                stage_number: targetStage?.numero_tappa,
+                stage_title: targetStage?.titolo,
+                stage_status_at_purchase: "completed",
+                stage_score_before: fullStageScore,
+                penalty_applied: penalty,
+                stage_score_after: fullStageScore - penalty,
+                applied_mode: "immediate_completed",
+                attacker_name: team.nome_squadra,
+                target_team_name: targetTeam.nome_squadra,
+              };
+            } else {
+              outcome = {
+                target_stage_id: p_target_stage_id,
+                stage_number: targetStage?.numero_tappa,
+                stage_title: targetStage?.titolo,
+                stage_status_at_purchase: compChallenges.length > 0 ? "in_progress" : "not_started",
+                applied_mode: "pending_future",
+                attacker_name: team.nome_squadra,
+                target_team_name: targetTeam.nome_squadra,
+              };
+            }
+
+            logActivity(
+              db,
+              currentUserId,
+              `La squadra "${team.nome_squadra}" ha applicato il Malus DIMEZZA PUNTI alla Tappa ${targetStage?.numero_tappa || ""} di "${targetTeam.nome_squadra}".`,
             );
           }
 

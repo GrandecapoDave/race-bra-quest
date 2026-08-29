@@ -204,11 +204,11 @@ const MARKETPLACE_ITEMS = [
   },
   {
     id: "dimezza_punti",
-    nome: "DIMEZZA PUNTI PROSSIMA SFIDA",
+    nome: "DIMEZZA PUNTI TAPPA",
     categoria: "MALUS",
     costo: 40,
-    effetto: "Dimezza del 50% i punti della prossima sfida superata dal bersaglio",
-    descrizione: "La squadra avversaria riceverà solo il 50% dei punti per la sua prossima prova completata.",
+    effetto: "Dimezza del 50% il punteggio complessivo di una tappa a scelta (Tappe 1–4) del bersaglio",
+    descrizione: "Scegli una tappa (1–4) della squadra avversaria: se è già stata svolta i punti vengono dimezzati subito, se è futura otterrà metà punteggio al completamento.",
     icon: ArrowDownCircle,
     color: "from-red-700 to-rose-950",
   },
@@ -260,8 +260,22 @@ function MarketplacePage() {
   // State for Malus target selection modal
   const [selectedMalus, setSelectedMalus] = useState<typeof MARKETPLACE_ITEMS[0] | null>(null);
   const [targetTeamId, setTargetTeamId] = useState<string>("");
+  const [selectedStageId, setSelectedStageId] = useState<string>("");
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | "BONUS" | "MALUS">("ALL");
+
+  // Query details (scores & progress) for selected target team (used in Dimezza Punti Tappa modal)
+  const targetTeamDetailsQuery = useQuery({
+    queryKey: ["target-team-details", targetTeamId],
+    queryFn: async () => {
+      if (!targetTeamId) return { scores: [], progress: [] };
+      const { data: sc } = await (supabase as any).from("scores").select("*").eq("team_id", targetTeamId);
+      const { data: pr } = await (supabase as any).from("team_progress").select("*").eq("team_id", targetTeamId);
+      return { scores: sc || [], progress: pr || [] };
+    },
+    enabled: !!targetTeamId && selectedMalus?.id === "dimezza_punti",
+    refetchInterval: 3000,
+  });
 
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [consumingId, setConsumingId] = useState<string | null>(null);
@@ -566,6 +580,7 @@ function MarketplacePage() {
       const { data, error } = await (supabase as any).rpc("buy_marketplace_item", {
         p_item_id: itemId,
         p_target_team_id: targetId || null,
+        p_target_stage_id: targetStageId || null,
       });
 
       if (error) {
@@ -678,10 +693,17 @@ function MarketplacePage() {
         });
       } else if (itemId === "dimezza_punti") {
         const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
-        toast.success("⚡ MALUS DIMEZZA PUNTI INVIATO!", {
-          description: `Il punteggio della prossima sfida completata da "${targetName}" sarà dimezzato (-50%)!`,
-          duration: 7000,
-        });
+        if (data.outcome?.applied_mode === "immediate_completed") {
+          toast.success(`⚡ DIMEZZA PUNTI TAPPA ${data.outcome.stage_number} APPLICATO!`, {
+            description: `Punti prima: ${data.outcome.stage_score_before} PT → Penalità: -${data.outcome.penalty_applied} PT → Punti finali di tappa: ${data.outcome.stage_score_after} PT su "${targetName}".`,
+            duration: 8000,
+          });
+        } else {
+          toast.success(`⚡ DIMEZZA PUNTI TAPPA ${data.outcome?.stage_number || ""} ASSEGNATO!`, {
+            description: `La squadra "${targetName}" riceverà il 50% del punteggio complessivo al completamento della Tappa ${data.outcome?.stage_number || ""}.`,
+            duration: 8000,
+          });
+        }
       } else if (itemId === "freeze_2min") {
         const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "avversaria";
         toast.success("❄️ FREEZE 2 MINUTI ATTIVATO!", {
@@ -1510,6 +1532,98 @@ function MarketplacePage() {
                     ℹ️ <strong>Effetto:</strong> La squadra bersaglio perderà 20 Punti Squadra. I punti verranno rimossi dalla classifica e <strong>non verranno trasferiti</strong> alla tua squadra.
                   </p>
                 </div>
+              ) : selectedMalus.id === "dimezza_punti" ? (
+                <div className="bg-rose-500/5 p-4 rounded-xl border border-rose-500/20 text-xs space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex justify-between items-center">
+                    <p className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <span>Malus:</span>
+                      <span className="text-rose-400 font-extrabold">⚡ DIMEZZA PUNTI TAPPA</span>
+                    </p>
+                    <span className="text-orange-400 font-mono font-black">{selectedMalus.costo} Token 🪙</span>
+                  </div>
+
+                  <p className="text-zinc-300 font-semibold flex justify-between border-t border-zinc-900 pt-1.5">
+                    <span>🎯 Squadra bersaglio:</span>
+                    <strong className="text-white font-extrabold">
+                      {teams.find((t) => t.id === targetTeamId)?.nome_squadra || "Sconosciuta"}
+                    </strong>
+                  </p>
+
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11px] font-black text-rose-300 uppercase tracking-wider">
+                      Seleziona la Tappa da dimezzare (1–4):
+                    </p>
+                    
+                    <div className="grid grid-cols-1 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                      {(stages.data ?? [])
+                        .filter((s: any) => (s.numero_tappa || s.order_index) >= 1 && (s.numero_tappa || s.order_index) <= 4)
+                        .sort((a: any, b: any) => (a.numero_tappa || a.order_index) - (b.numero_tappa || b.order_index))
+                        .map((s: any) => {
+                          const sNum = s.numero_tappa || s.order_index;
+                          const sChs = (challenges.data ?? []).filter((c: any) => c.stage_id === s.id);
+                          const compChs = (targetTeamDetailsQuery.data?.progress ?? []).filter(
+                            (p: any) => (p.stage_id === s.id || sChs.some((c: any) => c.id === p.challenge_id)) &&
+                                        (p.stato === "completed" || p.status === "completed")
+                          );
+                          const isDone = sChs.length > 0 && compChs.length >= sChs.length;
+                          const earnedPts = (targetTeamDetailsQuery.data?.scores ?? [])
+                            .filter((sc: any) => sc.stage_id === s.id && sc.tipo_modificatore !== "penalty_dimezza_tappa")
+                            .reduce((sum: number, sc: any) => sum + (sc.punti || 0), 0);
+                          const availablePts = sChs.reduce((sum: number, c: any) => sum + (c.punteggio_massimo || 0), 0);
+
+                          const isSelected = selectedStageId === s.id;
+
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => setSelectedStageId(s.id)}
+                              className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between ${
+                                isSelected
+                                  ? "border-rose-500 bg-rose-500/15 shadow-md shadow-rose-500/10 text-white"
+                                  : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 text-zinc-300"
+                              }`}
+                            >
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-black text-xs uppercase tracking-wide">
+                                    TAPPA {sNum}: {s.titolo}
+                                  </span>
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                                      isDone
+                                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                        : compChs.length > 0
+                                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                        : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                                    }`}
+                                  >
+                                    {isDone ? "✓ Completata" : compChs.length > 0 ? "★ In corso" : "🔒 Da svolgere"}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] font-mono">
+                                  {isDone ? (
+                                    <span className="text-emerald-400 font-bold">{earnedPts} PT ottenuti (→ dimezzati a {Math.floor(earnedPts / 2)} PT)</span>
+                                  ) : (
+                                    <span className="text-zinc-400">Fino a {availablePts} PT disponibili</span>
+                                  )}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <span className="size-4 rounded-full bg-rose-500 flex items-center justify-center shrink-0 ml-2">
+                                  <Check className="size-2.5 text-white stroke-[4]" />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-zinc-400 font-semibold leading-relaxed border-t border-zinc-900 pt-1.5">
+                    ℹ️ <strong>Regola:</strong> Se la tappa è già stata svolta, i punti vengono dimezzati subito. Se è ancora da svolgere o in corso, riceverà il 50% dei punti al completamento.
+                  </p>
+                </div>
               ) : (
                 <div className="bg-red-500/5 p-4 rounded-xl border border-red-500/10 text-xs space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
                   <p className="text-zinc-300 font-semibold flex justify-between">
@@ -1538,14 +1652,19 @@ function MarketplacePage() {
                 onClick={() => {
                   setSelectedMalus(null);
                   setTargetTeamId("");
+                  setSelectedStageId("");
                 }}
                 className="flex-1 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-xs font-bold text-muted-foreground transition-all"
               >
                 Annulla
               </button>
               <button
-                disabled={!targetTeamId || buyingId === selectedMalus.id}
-                onClick={() => handlePurchase(selectedMalus.id, targetTeamId)}
+                disabled={
+                  !targetTeamId ||
+                  (selectedMalus.id === "dimezza_punti" && !selectedStageId) ||
+                  buyingId === selectedMalus.id
+                }
+                onClick={() => handlePurchase(selectedMalus.id, targetTeamId, selectedStageId)}
                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 disabled:from-zinc-950 disabled:to-zinc-950 disabled:border-zinc-850 text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 disabled:cursor-not-allowed"
               >
                 {buyingId === selectedMalus.id ? (
@@ -1553,7 +1672,15 @@ function MarketplacePage() {
                 ) : (
                   <Coins className="size-3.5" />
                 )}
-                {selectedMalus.id === "trappola" ? "CONFERMA TRAPPOLA" : selectedMalus.id === "tassa_passaggio" ? "CONFERMA SWITCH" : selectedMalus.id === "penalita_punti" ? "CONFERMA ACQUISTO" : "Conferma Malus"}
+                {selectedMalus.id === "trappola"
+                  ? "CONFERMA TRAPPOLA"
+                  : selectedMalus.id === "tassa_passaggio"
+                  ? "CONFERMA SWITCH"
+                  : selectedMalus.id === "penalita_punti"
+                  ? "CONFERMA ACQUISTO"
+                  : selectedMalus.id === "dimezza_punti"
+                  ? "CONFERMA DIMEZZA TAPPA"
+                  : "Conferma Malus"}
               </button>
             </div>
           </div>
