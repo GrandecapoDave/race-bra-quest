@@ -416,12 +416,13 @@ function MarketplacePage() {
   const settings = gameSettingsQuery.data as any;
   const isMarketplaceVisible = settings?.marketplace_visible === true;
   const isMarketplaceActive = settings?.marketplace_active === true;
+  const isRaceCompleted = settings?.race_status === "completed";
 
   const hasCompletedTappa1 = progress.data?.some(
     (p: any) => p.challenge_id === "0147e750-f0a3-4b72-8e76-a003fe2ef143" && (p.stato === "completed" || p.status === "completed")
   ) === true;
 
-  const isAccessible = isAdmin.data || (isMarketplaceActive && hasCompletedTappa1);
+  const isAccessible = isAdmin.data || (isMarketplaceActive && hasCompletedTappa1 && !isRaceCompleted);
 
   // Render access denied for players who haven't discovered the Marketplace yet or if it is closed
   if (!isAccessible && !teamQuery.isLoading && !gameSettingsQuery.isLoading) {
@@ -432,9 +433,13 @@ function MarketplacePage() {
             <Lock className="size-8" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl font-display font-black uppercase text-red-500">Area Riservata</h1>
+            <h1 className="text-3xl font-display font-black uppercase text-red-500">
+              {isRaceCompleted ? "Gara Terminata" : "Area Riservata"}
+            </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {!hasCompletedTappa1
+              {isRaceCompleted
+                ? "La gara è terminata! Non è più possibile effettuare acquisti o compiere azioni nel Marketplace."
+                : !hasCompletedTappa1
                 ? "Il Marketplace si sbloccherà automaticamente dopo il completamento della Tappa 1 (Foto ufficiale)."
                 : "Il Marketplace è temporaneamente chiuso dalla Regia."}
             </p>

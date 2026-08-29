@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock, ArrowDownCircle } from "lucide-react";
+import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock, ArrowDownCircle, Camera, X, FileText } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { CircularProgress } from "@/components/ui/circular-progress";
@@ -23,6 +23,7 @@ import {
   sessionsQuery,
   stagesQuery,
   isStageUnlocked,
+  reportStatusQuery,
 } from "@/lib/race";
 
 const MARKETPLACE_ITEMS = [
@@ -126,6 +127,8 @@ function Dashboard() {
       return data;
     },
   });
+
+  const reportStatus = useQuery({ ...reportStatusQuery, refetchInterval: 3000 });
 
   const transactionsQuery = useQuery({
     queryKey: ["marketplace-transactions-list"],
@@ -334,6 +337,47 @@ function Dashboard() {
     (t) => t.item_id === "tassa_passaggio" && !dismissedNotifications.includes(t.id)
   );
 
+  const photoPosterEvaluatedNotifications = (scores.data ?? []).filter((s: any) => {
+    if (!s.challenge_id) return false;
+    if (dismissedNotifications.includes(s.id)) return false;
+    const ch = allChallenges.find((c) => c.id === s.challenge_id);
+    const motivoLower = (s.motivo || "").toLowerCase();
+    const isPhotoOrPoster =
+      ch?.type === "photo" ||
+      ch?.type === "living_poster" ||
+      motivoLower.includes("foto") ||
+      motivoLower.includes("locandina") ||
+      motivoLower.includes("valutazione");
+    return isPhotoOrPoster;
+  });
+
+  const isRaceCompleted = gameSettings.data?.race_status === "completed";
+  const isReportPublished = Boolean(reportStatus.data?.is_published);
+
+  if (isRaceCompleted && !isReportPublished) {
+    return (
+      <AppShell isAdmin={isAdmin.data}>
+        <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-zinc-800 rounded-3xl mt-8 bg-zinc-950/80 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
+          <div className="size-20 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-4xl animate-bounce shadow-lg shadow-amber-500/10">
+            🏁
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-display font-black uppercase text-amber-400">
+              Gara Terminata
+            </h1>
+            <p className="text-sm text-zinc-300 leading-relaxed">
+              La gara è ufficialmente conclusa! Tutti i punteggi, le sfide e le attività di gara sono stati congelati.
+            </p>
+            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-400 flex items-center justify-center gap-2">
+              <Clock className="size-4 text-amber-400 shrink-0" />
+              <span>I risultati e la classifica ufficiale saranno disponibili non appena la Regia pubblicherà il Resoconto Finale.</span>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   const handleSendPassaparola = async () => {
     if (!usePassaparolaTx) return;
     if (!passaparolaText.trim()) {
@@ -376,6 +420,74 @@ function Dashboard() {
     <AppShell isAdmin={isAdmin.data}>
       <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto">
         
+        {/* PUBLISHED FINAL RECAP CARD */}
+        {isRaceCompleted && isReportPublished && (
+          <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-amber-500/40 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-xl shadow-amber-950/30 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3.5">
+              <div className="size-11 rounded-2xl gold-gradient text-white flex items-center justify-center font-black text-xl shrink-0 shadow-md shadow-amber-500/20">
+                🏆
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-black uppercase tracking-wider text-amber-400">
+                  Resoconto Finale Pubblicato!
+                </h4>
+                <p className="text-xs text-zinc-300">
+                  La Regia ha pubblicato ufficialmente i risultati definitivi e le statistiche della gara.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/resoconto"
+              className="gold-gradient shrink-0 px-5 py-2.5 rounded-xl text-black font-black text-xs uppercase tracking-wider cursor-pointer hover:scale-[1.02] active:scale-95 transition-all text-center shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
+            >
+              <FileText className="size-4" />
+              Visualizza Resoconto
+            </Link>
+          </div>
+        )}
+
+        {/* PHOTO & POSTER EVALUATION NOTIFICATIONS */}
+        {photoPosterEvaluatedNotifications.map((s: any) => {
+          const ch = allChallenges.find((c) => c.id === s.challenge_id);
+          const st = (stages.data ?? []).find((st: any) => st.id === (s.stage_id || ch?.stage_id));
+          const stageNum = st?.order_index || 1;
+          const isPoster = ch?.type === "living_poster" || (s.motivo || "").toLowerCase().includes("locandina");
+
+          return (
+            <div
+              key={s.id}
+              className="bg-emerald-950/30 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-emerald-950/30"
+            >
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <Camera className="size-5 text-emerald-400 stroke-[2.5]" />
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                    {isPoster ? "🖼️ LOCANDINA VALUTATA DALLA REGIA" : "📸 FOTO VALUTATA DALLA REGIA"}
+                  </h4>
+                  <p className="text-zinc-200 text-xs">
+                    Hai ricevuto <strong className="text-emerald-400 font-extrabold text-sm">+{s.punti ?? s.points} PT</strong>
+                  </p>
+                  <div className="text-[11px] text-zinc-400 font-semibold flex items-center gap-2 mt-0.5">
+                    <span>Prova: <strong className="text-zinc-200">{ch?.title || "Foto Ufficiale"}</strong></span>
+                    <span>·</span>
+                    <span>Tappa: <strong className="text-zinc-200">Tappa {stageNum}</strong></span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(s.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 transition-all shrink-0 cursor-pointer"
+                title="Chiudi avviso"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
+          );
+        })}
+
+        {/* CLOSED STAGE REWARDS */}
         {closedStageRewards.map(({ stage, tx }) => {
           const outcome = tx.outcome;
           if (!outcome) return null;

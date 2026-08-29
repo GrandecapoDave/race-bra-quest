@@ -94,6 +94,24 @@ function ChallengePage() {
     );
   }
 
+  if (gameSettings.data?.race_status === "completed" && !isAdmin.data) {
+    return (
+      <AppShell isAdmin={false}>
+        <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-dashed border-red-500/30 rounded-3xl mt-12 bg-red-950/5">
+          <div className="size-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto border border-red-500/20 text-red-500">
+            <Lock className="size-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-display font-black uppercase text-red-500">Gara Terminata</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              La gara è ufficialmente conclusa. Tutte le prove e i punteggi sono stati congelati.
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   if (isRebusVisivo) {
     if (!started && state !== "completed") {
       return (

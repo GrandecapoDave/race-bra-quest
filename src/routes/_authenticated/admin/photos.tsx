@@ -84,63 +84,49 @@ function AdminPhotosPage() {
           </p>
         </div>
 
-        {/* STATUS TABS (HeroUI Pill Tabs with Badge) */}
-        <div className="flex bg-zinc-900/90 p-1.5 rounded-2xl border border-zinc-800/80 w-fit shrink-0 self-start md:self-auto gap-1.5 shadow-lg backdrop-blur-md">
+        {/* STATUS TABS */}
+        <div className="flex flex-wrap sm:flex-nowrap bg-zinc-900/90 p-1.5 rounded-2xl border border-zinc-800/80 w-full sm:w-auto shrink-0 gap-1.5 shadow-lg backdrop-blur-md">
           <button
             onClick={() => setPhotoFilter("pending")}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               photoFilter === "pending"
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-[1.02]"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-zinc-800/50"
             }`}
           >
-            <Clock className="size-3.5" />
+            <Clock className="size-3.5 shrink-0" />
             <span>Da Valutare</span>
-            <Badge
-              color={photoFilter === "pending" ? "default" : "warning"}
-              variant="solid"
-              size="sm"
-              className="bg-black/30 text-white font-bold"
-            >
+            <span className="px-2 py-0.5 rounded-full bg-black/40 text-[11px] font-mono font-bold text-white leading-none shrink-0 min-w-[20px] text-center">
               {pendingCount}
-            </Badge>
+            </span>
           </button>
           <button
             onClick={() => setPhotoFilter("confirmed")}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               photoFilter === "confirmed"
                 ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30 scale-[1.02]"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-zinc-800/50"
             }`}
           >
-            <CheckCircle className="size-3.5" />
+            <CheckCircle className="size-3.5 shrink-0" />
             <span>Confermate</span>
-            <Badge
-              color="success"
-              variant="solid"
-              size="sm"
-              className="bg-black/30 text-white font-bold"
-            >
+            <span className="px-2 py-0.5 rounded-full bg-black/40 text-[11px] font-mono font-bold text-white leading-none shrink-0 min-w-[20px] text-center">
               {confirmedCount}
-            </Badge>
+            </span>
           </button>
           <button
             onClick={() => setPhotoFilter("all")}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap ${
               photoFilter === "all"
                 ? "bg-zinc-800 text-white shadow-md scale-[1.02]"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-zinc-800/50"
             }`}
           >
+            <ImageIcon className="size-3.5 shrink-0" />
             <span>Tutte</span>
-            <Badge
-              color="default"
-              variant="solid"
-              size="sm"
-              className="bg-black/30 text-white font-bold"
-            >
+            <span className="px-2 py-0.5 rounded-full bg-black/40 text-[11px] font-mono font-bold text-white leading-none shrink-0 min-w-[20px] text-center">
               {allPhotoSubmissions.length}
-            </Badge>
+            </span>
           </button>
         </div>
       </div>

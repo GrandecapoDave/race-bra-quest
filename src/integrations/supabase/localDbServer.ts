@@ -2947,17 +2947,13 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               `La squadra "${team.nome_squadra}" ha inflitto una PENALITÀ PUNTI contro "${targetTeam.nome_squadra}" sottraendo ${pointsDeducted} PT.`,
             );
           } else if (item.id === "tassa_passaggio" && targetTeam) {
-            const buyerScores = db.scores.filter((s: any) => s.team_id === currentUserId);
-            const buyerCurrentPoints = buyerScores.reduce(
-              (sum: number, s: any) => sum + s.punti,
-              0,
-            );
+            const buyerScoreSum = db.scores.filter((s: any) => s.team_id === currentUserId).reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
+            const buyerCattiveriaSum = (db.cattiveria_ledger || []).filter((c: any) => c.team_id === currentUserId).reduce((sum: number, c: any) => sum + (c.punti || 0), 0);
+            const buyerCurrentPoints = buyerScoreSum + buyerCattiveriaSum;
 
-            const targetScores = db.scores.filter((s: any) => s.team_id === targetTeam.id);
-            const targetCurrentPoints = targetScores.reduce(
-              (sum: number, s: any) => sum + s.punti,
-              0,
-            );
+            const targetScoreSum = db.scores.filter((s: any) => s.team_id === targetTeam.id).reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
+            const targetCattiveriaSum = (db.cattiveria_ledger || []).filter((c: any) => c.team_id === targetTeam.id).reduce((sum: number, c: any) => sum + (c.punti || 0), 0);
+            const targetCurrentPoints = targetScoreSum + targetCattiveriaSum;
 
             const buyerDiff = targetCurrentPoints - buyerCurrentPoints;
             const targetDiff = buyerCurrentPoints - targetCurrentPoints;
