@@ -253,53 +253,58 @@ export function LivingPosterChallenge({
         {submission ? (
           // COMPLETED STATE
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-zinc-500 uppercase text-center">Locandina Originale</p>
-                <div className="rounded-xl border border-zinc-800 bg-zinc-950 flex justify-center p-2 min-h-[280px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* LOCANDINA ORIGINALE */}
+              <div className="space-y-2 flex flex-col">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider text-center">Locandina Originale</p>
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-3 min-h-[320px] max-h-[500px] overflow-hidden shadow-inner flex-1">
                   <img
                     src={`/POSTER/${poster?.file_name}`}
                     alt="Locandina Originale"
-                    className="w-auto max-w-full max-h-[380px] object-contain rounded-lg mx-auto"
+                    className="max-h-[460px] max-w-full w-auto h-auto object-contain rounded-xl mx-auto block shadow-md"
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-zinc-500 uppercase text-center">La vostra ricostruzione</p>
-                <div className="relative rounded-xl border border-zinc-800 bg-zinc-950 flex justify-center p-2 min-h-[280px]">
+
+              {/* LA VOSTRA RICOSTRUZIONE */}
+              <div className="space-y-2 flex flex-col">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider text-center">La vostra ricostruzione</p>
+                <div className="relative rounded-2xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-3 min-h-[320px] max-h-[500px] overflow-hidden shadow-inner flex-1">
                   {subPhotoUrl ? (
                     <>
                       <img
                         src={subPhotoUrl}
                         alt="Vostra ricostruzione"
-                        className="w-auto max-w-full max-h-[380px] object-contain rounded-lg mx-auto transition-transform duration-200"
+                        className="max-h-[460px] max-w-full w-auto h-auto object-contain rounded-xl mx-auto block shadow-md transition-transform duration-200"
                         style={{
                           transform: `${submittedFlipped ? "scaleX(-1)" : ""} rotate(${submittedRotation}deg)`,
                         }}
                       />
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-lg border border-white/10">
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/80 backdrop-blur-md p-1.5 rounded-xl border border-white/15 shadow-lg z-10">
                         <button
                           type="button"
                           title="Ribalta orizzontale (Specchia)"
                           onClick={() => setSubmittedFlipped(!submittedFlipped)}
-                          className={`p-1.5 rounded-md text-xs font-bold transition-colors ${
-                            submittedFlipped ? "bg-red-600 text-white" : "text-white hover:bg-white/20"
+                          className={`p-2 rounded-lg text-xs font-bold transition-colors ${
+                            submittedFlipped ? "bg-red-600 text-white shadow-sm" : "text-white hover:bg-white/20"
                           }`}
                         >
-                          <FlipHorizontal className="size-3.5" />
+                          <FlipHorizontal className="size-4" />
                         </button>
                         <button
                           type="button"
                           title="Ruota 90°"
                           onClick={() => setSubmittedRotation((r) => (r + 90) % 360)}
-                          className="p-1.5 rounded-md text-xs font-bold text-white hover:bg-white/20 transition-colors"
+                          className="p-2 rounded-lg text-xs font-bold text-white hover:bg-white/20 transition-colors"
                         >
-                          <RotateCw className="size-3.5" />
+                          <RotateCw className="size-4" />
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="h-[220px] w-full animate-pulse bg-muted" />
+                    <div className="h-[320px] w-full animate-pulse bg-zinc-900 rounded-xl flex items-center justify-center text-zinc-500 text-xs font-medium">
+                      Caricamento ricostruzione...
+                    </div>
                   )}
                 </div>
               </div>

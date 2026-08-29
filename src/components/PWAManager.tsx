@@ -55,6 +55,23 @@ export function PWAManager() {
         });
     }
 
+    // 4. Online/Offline network status listeners
+    const handleOnline = () => {
+      toast.success("Connessione ripristinata", {
+        description: "Sei di nuovo online per la gara.",
+        duration: 3000,
+      });
+    };
+    const handleOffline = () => {
+      toast.error("Connessione persa", {
+        description: "Sei offline. Verifica la tua connessione dati.",
+        duration: 5000,
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
     // 5. PWA Install Prompt Listener (Android / Chrome / Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();

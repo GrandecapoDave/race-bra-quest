@@ -69,16 +69,21 @@ function Dashboard() {
   const [passaparolaText, setPassaparolaText] = useState("");
   const [isSendingPassaparola, setIsSendingPassaparola] = useState(false);
 
-  const [dismissedShieldId, setDismissedShieldId] = useState<string | null>(null);
+  // Unified dismissed notifications management
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  const handleDismissNotification = (id: string) => {
+    if (!id) return;
+    const key = `dismissed_notifications_${user?.id ?? "anon"}`;
+    const updated = [...dismissedNotifications, id];
+    localStorage.setItem(key, JSON.stringify(updated));
+    setDismissedNotifications(updated);
+  };
 
   const handleDismissShieldAlert = (shieldId: string) => {
-    const key = `dismissed_shield_notification_${user?.id ?? "anon"}`;
-    localStorage.setItem(key, shieldId);
-    setDismissedShieldId(shieldId);
+    handleDismissNotification(shieldId);
   };
 
   const [dismissedRewards, setDismissedRewards] = useState<string[]>([]);
-
   const handleDismissReward = (stageId: string) => {
     const key = `dismissed_stage_rewards_${user?.id ?? "anon"}`;
     const updated = [...dismissedRewards, stageId];
@@ -89,13 +94,14 @@ function Dashboard() {
   // Load user-specific dismissed state when user changes (handles login/logout)
   useEffect(() => {
     if (!user?.id) {
-      setDismissedShieldId(null);
+      setDismissedNotifications([]);
       setDismissedRewards([]);
       return;
     }
-    const shieldKey = `dismissed_shield_notification_${user.id}`;
+    const notifKey = `dismissed_notifications_${user.id}`;
     const rewardsKey = `dismissed_stage_rewards_${user.id}`;
-    setDismissedShieldId(localStorage.getItem(shieldKey));
+    const storedNotifs = localStorage.getItem(notifKey);
+    setDismissedNotifications(storedNotifs ? JSON.parse(storedNotifs) : []);
     const stored = localStorage.getItem(rewardsKey);
     setDismissedRewards(stored ? JSON.parse(stored) : []);
   }, [user?.id]);
@@ -108,7 +114,6 @@ function Dashboard() {
   const scores = useQuery({ ...scoreEventsQuery(team.data?.id), refetchInterval: 3000 });
   const board = useQuery({ ...leaderboardQuery, refetchInterval: 3000 });
 
-  // Fetch all transactions
   const transactionsQuery = useQuery({
     queryKey: ["marketplace-transactions-list"],
     staleTime: 0,
@@ -126,7 +131,6 @@ function Dashboard() {
     },
   });
 
-  // Fetch all teams
   const teamsQuery = useQuery({
     queryKey: ["all-teams-list"],
     staleTime: 0,
@@ -168,18 +172,14 @@ function Dashboard() {
         const minStart = Math.min(...startTimes);
 
         const completedChs = stageProgs.filter((p) => p.status === "completed");
-        const allCompleted = stageChs.every((c) => completedChs.some((p) => p.challenge_id === c.id));
-
-        if (allCompleted) {
-          const completionTimes = completedChs.map((p) => p.completed_at ? new Date(p.completed_at).getTime() : 0).filter(Boolean);
-          if (completionTimes.length > 0) {
-            const maxCompletion = Math.max(...completionTimes);
-            const duration = Math.max(0, Math.round((maxCompletion - minStart) / 1000));
-            sumSeconds += duration;
+        if (completedChs.length === stageChs.length) {
+          const endTimes = stageProgs.map((p) => p.completed_at ? new Date(p.completed_at).getTime() : 0).filter(Boolean);
+          if (endTimes.length > 0) {
+            const maxEnd = Math.max(...endTimes);
+            sumSeconds += Math.max(0, Math.floor((maxEnd - minStart) / 1000));
           }
         } else {
-          const duration = Math.max(0, Math.round((Date.now() - minStart) / 1000));
-          sumSeconds += duration;
+          sumSeconds += Math.max(0, Math.floor((Date.now() - minStart) / 1000));
         }
       });
 
@@ -191,11 +191,16 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, [stages.data, challenges.data, progress.data]);
 
-  useEffect(() => {
-    if (isAdmin.data) {
-      navigate({ to: "/admin", replace: true });
-    }
-  }, [isAdmin.data, navigate]);
+  if (team.isLoading || stages.isLoading || challenges.isLoading) {
+    return (
+      <AppShell isAdmin={isAdmin.data}>
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Caricamento stato di gara...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (isAdmin.isLoading || isAdmin.data) {
     return (
@@ -219,7 +224,6 @@ function Dashboard() {
   const allChallenges = challenges.data ?? [];
   const allChallengeIds = new Set(allChallenges.map((c) => c.id));
   const prog = progress.data ?? [];
-  // Only count progress entries whose challenge actually exists in the DB
   const completedCount = prog.filter((p) => p.status === "completed" && allChallengeIds.has(p.challenge_id)).length;
   const percent = allChallenges.length ? (completedCount / allChallenges.length) * 100 : 0;
 
@@ -234,7 +238,6 @@ function Dashboard() {
   );
   const activeSession = (sessions.data ?? []).find((s) => s.stage_id === currentStage?.id);
 
-  // Check if Tappa 3 is unlocked
   const stage3 = stages.data?.find((s) => s.id === "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c");
   const isMarketplaceUnlocked = stage3 && stages.data && challenges.data && progress.data
     ? isStageUnlocked(stage3, stages.data, challenges.data, progress.data)
@@ -243,31 +246,53 @@ function Dashboard() {
   const transactions = transactionsQuery.data ?? [];
   const allTeams = teamsQuery.data ?? [];
   const myPurchases = team.data?.id ? transactions.filter((t) => t.buyer_team_id === team.data?.id) : [];
-  
-  const myBonuses = myPurchases.filter((t) => {
-    const item = MARKETPLACE_ITEMS.find((i) => i.id === t.item_id);
-    return item?.categoria === "BONUS";
-  });
-
-  const mySentMaluses = myPurchases.filter((t) => {
-    const item = MARKETPLACE_ITEMS.find((i) => i.id === t.item_id);
-    return item?.categoria === "MALUS";
-  });
-
   const myReceivedMaluses = team.data?.id ? transactions.filter((t) => t.target_team_id === team.data?.id) : [];
 
   const activeShield = myPurchases.find((t) => t.item_id === "bonus_scudo" && t.stato === "completed");
-  const consumedShield = myPurchases.find((t) => t.item_id === "bonus_scudo" && t.stato === "used");
-  const blockedMalusItem = consumedShield?.blocked_info?.item_id;
-  const blockedMalusDetails = blockedMalusItem ? MARKETPLACE_ITEMS.find((i) => i.id === blockedMalusItem) : null;
-  const blockedMalusLabel = blockedMalusDetails?.nome || blockedMalusItem || "avversario";
-
+  const active2x = myPurchases.find((t) => t.item_id === "moltiplicatore_2x" && t.stato === "completed");
+  const activePolizza = myPurchases.find((t) => t.item_id === "polizza_diretta" && t.stato === "completed");
+  const activeClassifica = myPurchases.find((t) => t.item_id === "bonus_classifica" && t.stato === "completed");
   const activePartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "completed");
-  const usedPartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "used");
-
-  const activePassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "completed");
+  const activePassaparola = myPurchases.find((t) => t.item_id === "passaparola" && (t.stato === "completed" || t.stato === "pending"));
   const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
-  const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used");
+
+  const activeDimezza = myReceivedMaluses.find((t) => t.item_id === "dimezza_punti" && t.stato === "completed");
+  const blackoutTx = myReceivedMaluses.find((t) => 
+    t.item_id === "blackout_mercato" && 
+    t.stato === "completed" && 
+    (t.timestamp || t.data_acquisto) &&
+    (Date.now() - new Date(t.timestamp || t.data_acquisto).getTime()) < 360 * 1000
+  );
+  const isMarketplaceFrozen = Boolean(blackoutTx);
+  const isTeamFrozen = team.data?.freeze_expires_at && new Date(team.data.freeze_expires_at).getTime() > Date.now();
+  const activeEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "completed");
+  const solvedEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "used");
+  const activeRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "completed");
+  const solvedRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "used");
+
+  const consumedShields = myPurchases.filter(
+    (t) => t.item_id === "bonus_scudo" && t.stato === "used" && !dismissedNotifications.includes(t.id)
+  );
+  const parriedAttacks = myPurchases.filter(
+    (t) => (t.stato === "expired" || t.dettagli?.blocked_by_shield_id || t.outcome?.blocked_by_shield_id) && 
+           t.target_team_id && 
+           !dismissedNotifications.includes(t.id)
+  );
+  const used2xList = myPurchases.filter(
+    (t) => t.item_id === "moltiplicatore_2x" && t.stato === "used" && !dismissedNotifications.includes(t.id)
+  );
+  const usedPolizzaList = myPurchases.filter(
+    (t) => t.item_id === "polizza_diretta" && t.stato === "used" && !dismissedNotifications.includes(t.id)
+  );
+  const recentTrappolaReceived = myReceivedMaluses.filter(
+    (t) => t.item_id === "trappola" && !dismissedNotifications.includes(t.id)
+  );
+  const recentPenalitaReceived = myReceivedMaluses.filter(
+    (t) => t.item_id === "penalita_punti" && !dismissedNotifications.includes(t.id)
+  );
+  const recentTassaReceived = myReceivedMaluses.filter(
+    (t) => t.item_id === "tassa_passaggio" && !dismissedNotifications.includes(t.id)
+  );
 
   const handleSendPassaparola = async () => {
     if (!usePassaparolaTx) return;
@@ -296,24 +321,6 @@ function Dashboard() {
     }
   };
 
-  const isTeamFrozen = team.data?.freeze_expires_at && new Date(team.data.freeze_expires_at).getTime() > Date.now();
-  // Blackout mercato: check for an active blackout_mercato transaction targeting this team within last 6 minutes
-  const blackoutTx = myReceivedMaluses.find((t) => 
-    t.item_id === "blackout_mercato" && 
-    t.stato === "completed" && 
-    (t.timestamp || t.data_acquisto) &&
-    (Date.now() - new Date(t.timestamp || t.data_acquisto).getTime()) < 360 * 1000
-  );
-  const isMarketplaceFrozen = Boolean(blackoutTx);
-  const activeEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "completed");
-  const solvedEnigma = myReceivedMaluses.find((t) => t.item_id === "enigma_extra" && t.stato === "used");
-  const activeRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "completed");
-  const solvedRuota = myReceivedMaluses.find((t) => t.item_id === "ruota_sfortunata" && t.stato === "used");
-  const active2x = myPurchases.find((t) => t.item_id === "moltiplicatore_2x" && t.stato === "completed");
-  const activePolizza = myPurchases.find((t) => t.item_id === "polizza_diretta" && t.stato === "completed");
-  const activeDimezza = myReceivedMaluses.find((t) => t.item_id === "dimezza_punti" && t.stato === "completed");
-
-  // Find any closed stage rewards that need to be shown to the team
   const closedStageRewards = (stages.data ?? [])
     .filter((s: any) => (s.status === "closed" || s.stato === "closed") && !dismissedRewards.includes(s.id))
     .map((s: any) => {
@@ -329,7 +336,6 @@ function Dashboard() {
     <AppShell isAdmin={isAdmin.data}>
       <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto">
         
-        {/* STAGE REWARD NOTIFICATIONS */}
         {closedStageRewards.map(({ stage, tx }) => {
           const outcome = tx.outcome;
           if (!outcome) return null;
@@ -376,29 +382,64 @@ function Dashboard() {
           );
         })}
 
-        {/* CONSUMED SHIELD NOTIFICATION */}
-        {consumedShield && dismissedShieldId !== consumedShield.id && (
-          <div className="bg-blue-950/20 border border-blue-500/30 text-blue-400 p-4 rounded-2xl flex items-center justify-between text-xs animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20">
-                <Shield className="size-4 text-blue-400 stroke-[2.5]" />
+        {/* 1. CONSUMED SHIELD NOTIFICATIONS (FOR VICTIM) */}
+        {consumedShields.map((cs) => {
+          const details = cs.outcome || cs.dettagli;
+          const attackerName = details?.blocked_attacker_name || (allTeams.find((t: any) => t.id === details?.blocked_attacker_id)?.nome_squadra) || "Un avversario";
+          const malusName = details?.blocked_malus_name || (MARKETPLACE_ITEMS.find((i) => i.id === details?.blocked_malus_id)?.nome) || "Malus Avversario";
+
+          return (
+            <div key={cs.id} className="bg-blue-950/30 border border-blue-500/40 text-blue-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-blue-950/30">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                  <Shield className="size-5 text-blue-400 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-blue-400">🛡️ SCUDO ATTIVATO — MALUS PARATO!</h4>
+                  <p className="text-[11px] text-zinc-300">
+                    La squadra <strong className="text-white">{attackerName}</strong> ha tentato di inviarti <strong className="text-blue-300">{malusName}</strong>. Il tuo Scudo ha parato ed annullato completamente il colpo!
+                  </p>
+                </div>
               </div>
-              <div>
-                <strong className="block text-sm uppercase tracking-wide font-black">🛡️ SCUDO ATTIVATO!</strong>
-                <span className="text-muted-foreground">
-                  Il Malus <strong className="text-foreground">{blockedMalusLabel}</strong> è stato completamente bloccato. Il tuo Scudo è stato consumato.
-                </span>
-              </div>
+              <button
+                onClick={() => handleDismissNotification(cs.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50 transition-all shrink-0 cursor-pointer"
+              >
+                ✕ Chiudi
+              </button>
             </div>
-            <button
-              onClick={() => handleDismissShieldAlert(consumedShield.id)}
-              className="text-xs font-black hover:text-white px-2 py-1 rounded hover:bg-white/5 transition-all shrink-0 ml-4 cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-        {/* ACTIVE 2X MULTIPLIER NOTIFICATION */}
+          );
+        })}
+
+        {/* 2. PARRIED MALUS NOTIFICATION (FOR ATTACKER) */}
+        {parriedAttacks.map((pa) => {
+          const targetName = (allTeams.find((t: any) => t.id === pa.target_team_id)?.nome_squadra) || "La squadra bersaglio";
+          const malusItem = MARKETPLACE_ITEMS.find((i) => i.id === pa.item_id);
+
+          return (
+            <div key={pa.id} className="bg-zinc-900/80 border border-zinc-500/40 text-zinc-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-black/40">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-zinc-800 border border-zinc-600 flex items-center justify-center shrink-0">
+                  <Shield className="size-5 text-zinc-400" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-zinc-200">🛡️ MALUS PARATO DALLO SCUDO!</h4>
+                  <p className="text-[11px] text-zinc-400">
+                    <strong className="text-white">{targetName}</strong> era protetta da uno Scudo. Il tuo <strong className="text-zinc-200">{malusItem?.nome || pa.item_id}</strong> è stato neutralizzato.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(pa.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-all shrink-0 cursor-pointer"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
+          );
+        })}
+
+        {/* 3. ACTIVE 2X MULTIPLIER NOTIFICATION */}
         {active2x && (
           <div className="bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border border-amber-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-amber-950/20 animate-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
@@ -407,7 +448,7 @@ function Dashboard() {
               </div>
               <div>
                 <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider">✨ MOLTIPLICATORE 2X ATTIVO</h4>
-                <p className="text-[11px] text-zinc-300">Il punteggio totale delle prove della tappa in corso sarà raddoppiato (x2)!</p>
+                <p className="text-[11px] text-zinc-300">Il punteggio della prossima prova completata con successo sarà raddoppiato (x2)!</p>
               </div>
             </div>
             <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
@@ -416,7 +457,7 @@ function Dashboard() {
           </div>
         )}
 
-        {/* ACTIVE POLIZZA NOTIFICATION */}
+        {/* 4. ACTIVE POLIZZA NOTIFICATION */}
         {activePolizza && (
           <div className="bg-gradient-to-r from-emerald-500/15 to-teal-500/10 border border-emerald-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-emerald-950/20 animate-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
@@ -434,7 +475,25 @@ function Dashboard() {
           </div>
         )}
 
-        {/* RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
+        {/* 5. ACTIVE SHIELD NOTIFICATION */}
+        {activeShield && (
+          <div className="bg-gradient-to-r from-blue-500/15 to-cyan-500/10 border border-blue-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-blue-950/20 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
+                <Shield className="size-5 text-blue-400 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider">🛡️ SCUDO PROTETTIVO ATTIVO</h4>
+                <p className="text-[11px] text-zinc-300">La tua squadra è completamente immune e protetta dal prossimo Malus avversario.</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
+              Protetto
+            </span>
+          </div>
+        )}
+
+        {/* 6. RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
         {activeDimezza && (
           <div className="bg-gradient-to-r from-red-500/20 to-rose-950/30 border border-red-500/50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-red-950/30 animate-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
@@ -459,7 +518,7 @@ function Dashboard() {
           </div>
         )}
 
-        {/* MARKETPLACE BLACKOUT NOTIFICATION */}
+        {/* 7. MARKETPLACE BLACKOUT NOTIFICATION */}
         {isMarketplaceFrozen && (
           <div className="bg-gradient-to-r from-zinc-800/40 to-stone-900/60 border border-zinc-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-black/40 animate-in slide-in-from-top-4 duration-300">
             <div className="flex items-center gap-3">
@@ -483,6 +542,129 @@ function Dashboard() {
             </span>
           </div>
         )}
+
+        {/* 8. USED BONUS / MALUS COMPLETED SUMMARIES (DISMISSABLE) */}
+        {used2xList.map((u2x) => (
+          <div key={u2x.id} className="bg-amber-950/25 border border-amber-500/40 text-amber-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <Zap className="size-5 text-amber-400" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">✅ MOLTIPLICATORE 2X UTILIZZATO</h4>
+                <p className="text-[11px] text-zinc-300">
+                  Il moltiplicatore 2X è stato applicato con successo alla prova completata, raddoppiando i punti ottenuti!
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleDismissNotification(u2x.id)}
+              className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-amber-900/40 border border-amber-500/30 hover:bg-amber-800/50 transition-all shrink-0 cursor-pointer"
+            >
+              ✕ Chiudi
+            </button>
+          </div>
+        ))}
+
+        {usedPolizzaList.map((up) => {
+          const refund = up.outcome?.refunded_points ?? up.dettagli?.refunded_points ?? 10;
+          return (
+            <div key={up.id} className="bg-emerald-950/25 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <Shield className="size-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">✅ POLIZZA RIMBORSO 50% APPLICATA</h4>
+                  <p className="text-[11px] text-zinc-300">
+                    A seguito di un malus subito, hai ricevuto un rimborso automatico di <strong className="text-emerald-400">+{refund} PT</strong> accreditati in classifica!
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(up.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 transition-all shrink-0 cursor-pointer"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
+          );
+        })}
+
+        {recentTrappolaReceived.map((tr) => {
+          const attacker = (allTeams.find((t: any) => t.id === tr.buyer_team_id)?.nome_squadra) || "Una squadra avversaria";
+          return (
+            <div key={tr.id} className="bg-rose-950/30 border border-rose-500/40 text-rose-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0">
+                  <span className="text-lg">🪤</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-rose-400">🪤 TRAPPOLA SUBITA</h4>
+                  <p className="text-[11px] text-zinc-300">
+                    La squadra <strong className="text-white">{attacker}</strong> ha attivato una Trappola rubando punti alla tua squadra.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(tr.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 transition-all shrink-0 cursor-pointer"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
+          );
+        })}
+
+        {recentPenalitaReceived.map((pr) => {
+          const attacker = (allTeams.find((t: any) => t.id === pr.buyer_team_id)?.nome_squadra) || "Una squadra avversaria";
+          return (
+            <div key={pr.id} className="bg-rose-950/30 border border-rose-500/40 text-rose-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0">
+                  <span className="text-lg">💥</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-rose-400">💥 PENALITÀ PUNTI SUBITA</h4>
+                  <p className="text-[11px] text-zinc-300">
+                    La squadra <strong className="text-white">{attacker}</strong> ha inflitto una penalità di -20 PT alla tua squadra.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(pr.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 transition-all shrink-0 cursor-pointer"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
+          );
+        })}
+
+        {recentTassaReceived.map((tr) => {
+          const attacker = (allTeams.find((t: any) => t.id === tr.buyer_team_id)?.nome_squadra) || "Una squadra avversaria";
+          return (
+            <div key={tr.id} className="bg-purple-950/30 border border-purple-500/40 text-purple-300 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
+                  <span className="text-lg">🔄</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-purple-400">🔄 TASSA DI PASSAGGIO SUBITA</h4>
+                  <p className="text-[11px] text-zinc-300">
+                    La squadra <strong className="text-white">{attacker}</strong> ha scambiato il suo punteggio con la tua squadra.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(tr.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-purple-900/40 border border-purple-500/30 hover:bg-purple-800/50 transition-all shrink-0 cursor-pointer"
+              >
+                ✕ Chiudi
+              </button>
+            </div>
+          );
+        })}
 
         {/* TEAM COCKPIT HERO (UI/UX Pro Max Edition) */}
         <section

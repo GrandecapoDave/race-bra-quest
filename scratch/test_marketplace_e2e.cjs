@@ -40,7 +40,7 @@ async function runTests() {
       ('${userB}', '${teamB}', 'team');
   `);
 
-  const challengeId = runSql(`SELECT id FROM public.challenges WHERE tipo_sfida IS NULL OR (tipo_sfida != 'photo' AND tipo_sfida != 'living_poster' AND tipo_sfida != 'social') LIMIT 1;`);
+  const challengeId = runSql(`SELECT id FROM public.challenges WHERE tipo_sfida = 'codice' LIMIT 1;`);
   runSql(`UPDATE public.challenges SET punteggio_massimo = 20 WHERE id = '${challengeId}';`);
 
   console.log(`Using challengeId: ${challengeId}`);
