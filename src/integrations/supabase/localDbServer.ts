@@ -2997,11 +2997,11 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           } else if (item.id === "dimezza_punti" && targetTeam) {
             const p_target_stage_id = args.p_target_stage_id;
             const targetStage = db.stages?.find((s: any) => s.id === p_target_stage_id);
-            const stageChallenges = db.challenges.filter((c: any) => c.stage_id === p_target_stage_id);
-            const compChallenges = db.team_progress.filter(
-              (p: any) => p.team_id === targetTeam.id && p.stage_id === p_target_stage_id && p.stato === "completed",
+            const stageChallengeIds = (db.challenges ?? []).filter((c: any) => c.stage_id === p_target_stage_id).map((c: any) => c.id);
+            const compChallenges = (db.team_progress ?? []).filter(
+              (p: any) => p.team_id === targetTeam.id && stageChallengeIds.includes(p.challenge_id) && p.stato === "completed",
             );
-            const isCompleted = stageChallenges.length > 0 && compChallenges.length >= stageChallenges.length;
+            const isCompleted = stageChallengeIds.length > 0 && compChallenges.length >= stageChallengeIds.length;
 
             if (isCompleted) {
               const stageScores = db.scores.filter(
