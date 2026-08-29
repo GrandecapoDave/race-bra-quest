@@ -28,18 +28,32 @@ function AdminPhotosPage() {
   const allPhotoSubmissions = useMemo(() => {
     const rawSubmissions = (allSubmissions.data ?? []) as any[];
     return rawSubmissions.filter((s: any) => {
-      const type = s.challenges?.tipo_sfida;
-      return type === "photo" || type === "living_poster" || Boolean(s.file_upload);
+      const type = s.challenges?.tipo_sfida || s.tipo;
+      const isLivingPoster =
+        type === "living_poster" ||
+        s.challenge_id === "555f4e1f-7443-42e7-9d7a-115f2122888f" ||
+        (s.challenges?.titolo || "").toLowerCase().includes("locandina") ||
+        (s.note || "").toLowerCase().includes("locandina");
+      const isSocial =
+        type === "social" ||
+        s.challenge_id === "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0" ||
+        (s.challenges?.titolo || "").toLowerCase().includes("social");
+
+      if (isLivingPoster || isSocial) return false;
+      return type === "photo" || Boolean(s.file_upload);
     });
   }, [allSubmissions.data]);
 
   // Derived available challenges based on selected stage
   const availableChallenges = useMemo(() => {
     const challengesList = (challenges.data ?? []) as any[];
-    if (selectedStageId === "all") {
-      return challengesList.filter((c: any) => c.tipo_sfida === "photo" || c.tipo_sfida === "living_poster");
-    }
-    return challengesList.filter((c: any) => c.stage_id === selectedStageId && (c.tipo_sfida === "photo" || c.tipo_sfida === "living_poster"));
+    return challengesList.filter((c: any) => {
+      if (c.tipo_sfida !== "photo") return false;
+      if (c.id === "555f4e1f-7443-42e7-9d7a-115f2122888f" || (c.titolo || "").toLowerCase().includes("locandina")) return false;
+      if (c.id === "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0" || (c.titolo || "").toLowerCase().includes("social")) return false;
+      if (selectedStageId !== "all" && c.stage_id !== selectedStageId) return false;
+      return true;
+    });
   }, [challenges.data, selectedStageId]);
 
   // Filtered submissions based on status, stage, challenge

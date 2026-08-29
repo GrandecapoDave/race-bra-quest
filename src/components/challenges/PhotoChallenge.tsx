@@ -54,6 +54,10 @@ export function PhotoChallenge({
       toast.error("Crea prima la tua squadra");
       return;
     }
+    if (photos.length > 0 || completed) {
+      toast.error("Hai già inviato la foto ufficiale per questa prova.");
+      return;
+    }
     if (file.size > 15 * 1024 * 1024) {
       toast.error("Immagine troppo grande (max 15MB)");
       return;
@@ -76,6 +80,10 @@ export function PhotoChallenge({
   async function handleConfirmUpload() {
     if (!team || !pendingFile) {
       toast.error("Nessuna foto selezionata");
+      return;
+    }
+    if (photos.length > 0 || completed) {
+      toast.error("Hai già inviato la foto ufficiale per questa prova.");
       return;
     }
 
@@ -118,8 +126,25 @@ export function PhotoChallenge({
 
   return (
     <div className="space-y-4">
-      {/* PENDING PHOTO REVIEW & ADJUSTMENT MODAL/CARD */}
-      {previewUrl && pendingFile ? (
+      {photos.length > 0 ? (
+        <div className="space-y-4">
+          <div className="bg-zinc-900/70 p-4 rounded-xl border border-zinc-800 text-center space-y-1">
+            <p className="text-xs font-bold text-emerald-400 flex items-center justify-center gap-1.5">
+              <Check className="size-4" /> Foto inviata il {photos[0]?.created_at ? new Date(photos[0].created_at).toLocaleString("it-IT") : ""}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Consegna completata e in attesa di revisione della Regia.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
+            {photos.map((p) => (
+              <PhotoCard key={p.id} path={p.url} lat={p.latitude} lng={p.longitude} at={p.created_at} />
+            ))}
+          </div>
+        </div>
+      ) : previewUrl && pendingFile ? (
+        /* PENDING PHOTO REVIEW & ADJUSTMENT MODAL/CARD */
         <div className="surface p-4 rounded-2xl border-2 border-primary/40 bg-zinc-950/60 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
@@ -227,24 +252,22 @@ export function PhotoChallenge({
         </label>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
-        {photos.map((p) => (
-          <PhotoCard key={p.id} path={p.url} lat={p.latitude} lng={p.longitude} at={p.created_at} />
-        ))}
-      </div>
-
       {completed ? (
         <p className="flex items-center gap-2 rounded-xl bg-success/15 px-4 py-3 text-sm font-bold text-success">
           <Check className="size-4" /> Prova completata
         </p>
+      ) : photos.length === 0 ? (
+        <p className="text-xs text-center text-muted-foreground">
+          Carica la foto richiesta per completare la prova.
+        </p>
       ) : (
         <button
           onClick={onComplete}
-          disabled={photos.length === 0 || completing || !!pendingFile}
+          disabled={completing || !!pendingFile}
           className="primary-gradient flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-extrabold text-primary-foreground disabled:opacity-40"
         >
           {completing && <Loader2 className="size-4 animate-spin" />}
-          {photos.length === 0 ? "Carica almeno una foto" : "Consegna la foto ufficiale"}
+          <span>Conferma completamento</span>
         </button>
       )}
     </div>

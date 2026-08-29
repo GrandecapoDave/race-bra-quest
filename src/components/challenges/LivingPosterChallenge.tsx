@@ -93,6 +93,10 @@ export function LivingPosterChallenge({
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    if (submission || completed) {
+      toast.error("Hai già inviato la ricostruzione per questa locandina.");
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -120,6 +124,10 @@ export function LivingPosterChallenge({
   async function handleUpload() {
     if (!team || !selectedFile || !poster) {
       toast.error("Impossibile procedere con l'invio.");
+      return;
+    }
+    if (submission || completed) {
+      toast.error("Hai già inviato la ricostruzione per questa locandina.");
       return;
     }
 
@@ -326,11 +334,13 @@ export function LivingPosterChallenge({
               </div>
             ) : (
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-3">
-                <Check className="size-5 text-green-500 shrink-0" />
+                <Check className="size-5 text-emerald-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-zinc-300">Foto consegnata con successo!</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Sfida superata. La regia valuterà l'interpretazione ed assegnerà a breve il punteggio extra.
+                  <p className="text-sm font-bold text-emerald-400">
+                    ✅ Foto inviata il {new Date(submission.created_at || submission.timestamp || Date.now()).toLocaleString("it-IT")}
+                  </p>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Consegna completata e in attesa di revisione della Regia.
                   </p>
                 </div>
               </div>

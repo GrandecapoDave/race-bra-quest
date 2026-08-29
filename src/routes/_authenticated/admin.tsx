@@ -1066,15 +1066,37 @@ export function ScoreEvaluator({
 
   const handleConfirmClick = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (alreadyConfirmed) return;
     const clampedPoints = Math.max(0, Math.min(maxPoints, Number(points) || 0));
-    if (alreadyConfirmed) {
-      const confirmChange = window.confirm(
-        `Questa prova è già stata verificata con ${currentPoints} punti. Sei sicuro di voler modificare il punteggio in ${clampedPoints} punti?`
-      );
-      if (!confirmChange) return;
-    }
     await onConfirm(clampedPoints);
   };
+
+  if (alreadyConfirmed) {
+    return (
+      <div className="bg-emerald-950/20 p-4 rounded-xl border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <CheckCircle className="size-5" />
+          </div>
+          <div>
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              🟢 Valutazione Definitiva: {currentPoints} PT
+            </span>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Punteggio consolidato e confermato dalla Regia.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-zinc-950/80 px-4 py-2 rounded-xl border border-emerald-500/30 text-center shrink-0">
+          <span className="text-[9px] text-muted-foreground font-bold uppercase block">Punti Assegnati</span>
+          <strong className="text-emerald-400 font-mono font-black text-base">
+            {currentPoints} / {maxPoints} PT
+          </strong>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800/80 space-y-4">

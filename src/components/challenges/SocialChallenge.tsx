@@ -101,6 +101,10 @@ export function SocialChallenge({
   }, [preview1, preview2]);
 
   function handleFileSelect(index: 1 | 2, file: File) {
+    if (sub || completed) {
+      toast.error("Hai già inviato gli scatti per questa missione social.");
+      return;
+    }
     if (file.size > 15 * 1024 * 1024) {
       toast.error("Immagine troppo grande (max 15MB)");
       return;
@@ -124,6 +128,10 @@ export function SocialChallenge({
   async function handleSend() {
     if (!team) {
       toast.error("Crea prima la tua squadra");
+      return;
+    }
+    if (sub || completed) {
+      toast.error("Hai già inviato gli scatti per questa missione social.");
       return;
     }
     if (!file1 || !file2) {
@@ -326,12 +334,12 @@ export function SocialChallenge({
 
       {isPendingValuation && (
         <section className="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-5 text-center space-y-4 animate-pop-in">
-          <div className="space-y-1">
-            <h4 className="text-sm font-extrabold text-success uppercase flex items-center gap-1.5 justify-center">
-              <Check className="size-4" /> Foto Inviate con Successo!
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center space-y-1">
+            <h4 className="text-sm font-extrabold text-emerald-400 uppercase flex items-center gap-1.5 justify-center">
+              <Check className="size-4" /> Foto inviata il {new Date(sub.uploaded_at).toLocaleString("it-IT")}
             </h4>
             <p className="text-xs text-zinc-400">
-              Le tue foto sono state inviate alla regia. Puoi proseguire subito la tua gara.
+              Consegna completata e in attesa di revisione della Regia.
             </p>
           </div>
 
