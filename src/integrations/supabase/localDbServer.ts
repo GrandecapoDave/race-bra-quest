@@ -3507,13 +3507,13 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             return timeA - timeB;
           });
 
-          // Reward tokens: 1ª=15, 2ª=13, 3ª=11, 4ª=9, 5ª=7, 6ª=6, 7ª=5, 8ª=4
-          const rewardTable = [15, 13, 11, 9, 7, 6, 5, 4];
+          // Reward tokens for up to 12 teams: 1ª=25, 2ª=20, 3ª=16, 4ª=13, 5ª=10, 6ª=8, 7ª=6, 8ª=5, 9ª=4, 10ª=3, 11ª=2, 12ª=1
+          const rewardTable = [25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1];
           const MAX_TOKENS = 80;
 
           const results = teamStats.map((stat: any, index: number) => {
             const position = index + 1;
-            const reward = rewardTable[index] ?? 4;
+            const reward = rewardTable[index] ?? 1;
 
             // Chi non è cattivo paga logic
             const maluses = (db.cattiveria_ledger || []).filter(
