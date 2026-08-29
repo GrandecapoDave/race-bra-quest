@@ -18,6 +18,7 @@ import {
   leaderboardQuery,
   myTeamQuery,
   progressQuery,
+  scoreEventsQuery,
   rankLeaderboard,
   sessionsQuery,
   stagesQuery,
@@ -95,6 +96,7 @@ function Dashboard() {
   const challenges = useQuery(challengesQuery);
   const progress = useQuery({ ...progressQuery(team.data?.id), refetchInterval: 3000 });
   const sessions = useQuery({ ...sessionsQuery(team.data?.id), refetchInterval: 3000 });
+  const scores = useQuery({ ...scoreEventsQuery(team.data?.id), refetchInterval: 3000 });
   const board = useQuery({ ...leaderboardQuery, refetchInterval: 3000 });
 
   // Fetch all transactions
@@ -198,6 +200,11 @@ function Dashboard() {
   }
 
   const myScore = board.data?.find((r) => r.team_id === team.data?.id);
+  const directScorePoints = (scores.data ?? []).reduce(
+    (acc: number, s: any) => acc + (s.points ?? s.punti ?? 0),
+    0
+  );
+  const displayTotalPoints = myScore?.total_points ?? (directScorePoints > 0 ? directScorePoints : 0);
   const position = myScore?.rank ?? (rankLeaderboard(board.data ?? []).findIndex((r) => r.team_id === team.data?.id) + 1);
 
   const allChallenges = challenges.data ?? [];
@@ -457,7 +464,7 @@ function Dashboard() {
                 <span>Punti</span>
               </div>
               <div className="font-display text-2xl sm:text-4xl font-black text-foreground mt-0.5 tracking-tight">
-                {myScore?.total_points ?? 0}
+                {displayTotalPoints}
               </div>
             </div>
 

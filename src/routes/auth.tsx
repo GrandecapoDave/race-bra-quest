@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, Flag, Eye, EyeOff } from "lucide-react";
@@ -31,6 +32,7 @@ const schema = z.object({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -79,11 +81,30 @@ function AuthPage() {
       const formattedUsername = parsed.data.username.trim().toLowerCase();
       const email = `${formattedUsername}@pechino.it`;
 
-      const { error } = await supabase.auth.signInWithPassword({
+      // Clear any cached query states before fresh login
+      queryClient.clear();
+
+      let { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: parsed.data.password,
       });
-      if (error) throw error;
+
+      if (signInError) {
+        // Attempt sign up if team was registered in admin table
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: parsed.data.password,
+          options: {
+            data: { display_name: formattedUsername },
+          },
+        });
+        if (signUpError) {
+          throw signInError;
+        }
+      }
+
+      // Invalidate all queries to fetch brand new session state
+      await queryClient.invalidateQueries();
 
       // Persist or clear remembered credentials
       try {

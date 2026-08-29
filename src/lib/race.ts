@@ -176,30 +176,55 @@ export const allTeamsQuery = queryOptions({
 
 export const myTeamQuery = queryOptions({
   queryKey: ["my-team"],
+  staleTime: 0,
   queryFn: async (): Promise<Team | null> => {
-    const { data: idData, error: idError } = await (supabase as any).rpc("current_team_id");
-    if (idError) {
-      console.warn("[race] myTeamQuery rpc error:", idError);
-      return null;
+    let teamId: string | null = null;
+    try {
+      const { data: idData } = await (supabase as any).rpc("current_team_id");
+      if (idData) teamId = idData as string;
+    } catch (err) {
+      console.warn("[race] myTeamQuery rpc error:", err);
     }
-    if (!idData) return null;
-    const { data, error } = await (supabase as any)
-      .from("teams")
-      .select("id,name:nome_squadra,motto,avatar_url,color:colore,created_at,token_balance,freeze_started_at,freeze_expires_at,freeze_duration_seconds")
-      .eq("id", idData as string)
-      .maybeSingle();
-    if (error) {
-      console.warn("[race] myTeamQuery select error:", error);
-      return null;
+
+    let data: any = null;
+
+    if (teamId) {
+      const res = await (supabase as any)
+        .from("teams")
+        .select("id,name:nome_squadra,motto,avatar_url,color:colore,created_at,token_balance,freeze_started_at,freeze_expires_at,freeze_duration_seconds,owner_id,username")
+        .eq("id", teamId)
+        .maybeSingle();
+      data = res.data;
     }
+
+    // Fallback: match by currently authenticated user
+    if (!data) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+        if (user) {
+          const usernameFromEmail = user.email ? user.email.split("@")[0].toLowerCase() : "";
+          const res = await (supabase as any)
+            .from("teams")
+            .select("id,name:nome_squadra,motto,avatar_url,color:colore,created_at,token_balance,freeze_started_at,freeze_expires_at,freeze_duration_seconds,owner_id,username")
+            .or(`owner_id.eq.${user.id},id.eq.${user.id},username.eq.${usernameFromEmail},nome_squadra.eq.${usernameFromEmail}`)
+            .maybeSingle();
+          data = res.data;
+        }
+      } catch (authErr) {
+        console.warn("[race] myTeamQuery auth fallback error:", authErr);
+      }
+    }
+
     if (!data) return null;
+
     return {
       id: data.id,
       name: data.name,
       motto: data.motto,
       avatar_url: data.avatar_url,
       color: data.color || "#f97316",
-      owner_id: data.id,
+      owner_id: data.owner_id || data.id,
       created_at: data.created_at,
       token_balance: data.token_balance ?? 0,
       freeze_started_at: data.freeze_started_at,
@@ -213,14 +238,68 @@ export const leaderboardQuery = queryOptions({
   queryKey: ["leaderboard"],
   staleTime: 0,
   queryFn: async () => {
-    const { data, error } = await (supabase as any).rpc("get_secure_leaderboard");
-    if (error) {
-      console.warn("[race] leaderboardQuery error:", error);
-      return [];
+    try {
+      const { data, error } = await (supabase as any).rpc("get_secure_leaderboard");
+      if (!error && data && Array.isArray(data) && data.length > 0) {
+        return data as LeaderboardRow[];
+      }
+    } catch (err) {
+      console.warn("[race] leaderboardQuery rpc error:", err);
     }
-    return data as LeaderboardRow[];
+
+    // High-resilience direct calculation fallback
+    try {
+      const { data: teams } = await (supabase as any).from("teams").select("*");
+      const { data: scores } = await (supabase as any).from("scores").select("*");
+      const { data: progress } = await (supabase as any).from("team_progress").select("*");
+      const { data: cattiveria } = await (supabase as any).from("cattiveria_ledger").select("*");
+      const { data: penalties } = await (supabase as any).from("time_penalties").select("*");
+
+      if (teams && teams.length > 0) {
+        const rows: LeaderboardRow[] = teams.map((t: any) => {
+          const teamScores = (scores || []).filter((s: any) => s.team_id === t.id);
+          const teamCatt = (cattiveria || []).filter((c: any) => c.team_id === t.id);
+          const teamProg = (progress || []).filter(
+            (p: any) => p.team_id === t.id && (p.stato === "completed" || p.status === "completed")
+          );
+          const teamPen = (penalties || []).filter((p: any) => p.team_id === t.id);
+
+          const chPts = teamScores.filter((s: any) => s.challenge_id).reduce((acc: number, s: any) => acc + (s.punti || 0), 0);
+          const modPts = teamScores.filter((s: any) => !s.challenge_id).reduce((acc: number, s: any) => acc + (s.punti || 0), 0);
+          const cattPts = teamCatt.reduce((acc: number, c: any) => acc + (c.punti || 0), 0);
+          const totPts = teamScores.reduce((acc: number, s: any) => acc + (s.punti || 0), 0) + cattPts;
+          const duration = teamPen.reduce((acc: number, p: any) => acc + (p.minuti_penalita || 0) * 60, 0);
+
+          return {
+            team_id: t.id,
+            name: t.nome_squadra || t.name,
+            color: t.colore || t.color || "#ea580c",
+            avatar_url: t.avatar_url,
+            motto: t.motto,
+            token_balance: t.token_balance ?? 0,
+            challenges_points: chPts,
+            modifier_points: modPts,
+            cattiveria_points: cattPts,
+            total_points: totPts,
+            completed_challenges: teamProg.length,
+            total_duration_seconds: duration,
+            last_completion: teamProg.length > 0 ? teamProg[teamProg.length - 1].created_at || null : null,
+            active: t.active ?? true,
+            freeze_started_at: t.freeze_started_at,
+            freeze_expires_at: t.freeze_expires_at,
+          } as LeaderboardRow;
+        });
+
+        rows.sort((a, b) => (b.total_points || 0) - (a.total_points || 0));
+        return rows;
+      }
+    } catch (fallbackErr) {
+      console.warn("[race] leaderboardQuery fallback error:", fallbackErr);
+    }
+
+    return [];
   },
-  refetchInterval: 20000,
+  refetchInterval: 5000,
 });
 
 export const progressQuery = (teamId: string | undefined) =>
