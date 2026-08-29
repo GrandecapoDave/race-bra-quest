@@ -170,29 +170,61 @@ export function TeamSetupChallenge({
   }, [name, motto, color, avatar, team, completed, queryClient]);
 
   async function addMember() {
-    if (!team || completed || memberName.trim().length < 2) return;
-    const { error } = await supabase
-      .from("team_members")
-      .insert({ team_id: team.id, name: memberName.trim().slice(0, 60) });
-    if (error) {
-      toast.error("Impossibile aggiungere il partecipante");
+    if (!team || completed) return;
+    const cleanName = memberName.trim();
+    if (cleanName.length < 2) {
+      toast.error("Inserisci almeno 2 caratteri per il nome del partecipante");
       return;
     }
-    setMemberName("");
-    members.refetch();
+    
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUserId = userData?.user?.id || null;
+
+      const { data, error } = await (supabase as any)
+        .from("team_members")
+        .insert({
+          team_id: team.id,
+          name: cleanName.slice(0, 60),
+          user_id: currentUserId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("[addMember] Supabase error:", error);
+        toast.error(error.message || "Impossibile aggiungere il partecipante");
+        return;
+      }
+
+      toast.success("Partecipante aggiunto con successo!");
+      setMemberName("");
+      await members.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["members", team.id] });
+      await queryClient.invalidateQueries({ queryKey: myTeamQuery.queryKey });
+    } catch (err: any) {
+      console.error("[addMember] exception:", err);
+      toast.error(err?.message || "Errore durante l'aggiunta del partecipante");
+    }
   }
 
   async function removeMember(memberId: string) {
     if (!team || completed) return;
-    const { error } = await supabase
-      .from("team_members")
-      .delete()
-      .eq("id", memberId);
-    if (error) {
-      toast.error("Impossibile rimuovere il partecipante");
-      return;
+    try {
+      const { error } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("id", memberId);
+      if (error) {
+        toast.error(error.message || "Impossibile rimuovere il partecipante");
+        return;
+      }
+      toast.info("Partecipante rimosso");
+      await members.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["members", team.id] });
+    } catch (err: any) {
+      toast.error("Errore durante la rimozione");
     }
-    members.refetch();
   }
 
   // Handle stage 1 challenge completion with strict validation
@@ -320,6 +352,7 @@ export function TeamSetupChallenge({
                   </div>
                   {!completed && (members.data?.length ?? 0) > 2 && (
                     <button
+                      type="button"
                       onClick={() => removeMember(m.id)}
                       className="text-zinc-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
                       title="Rimuovi partecipante"
@@ -332,35 +365,46 @@ export function TeamSetupChallenge({
             </ul>
 
             {!completed && (
-              <div className="pt-2 flex gap-2">
-                <input
-                  value={memberName}
-                  maxLength={60}
-                  onChange={(e) => setMemberName(e.target.value)}
-                  placeholder="Nome e Cognome partecipante..."
-                  className="flex-1 rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-                <button
-                  type="button"
-                  onClick={addMember}
-                  className="rounded-xl primary-gradient px-4 text-xs font-black text-primary-foreground uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md hover:brightness-110 active:scale-95"
-                >
-                  <Plus className="size-4 stroke-[3]" />
-                  Aggiungi
-                </button>
+              <div className="pt-2">
+                <span className="text-[11px] font-bold text-zinc-400 mb-1.5 block">
+                  Aggiungi partecipante alla squadra:
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    value={memberName}
+                    maxLength={60}
+                    onChange={(e) => setMemberName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addMember();
+                      }
+                    }}
+                    placeholder="Nome e Cognome partecipante..."
+                    className="flex-1 rounded-xl border border-input bg-input/40 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={addMember}
+                    className="rounded-xl primary-gradient px-4 text-xs font-black text-primary-foreground uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md hover:brightness-110 active:scale-95"
+                  >
+                    <Plus className="size-4 stroke-[3]" />
+                    Aggiungi
+                  </button>
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* ── AVATAR GRID (OBBLIGATORIO) ── */}
-      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-3">
+      {/* ── AVATAR SECTION WITH LUXURY FRAMES (CORNICI) ── */}
+      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">
             Scegli Avatar *
           </p>
-          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${
+          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
             avatar
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
               : "bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse"
@@ -369,7 +413,42 @@ export function TeamSetupChallenge({
           </span>
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-2.5">
+        {/* ACTIVE AVATAR SHOWCASE FRAME (CORNICE EMBLEMA SELEZIONATO) */}
+        {avatar && (
+          <div className="p-3.5 rounded-2xl border-2 border-primary/40 bg-zinc-900/90 shadow-lg shadow-primary/20 flex items-center gap-4 animate-in zoom-in-95 duration-200">
+            <div
+              className="p-1.5 rounded-2xl border-2 shadow-xl shrink-0"
+              style={{
+                borderColor: color || "#f97316",
+                backgroundColor: (color || "#f97316") + "26",
+                boxShadow: `0 0 15px -2px ${(color || "#f97316")}55`,
+              }}
+            >
+              <HeroAvatar
+                emoji={avatar}
+                size="lg"
+                radius="lg"
+                color={color}
+                isBordered
+                className="size-14 text-3xl shadow-inner bg-zinc-950/80"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                Cornice Avatar Ufficiale
+              </span>
+              <h4 className="text-sm font-extrabold text-white truncate">
+                Emblema Selezionato: <span className="text-lg">{avatar}</span>
+              </h4>
+              <p className="text-[10px] text-muted-foreground">
+                Questo stemma incorniciato apparirà accanto al vostro nome su tutti i tabelloni di gara.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* AVATAR GRID WITH FRAMES (CORNICI RIFINITE PER OGNI AVATAR) */}
+        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2.5">
           {AVATARS.map((a) => {
             const isMine  = avatar === a;
             const isTaken = !isMine && takenAvatars.has(a);
@@ -385,7 +464,13 @@ export function TeamSetupChallenge({
                     triggerHaptic("light");
                   }
                 }}
-                className="cursor-pointer"
+                className={`p-1 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex items-center justify-center ${
+                  isMine
+                    ? "border-primary bg-primary/20 shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/40 ring-offset-2 ring-offset-zinc-950"
+                    : isTaken || completed
+                    ? "border-zinc-800/40 bg-zinc-950/40 opacity-30 cursor-not-allowed"
+                    : "border-zinc-700/80 bg-zinc-900/90 hover:border-primary/60 hover:bg-zinc-800/80 hover:scale-105"
+                }`}
               >
                 <HeroAvatar
                   emoji={a}
@@ -394,20 +479,14 @@ export function TeamSetupChallenge({
                   color={color}
                   isBordered={isMine}
                   isDisabled={completed || isTaken}
-                  isHoverable={!completed && !isTaken}
-                  isPressable={!completed && !isTaken}
-                  className={cn(
-                    "size-12 text-2xl transition-all duration-200",
-                    isMine && "bg-primary/25 scale-110 shadow-lg shadow-primary/35 ring-2 ring-primary ring-offset-2 ring-offset-zinc-950",
-                    !isMine && !isTaken && "bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700"
-                  )}
+                  className="size-11 text-2xl shadow-sm pointer-events-none"
                   badge={
                     isTaken ? (
                       <span className="flex size-4 items-center justify-center rounded-full bg-zinc-800 ring-1 ring-zinc-700 shadow-sm">
                         <Lock className="size-2.5 text-zinc-300" />
                       </span>
                     ) : isMine ? (
-                      <span className="flex size-4 items-center justify-center rounded-full bg-primary text-black ring-1 ring-white shadow-sm">
+                      <span className="flex size-4 items-center justify-center rounded-full bg-primary text-black ring-1 ring-white shadow-sm font-bold">
                         <Check className="size-2.5 stroke-[3]" />
                       </span>
                     ) : null

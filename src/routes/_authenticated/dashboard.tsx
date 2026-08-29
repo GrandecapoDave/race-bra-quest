@@ -417,21 +417,25 @@ function Dashboard() {
             </div>
           )}
 
-          {/* TEAM PROFILE ROW (HeroUI Avatar & Typography) */}
+          {/* TEAM PROFILE ROW (HeroUI Avatar & Typography with Luxury Frame) */}
           <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-            <HeroAvatar
-              emoji={team.data?.avatar_url ?? "🏳️"}
-              color={team.data?.color ?? "#f97316"}
-              isBordered
-              radius="lg"
-              size="xl"
-              isHoverable
-              className="size-16 sm:size-20 text-3xl sm:text-4xl shadow-xl transition-all duration-300"
+            <div
+              className="p-1.5 rounded-3xl border-2 shadow-2xl transition-transform hover:scale-105 shrink-0"
               style={{
+                borderColor: team.data?.color ?? "#f97316",
                 backgroundColor: (team.data?.color ?? "#f97316") + "26",
-                boxShadow: `0 0 25px -2px ${(team.data?.color ?? "#f97316")}55`,
+                boxShadow: `0 0 25px -2px ${(team.data?.color ?? "#f97316")}66`,
               }}
-            />
+            >
+              <HeroAvatar
+                emoji={team.data?.avatar_url ?? "🏳️"}
+                color={team.data?.color ?? "#f97316"}
+                isBordered
+                radius="lg"
+                size="xl"
+                className="size-16 sm:size-20 text-3xl sm:text-4xl shadow-inner bg-zinc-950/80"
+              />
+            </div>
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-wide text-foreground drop-shadow-sm">
                 {team.data?.name ?? "Nessuna squadra"}
