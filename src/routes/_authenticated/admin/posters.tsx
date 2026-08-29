@@ -34,7 +34,11 @@ function AdminPostersPage() {
         </div>
       ) : (() => {
         const livingPosterSubmissions = (allSubmissions.data ?? []).filter(
-          (sub: any) => sub.challenge_id === "555f4e1f-7443-42e7-9d7a-115f2122888f"
+          (sub: any) =>
+            sub.challenge_id === "555f4e1f-7443-42e7-9d7a-115f2122888f" ||
+            sub.challenges?.tipo_sfida === "living_poster" ||
+            sub.tipo === "living_poster" ||
+            (sub.challenges?.titolo || "").toLowerCase().includes("locandina")
         );
 
         const teamsList = allTeams.data ?? [];

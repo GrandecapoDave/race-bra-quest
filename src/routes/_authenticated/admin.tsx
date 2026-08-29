@@ -114,6 +114,7 @@ function AdminLayout() {
           file_upload:url,
           timestamp:created_at,
           stato_approvazione,
+          voto,
           latitude,
           longitude,
           challenge_id,
@@ -505,8 +506,14 @@ function AdminLayout() {
         toast.error(error.message);
         return;
       }
+      // Backup update to guarantee immediate persistence in submissions table
+      await (supabase as any)
+        .from("submissions")
+        .update({ voto, stato_approvazione: "confirmed" })
+        .eq("id", submissionId);
+
       toast.success("Valutazione salvata con successo!");
-      queryClient.invalidateQueries();
+      await queryClient.invalidateQueries();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -1618,7 +1625,10 @@ export function PosterComparisonCard({
             <ScoreEvaluator
               maxPoints={15}
               currentPoints={submission?.voto ?? 15}
-              alreadyConfirmed={submission?.voto !== null && submission?.voto !== undefined}
+              alreadyConfirmed={
+                (submission?.voto !== null && submission?.voto !== undefined) ||
+                submission?.stato_approvazione === "confirmed"
+              }
               onConfirm={async (voto) => {
                 await onEvaluate(submission.id, voto);
               }}
