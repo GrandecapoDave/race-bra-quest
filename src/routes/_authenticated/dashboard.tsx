@@ -467,7 +467,14 @@ function Dashboard() {
                 <Lock className="size-5 text-zinc-300" />
               </div>
               <div>
-                <h4 className="text-xs font-black text-zinc-300 uppercase tracking-wider">🔒 BLACKOUT MERCATO IN CORSO</h4>
+                <h4 className="text-xs font-black text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🔒 BLACKOUT MERCATO IN CORSO</span>
+                  {blackoutTx?.buyer_team_id && (
+                    <span className="text-zinc-400 font-normal text-[11px]">
+                      (da <strong>{(allTeams.find((t: any) => t.id === blackoutTx.buyer_team_id)?.nome_squadra || "un avversario")}</strong>)
+                    </span>
+                  )}
+                </h4>
                 <p className="text-[11px] text-zinc-400">L'accesso al Marketplace è momentaneamente congelato a causa di un malus avversario.</p>
               </div>
             </div>
