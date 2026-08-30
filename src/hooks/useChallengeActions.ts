@@ -20,6 +20,8 @@ export function useCompleteChallenge() {
         bonus?: number;
         stage_completed: boolean;
         stage_reward?: number;
+        stage_position?: number;
+        cattiveria_delta?: number;
       };
     },
     retry: 2,
@@ -46,7 +48,14 @@ export function useCompleteChallenge() {
           toast.success(`Bonus arrivo tappa: +${result.bonus} punti`);
         }
         if (result.stage_completed && result.stage_reward && result.stage_reward > 0) {
-          toast.success(`🏁 Tappa Completata! Hai guadagnato +${result.stage_reward} Token! 🪙`);
+          const medals = ["🥇", "🥈", "🥉"];
+          const pos = result.stage_position ?? 1;
+          const medal = medals[pos - 1] || `${pos}°`;
+          const placementText = pos === 1 ? "Hai completato la tappa per primo!" : `Posizione di arrivo: ${pos}°`;
+          toast.success(
+            `${medal} ${pos}° POSTO IN TAPPA!\n${placementText}\n+${result.stage_reward} Token accreditati! 🪙`,
+            { duration: 8000 }
+          );
         }
       }
       await queryClient.invalidateQueries();

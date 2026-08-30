@@ -2122,6 +2122,9 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           }
           const bonus = 0;
           let stage_completed = false;
+          let stage_reward = 0;
+          let stage_position = 0;
+          let cattiveria_delta = 0;
 
           let multiplier_2x_bonus = 0;
           let dimezza_penalty = 0;
@@ -2192,6 +2195,117 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               }
               if (allStageChs.length > 0 && newlyCompleted.length >= allStageChs.length) {
                 stage_completed = true;
+
+                // AUTOMATIC ARRIVAL-BASED STAGE REWARD & CATTIVERIA
+                const alreadyRewarded = (db.marketplace_transactions || []).some(
+                  (t: any) =>
+                    (t.team_id === currentUserId || t.buyer_team_id === currentUserId) &&
+                    (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
+                    (t.stage_id === challenge.stage_id || t.dettagli?.stage_id === challenge.stage_id || t.outcome?.stage_id === challenge.stage_id) &&
+                    t.stato === "completed"
+                );
+
+                if (!alreadyRewarded) {
+                  const previousFinishers = (db.marketplace_transactions || []).filter(
+                    (t: any) =>
+                      (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
+                      (t.stage_id === challenge.stage_id || t.dettagli?.stage_id === challenge.stage_id || t.outcome?.stage_id === challenge.stage_id) &&
+                      t.stato === "completed"
+                  );
+
+                  stage_position = previousFinishers.length + 1;
+                  const rewardTable = [25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1];
+                  stage_reward = rewardTable[stage_position - 1] ?? 1;
+
+                  const MAX_TOKENS = 80;
+                  const oldBalance = team?.token_balance ?? 50;
+                  const newBalance = Math.min(MAX_TOKENS, oldBalance + stage_reward);
+                  const actualAdded = newBalance - oldBalance;
+                  if (team) {
+                    team.token_balance = newBalance;
+                  }
+
+                  const currentStage = db.stages?.find((s: any) => s.id === challenge.stage_id);
+
+                  if (!db.marketplace_transactions) db.marketplace_transactions = [];
+                  db.marketplace_transactions.push({
+                    id: uuid(),
+                    buyer_team_id: currentUserId,
+                    team_id: currentUserId,
+                    item_id: "reward_stage",
+                    marketplace_item_id: "reward_stage",
+                    target_team_id: null,
+                    costo: -stage_reward,
+                    costo_token: -stage_reward,
+                    timestamp: new Date().toISOString(),
+                    data_acquisto: new Date().toISOString(),
+                    stato: "completed",
+                    stage_id: challenge.stage_id,
+                    outcome: {
+                      stage_id: challenge.stage_id,
+                      stage_name: currentStage?.nome_tappa || currentStage?.title || `Tappa ${currentStage?.ordine || ""}`,
+                      stage_index: currentStage?.ordine || currentStage?.numero_tappa,
+                      position: stage_position,
+                      reward_tokens: stage_reward,
+                      actual_added_tokens: actualAdded,
+                      old_balance: oldBalance,
+                      new_balance: newBalance,
+                      capped: newBalance === MAX_TOKENS && oldBalance + stage_reward > MAX_TOKENS,
+                    },
+                    dettagli: {
+                      stage_id: challenge.stage_id,
+                      stage_name: currentStage?.nome_tappa || currentStage?.title || `Tappa ${currentStage?.ordine || ""}`,
+                      stage_index: currentStage?.ordine || currentStage?.numero_tappa,
+                      position: stage_position,
+                      reward_tokens: stage_reward,
+                      actual_added_tokens: actualAdded,
+                      old_balance: oldBalance,
+                      new_balance: newBalance,
+                      capped: newBalance === MAX_TOKENS && oldBalance + stage_reward > MAX_TOKENS,
+                    },
+                  });
+
+                  // Punti Cattiveria (Regola "Chi non è cattivo paga" per questa tappa)
+                  const maluses = (db.cattiveria_ledger || []).filter(
+                    (l: any) => l.team_id === currentUserId && l.stage_id === challenge.stage_id && l.tipo === "malus"
+                  );
+                  const malusCount = maluses.length;
+
+                  let endOfStagePoints = 0;
+                  let endOfStageMotivo = "";
+                  if (malusCount === 0) {
+                    endOfStagePoints = -10;
+                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 0 Malus usati";
+                  } else if (malusCount === 2) {
+                    endOfStagePoints = 5;
+                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 2 Malus usati";
+                  } else if (malusCount === 3) {
+                    endOfStagePoints = 10;
+                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 3 Malus usati";
+                  } else if (malusCount >= 4) {
+                    endOfStagePoints = 15;
+                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 4+ Malus usati";
+                  }
+
+                  if (endOfStagePoints !== 0) {
+                    addCattiveriaPoints(
+                      db,
+                      currentUserId,
+                      challenge.stage_id,
+                      "end_of_stage",
+                      null,
+                      `end_stage_${challenge.stage_id}`,
+                      endOfStagePoints,
+                      endOfStageMotivo,
+                    );
+                  }
+
+                  logActivity(
+                    db,
+                    currentUserId,
+                    `Squadra "${team?.nome_squadra || ""}" ha completato la ${currentStage?.title || `Tappa ${currentStage?.ordine || ""}`} in ${stage_position}ª posizione (+${stage_reward} Token)!`,
+                  );
+                }
 
                 // Handle Dimezza Punti Tappa on stage completion
                 const txStageDimezza = db.marketplace_transactions?.find(
@@ -2287,6 +2401,9 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
               polizza_refund,
               bonus,
               stage_completed,
+              stage_reward,
+              stage_position,
+              cattiveria_delta,
             },
             error: null,
           };
@@ -3545,45 +3662,77 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             }
 
             const team = db.teams.find((t: any) => t.id === stat.team_id);
-            const oldBalance = team.token_balance ?? 50;
-            const newBalance = Math.min(MAX_TOKENS, oldBalance + reward);
-            const actualAdded = newBalance - oldBalance;
-
-            // Update balance
-            team.token_balance = newBalance;
-
-            // Record transaction in ledger
-            const transaction = {
-              id: uuid(),
-              buyer_team_id: stat.team_id,
-              item_id: "reward_stage",
-              target_team_id: null,
-              costo: -reward, // negative cost indicates token addition
-              timestamp: new Date().toISOString(),
-              stato: "completed",
-              outcome: {
-                stage_id: p_stage_id,
-                stage_name: stage.nome_tappa || stage.title || `Tappa ${stage.ordine}`,
-                stage_index: stage.ordine,
-                position: position,
-                reward_tokens: reward,
-                actual_added_tokens: actualAdded,
-                old_balance: oldBalance,
-                new_balance: newBalance,
-                capped: newBalance === MAX_TOKENS && oldBalance + reward > MAX_TOKENS,
-              },
-            };
-
-            if (!db.marketplace_transactions) {
-              db.marketplace_transactions = [];
-            }
-            db.marketplace_transactions.push(transaction);
-
-            logActivity(
-              db,
-              stat.team_id,
-              `Squadra "${stat.nome_squadra}" ha concluso la Tappa ${stage.ordine} in ${position}ª posizione ricevendo +${reward} Token.`,
+            const existingTx = (db.marketplace_transactions || []).find(
+              (t: any) =>
+                (t.team_id === stat.team_id || t.buyer_team_id === stat.team_id) &&
+                (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
+                (t.stage_id === p_stage_id || t.dettagli?.stage_id === p_stage_id || t.outcome?.stage_id === p_stage_id) &&
+                t.stato === "completed"
             );
+
+            let oldBalance = team?.token_balance ?? 50;
+            let newBalance = oldBalance;
+            let actualAdded = 0;
+
+            if (!existingTx) {
+              newBalance = Math.min(MAX_TOKENS, oldBalance + reward);
+              actualAdded = newBalance - oldBalance;
+              if (team) {
+                team.token_balance = newBalance;
+              }
+
+              const transaction = {
+                id: uuid(),
+                buyer_team_id: stat.team_id,
+                team_id: stat.team_id,
+                item_id: "reward_stage",
+                marketplace_item_id: "reward_stage",
+                target_team_id: null,
+                costo: -reward,
+                costo_token: -reward,
+                timestamp: new Date().toISOString(),
+                data_acquisto: new Date().toISOString(),
+                stato: "completed",
+                stage_id: p_stage_id,
+                outcome: {
+                  stage_id: p_stage_id,
+                  stage_name: stage.nome_tappa || stage.title || `Tappa ${stage.ordine}`,
+                  stage_index: stage.ordine,
+                  position: position,
+                  reward_tokens: reward,
+                  actual_added_tokens: actualAdded,
+                  old_balance: oldBalance,
+                  new_balance: newBalance,
+                  capped: newBalance === MAX_TOKENS && oldBalance + reward > MAX_TOKENS,
+                },
+                dettagli: {
+                  stage_id: p_stage_id,
+                  stage_name: stage.nome_tappa || stage.title || `Tappa ${stage.ordine}`,
+                  stage_index: stage.ordine,
+                  position: position,
+                  reward_tokens: reward,
+                  actual_added_tokens: actualAdded,
+                  old_balance: oldBalance,
+                  new_balance: newBalance,
+                  capped: newBalance === MAX_TOKENS && oldBalance + reward > MAX_TOKENS,
+                },
+              };
+
+              if (!db.marketplace_transactions) {
+                db.marketplace_transactions = [];
+              }
+              db.marketplace_transactions.push(transaction);
+
+              logActivity(
+                db,
+                stat.team_id,
+                `Squadra "${stat.nome_squadra}" ha concluso la Tappa ${stage.ordine} in ${position}ª posizione ricevendo +${reward} Token.`,
+              );
+            } else {
+              oldBalance = existingTx.outcome?.old_balance ?? oldBalance;
+              newBalance = existingTx.outcome?.new_balance ?? (team?.token_balance ?? 50);
+              actualAdded = existingTx.outcome?.actual_added_tokens ?? 0;
+            }
 
             return {
               team_id: stat.team_id,

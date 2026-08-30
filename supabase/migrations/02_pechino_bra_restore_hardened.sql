@@ -506,6 +506,13 @@ DECLARE
   v_points INTEGER := 0;
   v_bonus INTEGER := 0;
   v_stage_completed BOOLEAN := false;
+  v_stage_reward INTEGER := 0;
+  v_stage_position INTEGER := 0;
+  v_already_rewarded INTEGER := 0;
+  v_previous_finishers INTEGER := 0;
+  v_malus_count INTEGER := 0;
+  v_cattiveria_pts INTEGER := 0;
+  v_cattiveria_motivo TEXT := '';
   v_total INTEGER;
   v_completed INTEGER;
 BEGIN
@@ -562,9 +569,126 @@ BEGIN
   JOIN public.challenges c ON c.id = tp.challenge_id
   WHERE tp.team_id = v_team_id AND c.stage_id = v_challenge.stage_id AND tp.stato = 'completed';
 
-  IF v_total > 0 AND v_completed >= v_total THEN v_stage_completed := true; END IF;
+  IF v_total > 0 AND v_completed >= v_total THEN 
+    v_stage_completed := true;
 
-  RETURN jsonb_build_object('already', v_already, 'points', v_points, 'bonus', v_bonus, 'stage_completed', v_stage_completed);
+    -- AUTOMATIC ARRIVAL-BASED STAGE REWARD & CATTIVERIA
+    SELECT COUNT(*)::INTEGER INTO v_already_rewarded
+    FROM public.marketplace_transactions
+    WHERE team_id = v_team_id 
+      AND (marketplace_item_id = 'reward_stage' OR item_id = 'reward_stage')
+      AND (outcome->>'stage_id' = v_challenge.stage_id::text OR dettagli->>'stage_id' = v_challenge.stage_id::text);
+
+    IF v_already_rewarded = 0 THEN
+      SELECT COUNT(DISTINCT team_id)::INTEGER INTO v_previous_finishers
+      FROM public.marketplace_transactions
+      WHERE (marketplace_item_id = 'reward_stage' OR item_id = 'reward_stage')
+        AND (outcome->>'stage_id' = v_challenge.stage_id::text OR dettagli->>'stage_id' = v_challenge.stage_id::text)
+        AND stato = 'completed';
+
+      v_stage_position := v_previous_finishers + 1;
+
+      -- Reward table: 1st=25, 2nd=20, 3rd=16, 4th=13, 5th=10, 6th=8, 7th=6, 8th=5, 9th=4, 10th=3, 11th=2, 12th=1
+      v_stage_reward := CASE v_stage_position
+        WHEN 1 THEN 25
+        WHEN 2 THEN 20
+        WHEN 3 THEN 16
+        WHEN 4 THEN 13
+        WHEN 5 THEN 10
+        WHEN 6 THEN 8
+        WHEN 7 THEN 6
+        WHEN 8 THEN 5
+        WHEN 9 THEN 4
+        WHEN 10 THEN 3
+        WHEN 11 THEN 2
+        ELSE 1
+      END;
+
+      UPDATE public.teams
+      SET token_balance = LEAST(80, COALESCE(token_balance, 50) + v_stage_reward)
+      WHERE id = v_team_id;
+
+      INSERT INTO public.marketplace_transactions (
+        team_id,
+        buyer_team_id,
+        item_id,
+        marketplace_item_id,
+        costo_token,
+        costo,
+        stato,
+        outcome,
+        dettagli
+      ) VALUES (
+        v_team_id,
+        v_team_id,
+        'reward_stage',
+        'reward_stage',
+        -v_stage_reward,
+        -v_stage_reward,
+        'completed',
+        jsonb_build_object(
+          'stage_id', v_challenge.stage_id,
+          'position', v_stage_position,
+          'reward_tokens', v_stage_reward
+        ),
+        jsonb_build_object(
+          'stage_id', v_challenge.stage_id,
+          'position', v_stage_position,
+          'reward_tokens', v_stage_reward
+        )
+      );
+
+      -- Punti Cattiveria
+      SELECT COUNT(*)::INTEGER INTO v_malus_count
+      FROM public.cattiveria_ledger
+      WHERE team_id = v_team_id AND stage_id = v_challenge.stage_id AND tipo = 'malus';
+
+      v_cattiveria_pts := CASE 
+        WHEN v_malus_count = 0 THEN -10
+        WHEN v_malus_count = 1 THEN 0
+        WHEN v_malus_count = 2 THEN 5
+        WHEN v_malus_count = 3 THEN 10
+        ELSE 15
+      END;
+
+      v_cattiveria_motivo := CASE
+        WHEN v_malus_count = 0 THEN 'Regola ''Chi non è cattivo paga'': 0 Malus usati'
+        WHEN v_malus_count = 2 THEN 'Regola ''Chi non è cattivo paga'': 2 Malus usati'
+        WHEN v_malus_count = 3 THEN 'Regola ''Chi non è cattivo paga'': 3 Malus usati'
+        WHEN v_malus_count >= 4 THEN 'Regola ''Chi non è cattivo paga'': 4+ Malus usati'
+        ELSE ''
+      END;
+
+      IF v_cattiveria_pts != 0 THEN
+        INSERT INTO public.cattiveria_ledger (
+          team_id,
+          stage_id,
+          tipo,
+          punti,
+          motivo,
+          riferimento_transazione
+        ) VALUES (
+          v_team_id,
+          v_challenge.stage_id,
+          'end_of_stage',
+          v_cattiveria_pts,
+          v_cattiveria_motivo,
+          'end_stage_' || v_challenge.stage_id::text
+        )
+        ON CONFLICT DO NOTHING;
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'already', v_already,
+    'points', v_points,
+    'bonus', v_bonus,
+    'stage_completed', v_stage_completed,
+    'stage_reward', v_stage_reward,
+    'stage_position', v_stage_position,
+    'cattiveria_delta', v_cattiveria_pts
+  );
 END;
 $$;
 CREATE OR REPLACE FUNCTION public.get_bank_state(p_team_id UUID)
