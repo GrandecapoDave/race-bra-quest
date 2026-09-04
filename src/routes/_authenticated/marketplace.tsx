@@ -34,7 +34,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { myTeamQuery, stagesQuery, challengesQuery, progressQuery, isStageUnlocked, leaderboardQuery, rankLeaderboard, formatDuration } from "@/lib/race";
+import { myTeamQuery, stagesQuery, challengesQuery, progressQuery, isStageUnlocked, leaderboardQuery, rankLeaderboard, formatDuration, gameSettingsQuery } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/marketplace")({
   head: () => ({
@@ -397,26 +397,16 @@ function MarketplacePage() {
   });
 
   // Fetch game settings
-  const gameSettingsQuery = useQuery({
-    queryKey: ["game-settings"],
-    refetchInterval: 3000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("game_settings")
-        .select("*")
-        .single();
-      if (error) {
-        console.warn("Error gameSettingsQuery:", error);
-        return { marketplace_visible: false, marketplace_active: false, activated_at: null, activated_by: null };
-      }
-      return data || { marketplace_visible: false, marketplace_active: false, activated_at: null, activated_by: null };
-    }
-  });
+  const gameSettings = useQuery(gameSettingsQuery);
 
-  const settings = gameSettingsQuery.data as any;
+  const settings = gameSettings.data as any;
   const isMarketplaceVisible = settings?.marketplace_visible === true;
   const isMarketplaceActive = settings?.marketplace_active === true;
-  const isRaceCompleted = settings?.race_status === "completed";
+  const isRaceCompleted =
+    settings?.isRaceCompleted === true ||
+    settings?.race_status === "completed" ||
+    settings?.game_status === "Gara terminata";
+
 
   const hasCompletedTappa1 = progress.data?.some(
     (p: any) => p.challenge_id === "0147e750-f0a3-4b72-8e76-a003fe2ef143" && (p.stato === "completed" || p.status === "completed")
@@ -425,7 +415,7 @@ function MarketplacePage() {
   const isAccessible = isAdmin.data || (isMarketplaceActive && hasCompletedTappa1 && !isRaceCompleted);
 
   // Render access denied for players who haven't discovered the Marketplace yet or if it is closed
-  if (!isAccessible && !teamQuery.isLoading && !gameSettingsQuery.isLoading) {
+  if (!isAccessible && !teamQuery.isLoading && !gameSettings.isLoading) {
     return (
       <AppShell isAdmin={false}>
         <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-dashed border-red-500/30 rounded-3xl mt-12 bg-red-950/5">

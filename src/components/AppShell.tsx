@@ -41,6 +41,7 @@ import {
   progressQuery,
   isStageUnlocked,
   reportStatusQuery,
+  gameSettingsQuery,
 } from "@/lib/race";
 import { triggerHaptic } from "@/lib/haptics";
 import { AdminDecisionModal } from "@/components/AdminDecisionModal";
@@ -406,19 +407,8 @@ function AppShellInner({
     return `${m}:${s}`;
   };
 
-  const gameSettings = useQuery({
-    queryKey: ["game-settings"],
-    staleTime: 0,
-    refetchInterval: 3000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("game_settings")
-        .select("*")
-        .single();
-      if (error) return null;
-      return data;
-    },
-  });
+  const gameSettings = useQuery(gameSettingsQuery);
+
 
   const isMarketplaceActive = gameSettings.data?.marketplace_active === true;
 

@@ -531,3 +531,71 @@ export const gameReportQuery = (userId?: string) =>
     refetchInterval: 5000,
   });
 
+export const gameSettingsQuery = queryOptions({
+  queryKey: ["game-settings"],
+  refetchInterval: 3000,
+  queryFn: async () => {
+    try {
+      const [gsRes, sRes] = await Promise.all([
+        (supabase as any).from("game_settings").select("*").maybeSingle(),
+        (supabase as any).from("settings").select("*"),
+      ]);
+      const gsData = gsRes?.data || {};
+      const settingsList = (sRes?.data || []) as Array<{ id: string; value: string }>;
+      const statusSetting = settingsList.find((s) => s.id === "game_status")?.value;
+      const startedAt = settingsList.find((s) => s.id === "game_started_at")?.value;
+      const endedAt = settingsList.find((s) => s.id === "game_ended_at")?.value;
+
+      const isRaceCompleted =
+        statusSetting === "Gara terminata" ||
+        gsData.race_status === "completed" ||
+        gsData.status === "Gara terminata";
+
+      const isRaceStarted =
+        statusSetting === "Gara attiva" ||
+        gsData.race_status === "active" ||
+        gsData.race_status === "in_progress" ||
+        gsData.status === "Gara attiva";
+
+      const status = isRaceCompleted
+        ? "Gara terminata"
+        : isRaceStarted
+        ? "Gara attiva"
+        : "Gara non iniziata";
+
+      const raceStatus = isRaceCompleted
+        ? "completed"
+        : isRaceStarted
+        ? "in_progress"
+        : "not_started";
+
+      return {
+        marketplace_visible: true,
+        marketplace_active: true,
+        ...gsData,
+        status,
+        game_status: status,
+        race_status: raceStatus,
+        started_at: startedAt || gsData.started_at || gsData.race_started_at || null,
+        race_started_at: startedAt || gsData.started_at || gsData.race_started_at || null,
+        ended_at: endedAt || gsData.ended_at || gsData.race_ended_at || null,
+        race_ended_at: endedAt || gsData.ended_at || gsData.race_ended_at || null,
+        isRaceCompleted,
+        isRaceStarted,
+      };
+    } catch (e) {
+      console.warn("gameSettingsQuery error:", e);
+      return {
+        race_status: "not_started",
+        game_status: "Gara non iniziata",
+        isRaceCompleted: false,
+        isRaceStarted: false,
+        marketplace_visible: true,
+        marketplace_active: true,
+      };
+    }
+  },
+});
+
+
+

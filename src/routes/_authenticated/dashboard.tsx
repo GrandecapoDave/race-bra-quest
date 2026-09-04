@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock, ArrowDownCircle, Camera, X, FileText } from "lucide-react";
@@ -24,7 +24,9 @@ import {
   stagesQuery,
   isStageUnlocked,
   reportStatusQuery,
+  gameSettingsQuery,
 } from "@/lib/race";
+
 
 const MARKETPLACE_ITEMS = [
   { id: "bonus_punti", nome: "BONUS PUNTI", categoria: "BONUS" },
@@ -123,18 +125,7 @@ function Dashboard() {
   const scores = useQuery({ ...scoreEventsQuery(team.data?.id), refetchInterval: 3000 });
   const board = useQuery({ ...leaderboardQuery, refetchInterval: 3000 });
 
-  const gameSettings = useQuery({
-    queryKey: ["game-settings"],
-    refetchInterval: 3000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("game_settings")
-        .select("*")
-        .single();
-      if (error) return null;
-      return data;
-    },
-  });
+  const gameSettings = useQuery(gameSettingsQuery);
 
   const reportStatus = useQuery({ ...reportStatusQuery, refetchInterval: 3000 });
 
@@ -359,8 +350,39 @@ function Dashboard() {
     return isPhotoOrPoster;
   });
 
-  const isRaceCompleted = gameSettings.data?.race_status === "completed";
+  const isRaceCompleted =
+    gameSettings.data?.isRaceCompleted === true ||
+    gameSettings.data?.race_status === "completed" ||
+    gameSettings.data?.game_status === "Gara terminata";
   const isReportPublished = Boolean(reportStatus.data?.is_published);
+
+  // Reactive Toast notification when new stage completion reward is granted (even via admin approval)
+  const notifiedStageTxRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!team.data?.id || !transactionsQuery.data) return;
+    const stageRewards = transactionsQuery.data.filter(
+      (t: any) =>
+        (t.buyer_team_id === team.data?.id || t.team_id === team.data?.id) &&
+        (t.item_id === "reward_stage" || t.marketplace_item_id === "reward_stage") &&
+        t.stato === "completed"
+    );
+    stageRewards.forEach((tx: any) => {
+      if (!notifiedStageTxRef.current.has(tx.id)) {
+        notifiedStageTxRef.current.add(tx.id);
+        const outcome = tx.outcome || tx.dettagli;
+        const pos = outcome?.position;
+        const tokens = outcome?.reward_tokens ?? Math.abs(tx.costo_token ?? tx.costo ?? 0);
+        const stageName = outcome?.stage_name || `Tappa ${outcome?.stage_index || ""}`;
+        const medals = ["🥇", "🥈", "🥉"];
+        const posLabel = pos === 1 ? "1° posto" : pos === 2 ? "2° posto" : pos === 3 ? "3° posto" : `${pos}° posto`;
+        const medal = (pos && medals[pos - 1]) || "🏆";
+        toast.success(
+          `${medal} ${stageName} completata! Vi siete classificati al ${posLabel} (+${tokens} Token)!`,
+          { duration: 8000 }
+        );
+      }
+    });
+  }, [team.data?.id, transactionsQuery.data]);
 
   if (isRaceCompleted && !isReportPublished) {
     return (
@@ -413,16 +435,24 @@ function Dashboard() {
     }
   };
 
-  const closedStageRewards = (stages.data ?? [])
-    .filter((s: any) => (s.status === "closed" || s.stato === "closed") && !dismissedRewards.includes(s.id))
-    .map((s: any) => {
-      const tx = transactions.find(
-        (t: any) => t.buyer_team_id === team.data?.id && t.item_id === "reward_stage" && t.outcome?.stage_id === s.id
-      );
-      if (!tx) return null;
-      return { stage: s, tx };
+  const stageRewardsList = transactions
+    .filter(
+      (t: any) =>
+        (t.buyer_team_id === team.data?.id || t.team_id === team.data?.id) &&
+        (t.item_id === "reward_stage" || t.marketplace_item_id === "reward_stage") &&
+        t.stato === "completed"
+    )
+    .map((tx: any) => {
+      const stageId = tx.stage_id || tx.outcome?.stage_id || tx.dettagli?.stage_id;
+      if (dismissedRewards.includes(stageId) || dismissedRewards.includes(tx.id)) return null;
+      const stage = (stages.data ?? []).find((s: any) => s.id === stageId) || {
+        id: stageId,
+        title: tx.outcome?.stage_name || tx.dettagli?.stage_name || `Tappa ${tx.outcome?.stage_index || ""}`,
+        nome_tappa: tx.outcome?.stage_name || tx.dettagli?.stage_name || `Tappa ${tx.outcome?.stage_index || ""}`,
+      };
+      return { stage, tx };
     })
-    .filter(Boolean) as Array<{ stage: any, tx: any }>;
+    .filter(Boolean) as Array<{ stage: any; tx: any }>;
 
   return (
     <AppShell isAdmin={isAdmin.data}>
@@ -515,9 +545,9 @@ function Dashboard() {
           );
         })}
 
-        {/* CLOSED STAGE REWARDS */}
-        {closedStageRewards.map(({ stage, tx }) => {
-          const outcome = tx.outcome;
+        {/* COMPLETED STAGE REWARDS */}
+        {stageRewardsList.map(({ stage, tx }) => {
+          const outcome = tx.outcome || tx.dettagli;
           if (!outcome) return null;
           const medals = ["🥇", "🥈", "🥉"];
           const positionLabel = outcome.position === 1 ? "1ª" : outcome.position === 2 ? "2ª" : outcome.position === 3 ? "3ª" : `${outcome.position}ª`;
@@ -525,35 +555,30 @@ function Dashboard() {
 
           return (
             <div
-              key={stage.id}
+              key={tx.id || stage.id}
               className="bg-yellow-500/10 border border-yellow-500/35 text-yellow-400 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-yellow-950/20"
             >
               <div className="flex items-start gap-3">
                 <span className="text-3xl shrink-0 select-none mt-0.5">{medal}</span>
                 <div className="space-y-1">
                   <h4 className="text-sm font-black uppercase tracking-wider">
-                    Tappa Conclusa: {stage.title || stage.nome_tappa}
+                    Tappa Conclusa: {stage.title || stage.nome_tappa || outcome.stage_name}
                   </h4>
                   <p className="text-zinc-300 text-xs leading-relaxed">
-                    La Regia ha chiuso ufficialmente la tappa! La vostra squadra si è classificata in <strong className="text-yellow-400 font-extrabold">{positionLabel}</strong> posizione.
+                    La vostra squadra ha completato la tappa e si è classificata in <strong className="text-yellow-400 font-extrabold">{positionLabel}</strong> posizione.
                   </p>
                   <div className="text-zinc-400 text-[11px] flex flex-wrap items-center gap-1.5 font-semibold mt-1">
                     <span>Accreditati: <strong className="text-emerald-400 font-extrabold">+{outcome.reward_tokens} Token</strong></span>
                     <span className="opacity-40">·</span>
                     <span>Saldo: {outcome.old_balance} → <strong className="text-yellow-400 font-extrabold">🪙 {outcome.new_balance} Token</strong></span>
-                    {outcome.capped && (
-                      <>
-                        <span className="opacity-40">·</span>
-                        <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-[9px] font-black border border-amber-500/30 uppercase tracking-widest leading-none">
-                          Limite 80 Raggiunto
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => handleDismissReward(stage.id)}
+                onClick={() => {
+                  handleDismissReward(stage.id);
+                  if (tx.id) handleDismissNotification(tx.id);
+                }}
                 className="primary-gradient glow shrink-0 px-4 py-2.5 rounded-xl text-primary-foreground font-black text-xs uppercase tracking-wider cursor-pointer hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto text-center shadow-md shadow-yellow-500/10"
               >
                 OK, Ricevi

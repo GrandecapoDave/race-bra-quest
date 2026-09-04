@@ -1081,6 +1081,149 @@ function addCattiveriaPoints(
   });
 }
 
+// Unified Helper to verify stage completion and award placement tokens
+function checkAndAwardStageCompletion(db: any, teamId: string, stageId: string) {
+  if (!teamId || !stageId) return null;
+  const allStageChs = (db.challenges || []).filter((c: any) => c.stage_id === stageId);
+  if (allStageChs.length === 0) return null;
+
+  const completedStageChs = (db.team_progress || []).filter(
+    (tp: any) =>
+      tp.team_id === teamId &&
+      (tp.stage_id === stageId || allStageChs.some((c: any) => c.id === tp.challenge_id)) &&
+      (tp.stato === "completed" || tp.status === "completed"),
+  );
+
+  if (completedStageChs.length < allStageChs.length) {
+    return null;
+  }
+
+  // Stage is completed! Check if already rewarded
+  if (!db.marketplace_transactions) db.marketplace_transactions = [];
+  const alreadyRewarded = db.marketplace_transactions.some(
+    (t: any) =>
+      (t.team_id === teamId || t.buyer_team_id === teamId) &&
+      (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
+      (t.stage_id === stageId || t.dettagli?.stage_id === stageId || t.outcome?.stage_id === stageId) &&
+      t.stato === "completed"
+  );
+
+  if (alreadyRewarded) {
+    return null;
+  }
+
+  const previousFinishers = db.marketplace_transactions.filter(
+    (t: any) =>
+      (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
+      (t.stage_id === stageId || t.dettagli?.stage_id === stageId || t.outcome?.stage_id === stageId) &&
+      t.stato === "completed"
+  );
+
+  const stage_position = previousFinishers.length + 1;
+  const rewardTable = [25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1];
+  const stage_reward = rewardTable[stage_position - 1] ?? 1;
+
+  const team = (db.teams || []).find((t: any) => t.id === teamId);
+  const oldBalance = team?.token_balance ?? 50;
+  const newBalance = oldBalance + stage_reward;
+  const actualAdded = newBalance - oldBalance;
+  if (team) {
+    team.token_balance = newBalance;
+  }
+
+  const currentStage = (db.stages || []).find((s: any) => s.id === stageId);
+  const stageName = currentStage?.nome_tappa || currentStage?.titolo || currentStage?.title || `Tappa ${currentStage?.numero_tappa || currentStage?.ordine || ""}`;
+  const stageIndex = currentStage?.numero_tappa || currentStage?.ordine || currentStage?.order_index || 1;
+
+  const tx = {
+    id: uuid(),
+    buyer_team_id: teamId,
+    team_id: teamId,
+    item_id: "reward_stage",
+    marketplace_item_id: "reward_stage",
+    target_team_id: null,
+    costo: -stage_reward,
+    costo_token: -stage_reward,
+    timestamp: new Date().toISOString(),
+    data_acquisto: new Date().toISOString(),
+    stato: "completed",
+    stage_id: stageId,
+    outcome: {
+      stage_id: stageId,
+      stage_name: stageName,
+      stage_index: stageIndex,
+      position: stage_position,
+      reward_tokens: stage_reward,
+      actual_added_tokens: actualAdded,
+      old_balance: oldBalance,
+      new_balance: newBalance,
+      capped: false,
+    },
+    dettagli: {
+      stage_id: stageId,
+      stage_name: stageName,
+      stage_index: stageIndex,
+      position: stage_position,
+      reward_tokens: stage_reward,
+      actual_added_tokens: actualAdded,
+      old_balance: oldBalance,
+      new_balance: newBalance,
+      capped: false,
+    },
+  };
+  db.marketplace_transactions.push(tx);
+
+  // Cattiveria rule
+  const maluses = (db.cattiveria_ledger || []).filter(
+    (l: any) => l.team_id === teamId && l.stage_id === stageId && l.tipo === "malus"
+  );
+  const malusCount = maluses.length;
+
+  let endOfStagePoints = 0;
+  let endOfStageMotivo = "";
+  if (malusCount === 0) {
+    endOfStagePoints = -10;
+    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 0 Malus usati";
+  } else if (malusCount === 2) {
+    endOfStagePoints = 5;
+    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 2 Malus usati";
+  } else if (malusCount === 3) {
+    endOfStagePoints = 10;
+    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 3 Malus usati";
+  } else if (malusCount >= 4) {
+    endOfStagePoints = 15;
+    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 4+ Malus usati";
+  }
+
+  if (endOfStagePoints !== 0) {
+    addCattiveriaPoints(
+      db,
+      teamId,
+      stageId,
+      "end_of_stage",
+      null,
+      `end_stage_${stageId}`,
+      endOfStagePoints,
+      endOfStageMotivo,
+    );
+  }
+
+  logActivity(
+    db,
+    teamId,
+    `Squadra "${team?.nome_squadra || "Sconosciuta"}" ha completato la ${stageName} al ${stage_position}° posto (+${stage_reward} Token)!`,
+    0,
+  );
+
+  return {
+    stage_completed: true,
+    stage_reward,
+    stage_position,
+    cattiveria_delta: endOfStagePoints,
+  };
+}
+
+
 // Generate random UUID
 function uuid() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
@@ -2193,190 +2336,12 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             points = base_points + multiplier_2x_bonus - dimezza_penalty + polizza_refund;
 
             if (challenge) {
-              const allStageChs = db.challenges.filter(
-                (c: any) => c.stage_id === challenge.stage_id,
-              );
-              const completedStageChs = db.team_progress.filter(
-                (tp: any) =>
-                  tp.team_id === currentUserId &&
-                  tp.stage_id === challenge.stage_id &&
-                  tp.stato === "completed",
-              );
-              const newlyCompleted = [...completedStageChs];
-              if (!newlyCompleted.some((tp: any) => tp.challenge_id === p_challenge)) {
-                newlyCompleted.push({ challenge_id: p_challenge });
-              }
-              if (allStageChs.length > 0 && newlyCompleted.length >= allStageChs.length) {
+              const res = checkAndAwardStageCompletion(db, currentUserId, challenge.stage_id);
+              if (res) {
                 stage_completed = true;
-
-                // AUTOMATIC ARRIVAL-BASED STAGE REWARD & CATTIVERIA
-                const alreadyRewarded = (db.marketplace_transactions || []).some(
-                  (t: any) =>
-                    (t.team_id === currentUserId || t.buyer_team_id === currentUserId) &&
-                    (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
-                    (t.stage_id === challenge.stage_id || t.dettagli?.stage_id === challenge.stage_id || t.outcome?.stage_id === challenge.stage_id) &&
-                    t.stato === "completed"
-                );
-
-                if (!alreadyRewarded) {
-                  const previousFinishers = (db.marketplace_transactions || []).filter(
-                    (t: any) =>
-                      (t.marketplace_item_id === "reward_stage" || t.item_id === "reward_stage") &&
-                      (t.stage_id === challenge.stage_id || t.dettagli?.stage_id === challenge.stage_id || t.outcome?.stage_id === challenge.stage_id) &&
-                      t.stato === "completed"
-                  );
-
-                  stage_position = previousFinishers.length + 1;
-                  const rewardTable = [25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1];
-                  stage_reward = rewardTable[stage_position - 1] ?? 1;
-
-                  const MAX_TOKENS = 99999;
-                  const oldBalance = team?.token_balance ?? 50;
-                  const newBalance = oldBalance + stage_reward;
-                  const actualAdded = newBalance - oldBalance;
-                  if (team) {
-                    team.token_balance = newBalance;
-                  }
-
-                  const currentStage = db.stages?.find((s: any) => s.id === challenge.stage_id);
-
-                  if (!db.marketplace_transactions) db.marketplace_transactions = [];
-                  db.marketplace_transactions.push({
-                    id: uuid(),
-                    buyer_team_id: currentUserId,
-                    team_id: currentUserId,
-                    item_id: "reward_stage",
-                    marketplace_item_id: "reward_stage",
-                    target_team_id: null,
-                    costo: -stage_reward,
-                    costo_token: -stage_reward,
-                    timestamp: new Date().toISOString(),
-                    data_acquisto: new Date().toISOString(),
-                    stato: "completed",
-                    stage_id: challenge.stage_id,
-                    outcome: {
-                      stage_id: challenge.stage_id,
-                      stage_name: currentStage?.nome_tappa || currentStage?.title || `Tappa ${currentStage?.ordine || ""}`,
-                      stage_index: currentStage?.ordine || currentStage?.numero_tappa,
-                      position: stage_position,
-                      reward_tokens: stage_reward,
-                      actual_added_tokens: actualAdded,
-                      old_balance: oldBalance,
-                      new_balance: newBalance,
-                      capped: newBalance === MAX_TOKENS && oldBalance + stage_reward > MAX_TOKENS,
-                    },
-                    dettagli: {
-                      stage_id: challenge.stage_id,
-                      stage_name: currentStage?.nome_tappa || currentStage?.title || `Tappa ${currentStage?.ordine || ""}`,
-                      stage_index: currentStage?.ordine || currentStage?.numero_tappa,
-                      position: stage_position,
-                      reward_tokens: stage_reward,
-                      actual_added_tokens: actualAdded,
-                      old_balance: oldBalance,
-                      new_balance: newBalance,
-                      capped: newBalance === MAX_TOKENS && oldBalance + stage_reward > MAX_TOKENS,
-                    },
-                  });
-
-                  // Punti Cattiveria (Regola "Chi non è cattivo paga" per questa tappa)
-                  const maluses = (db.cattiveria_ledger || []).filter(
-                    (l: any) => l.team_id === currentUserId && l.stage_id === challenge.stage_id && l.tipo === "malus"
-                  );
-                  const malusCount = maluses.length;
-
-                  let endOfStagePoints = 0;
-                  let endOfStageMotivo = "";
-                  if (malusCount === 0) {
-                    endOfStagePoints = -10;
-                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 0 Malus usati";
-                  } else if (malusCount === 2) {
-                    endOfStagePoints = 5;
-                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 2 Malus usati";
-                  } else if (malusCount === 3) {
-                    endOfStagePoints = 10;
-                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 3 Malus usati";
-                  } else if (malusCount >= 4) {
-                    endOfStagePoints = 15;
-                    endOfStageMotivo = "Regola 'Chi non è cattivo paga': 4+ Malus usati";
-                  }
-
-                  if (endOfStagePoints !== 0) {
-                    addCattiveriaPoints(
-                      db,
-                      currentUserId,
-                      challenge.stage_id,
-                      "end_of_stage",
-                      null,
-                      `end_stage_${challenge.stage_id}`,
-                      endOfStagePoints,
-                      endOfStageMotivo,
-                    );
-                  }
-
-                  logActivity(
-                    db,
-                    currentUserId,
-                    `Squadra "${team?.nome_squadra || ""}" ha completato la ${currentStage?.title || `Tappa ${currentStage?.ordine || ""}`} in ${stage_position}ª posizione (+${stage_reward} Token)!`,
-                  );
-                }
-
-                // Handle Dimezza Punti Tappa on stage completion
-                const txStageDimezza = db.marketplace_transactions?.find(
-                  (t: any) =>
-                    t.target_team_id === currentUserId &&
-                    (t.marketplace_item_id === "dimezza_punti" || t.item_id === "dimezza_punti") &&
-                    (t.stage_id === challenge.stage_id || t.dettagli?.target_stage_id === challenge.stage_id) &&
-                    t.stato === "completed",
-                );
-
-                if (txStageDimezza) {
-                  const stageScores = db.scores.filter(
-                    (s: any) => s.team_id === currentUserId && s.stage_id === challenge.stage_id && s.tipo_modificatore !== "penalty_dimezza_tappa",
-                  );
-                  const fullStageScore = stageScores.reduce((sum: number, s: any) => sum + (s.punti || 0), 0);
-                  if (fullStageScore > 0) {
-                    dimezza_penalty = Math.floor(fullStageScore / 2);
-                    db.scores.push({
-                      id: uuid(),
-                      team_id: currentUserId,
-                      stage_id: challenge.stage_id,
-                      punti: -dimezza_penalty,
-                      tipo_modificatore: "penalty_dimezza_tappa",
-                      motivo: `Malus Dimezza Punti Tappa: penalità −${dimezza_penalty} PT (50% del punteggio complessivo della tappa)`,
-                      created_at: new Date().toISOString(),
-                    });
-
-                    // Polizza Diretta refund 50%
-                    const txPolizza = db.marketplace_transactions?.find(
-                      (t: any) => t.team_id === currentUserId && (t.marketplace_item_id === "polizza_diretta" || t.item_id === "polizza_diretta") && t.stato === "completed",
-                    );
-                    if (txPolizza && dimezza_penalty > 0) {
-                      polizza_refund = Math.ceil(dimezza_penalty / 2);
-                      db.scores.push({
-                        id: uuid(),
-                        team_id: currentUserId,
-                        stage_id: challenge.stage_id,
-                        punti: polizza_refund,
-                        tipo_modificatore: "bonus_polizza",
-                        motivo: `Polizza Diretta: Rimborso 50% penalità Dimezza Tappa (+${polizza_refund} PT)`,
-                        created_at: new Date().toISOString(),
-                      });
-                      txPolizza.stato = "used";
-                      txPolizza.data_utilizzo = new Date().toISOString();
-                      txPolizza.dettagli = { refunded_points: polizza_refund, source_malus: "dimezza_punti", target_stage_id: challenge.stage_id };
-                    }
-                  }
-
-                  txStageDimezza.stato = "used";
-                  txStageDimezza.data_utilizzo = new Date().toISOString();
-                  txStageDimezza.dettagli = {
-                    ...(txStageDimezza.dettagli || {}),
-                    stage_score_before: fullStageScore,
-                    penalty_applied: dimezza_penalty,
-                    stage_score_after: fullStageScore - dimezza_penalty,
-                    applied_at_stage_completion: true,
-                  };
-                }
+                stage_reward = res.stage_reward;
+                stage_position = res.stage_position;
+                cattiveria_delta = res.cattiveria_delta;
               }
             }
 
@@ -2473,6 +2438,10 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
                 `La regia ha APPROVATO la prova "${challenge.titolo}" della squadra "${team.nome_squadra}".`,
                 p_points,
               );
+            }
+
+            if (challenge?.stage_id) {
+              checkAndAwardStageCompletion(db, sub.team_id, challenge.stage_id);
             }
 
             saveDb(db);
@@ -2628,6 +2597,10 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             }
           }
 
+          if (challenge?.stage_id) {
+            checkAndAwardStageCompletion(db, sub.team_id, challenge.stage_id);
+          }
+
           saveDb(db);
           return { data: { success: true }, error: null };
         }
@@ -2681,6 +2654,81 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             }
           }
 
+          if (challenge?.stage_id) {
+            checkAndAwardStageCompletion(db, sub.team_id, challenge.stage_id);
+          }
+
+          saveDb(db);
+          return { data: { success: true }, error: null };
+        }
+
+        if (fnName === "start_global_race") {
+          const nowIso = new Date().toISOString();
+          if (!db.game_settings || db.game_settings.length === 0) {
+            db.game_settings = [{ id: uuid(), race_status: "active", started_at: nowIso, ended_at: null, marketplace_active: true, marketplace_visible: true }];
+          } else {
+            db.game_settings[0].race_status = "active";
+            if (!db.game_settings[0].started_at) {
+              db.game_settings[0].started_at = nowIso;
+            }
+            db.game_settings[0].ended_at = null;
+          }
+          if (!db.settings) db.settings = [];
+          const statusSetting = db.settings.find((s: any) => s.id === "game_status");
+          if (statusSetting) {
+            statusSetting.value = "Gara attiva";
+            statusSetting.updated_at = nowIso;
+          } else {
+            db.settings.push({ id: "game_status", value: "Gara attiva", updated_at: nowIso });
+          }
+          saveDb(db);
+          return { data: { success: true }, error: null };
+        }
+
+        if (fnName === "end_global_race") {
+          const nowIso = new Date().toISOString();
+          if (!db.game_settings || db.game_settings.length === 0) {
+            db.game_settings = [{ id: uuid(), race_status: "completed", ended_at: nowIso, marketplace_active: false, marketplace_visible: true }];
+          } else {
+            db.game_settings[0].race_status = "completed";
+            db.game_settings[0].ended_at = nowIso;
+          }
+          if (!db.settings) db.settings = [];
+          const statusSetting = db.settings.find((s: any) => s.id === "game_status");
+          if (statusSetting) {
+            statusSetting.value = "Gara terminata";
+            statusSetting.updated_at = nowIso;
+          } else {
+            db.settings.push({ id: "game_status", value: "Gara terminata", updated_at: nowIso });
+          }
+          const endedSetting = db.settings.find((s: any) => s.id === "game_ended_at");
+          if (endedSetting) {
+            endedSetting.value = nowIso;
+            endedSetting.updated_at = nowIso;
+          } else {
+            db.settings.push({ id: "game_ended_at", value: nowIso, updated_at: nowIso });
+          }
+          saveDb(db);
+          return { data: { success: true }, error: null };
+        }
+
+        if (fnName === "reset_global_race") {
+          const nowIso = new Date().toISOString();
+          if (!db.game_settings || db.game_settings.length === 0) {
+            db.game_settings = [{ id: uuid(), race_status: "not_started", started_at: null, ended_at: null }];
+          } else {
+            db.game_settings[0].race_status = "not_started";
+            db.game_settings[0].started_at = null;
+            db.game_settings[0].ended_at = null;
+          }
+          if (!db.settings) db.settings = [];
+          const statusSetting = db.settings.find((s: any) => s.id === "game_status");
+          if (statusSetting) {
+            statusSetting.value = "Gara non iniziata";
+            statusSetting.updated_at = nowIso;
+          } else {
+            db.settings.push({ id: "game_status", value: "Gara non iniziata", updated_at: nowIso });
+          }
           saveDb(db);
           return { data: { success: true }, error: null };
         }

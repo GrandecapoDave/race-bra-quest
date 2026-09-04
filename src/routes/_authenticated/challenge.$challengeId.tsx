@@ -20,7 +20,7 @@ import { BoxeChallenge } from "@/components/challenges/BoxeChallenge";
 import JackpotChallenge from "@/components/challenges/JackpotChallenge";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { useCompleteChallenge, useStartChallenge } from "@/hooks/useChallengeActions";
-import { challengeState, challengesQuery, myTeamQuery, progressQuery } from "@/lib/race";
+import { challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery } from "@/lib/race";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/challenge/$challengeId")({
@@ -54,18 +54,7 @@ function ChallengePage() {
   const state = challenge ? challengeState(challenge, stageChallenges, prog) : "locked";
   const started = prog.some((p) => p.challenge_id === challengeId);
 
-  const gameSettings = useQuery({
-    queryKey: ["game-settings"],
-    staleTime: 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("game_settings")
-        .select("*")
-        .single();
-      if (error) return null;
-      return data;
-    }
-  });
+  const gameSettings = useQuery(gameSettingsQuery);
 
   const isEnigma = challenge?.type === "enigma_musicale" || challenge?.type === "enigma_testo" || challenge?.type === "lucchetto_direzionale" || challenge?.type === "enigma_coordinate";
 
@@ -94,7 +83,12 @@ function ChallengePage() {
     );
   }
 
-  if (gameSettings.data?.race_status === "completed" && !isAdmin.data) {
+  const isRaceCompleted =
+    gameSettings.data?.isRaceCompleted === true ||
+    gameSettings.data?.race_status === "completed" ||
+    gameSettings.data?.game_status === "Gara terminata";
+
+  if (isRaceCompleted && !isAdmin.data) {
     return (
       <AppShell isAdmin={false}>
         <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-dashed border-red-500/30 rounded-3xl mt-12 bg-red-950/5">
