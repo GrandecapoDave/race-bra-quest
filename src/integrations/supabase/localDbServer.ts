@@ -5572,6 +5572,27 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
 
             (outcome as any).freeze_started_at = startedAt;
             (outcome as any).freeze_expires_at = expiresAt;
+
+            if (!db.marketplace_transactions) db.marketplace_transactions = [];
+            db.marketplace_transactions.push({
+              id: uuid(),
+              buyer_team_id: unluckyTx.buyer_team_id || currentUserId,
+              team_id: unluckyTx.buyer_team_id || currentUserId,
+              target_team_id: currentUserId,
+              item_id: "freeze_2min",
+              marketplace_item_id: "freeze_2min",
+              costo: 0,
+              costo_token: 0,
+              stato: "completed",
+              timestamp: startedAt,
+              data_acquisto: startedAt,
+              outcome: {
+                freeze_started_at: startedAt,
+                freeze_expires_at: expiresAt,
+                duration_seconds: 120,
+                source: "ruota_sfortunata",
+              },
+            });
           } else if (selectedOutcome.id === "minus_20_points") {
             if (!db.scores) db.scores = [];
             const teamScores = db.scores.filter((s: any) => s.team_id === currentUserId);
