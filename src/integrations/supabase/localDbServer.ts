@@ -1680,6 +1680,19 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
         // Write base64 data to disk
         const base64Data = fileData.replace(/^data:image\/\w+;base64,/, "");
         fs.writeFileSync(fullPath, base64Data, "base64");
+
+        const outputUploadsDir = path.resolve(process.cwd(), ".output", "public", "uploads");
+        try {
+          const outputFullPath = path.join(outputUploadsDir, filePath);
+          const outputParentDir = path.dirname(outputFullPath);
+          if (!fs.existsSync(outputParentDir)) {
+            fs.mkdirSync(outputParentDir, { recursive: true });
+          }
+          fs.writeFileSync(outputFullPath, base64Data, "base64");
+        } catch (e) {
+          // Ignore if .output does not exist (dev mode)
+        }
+
         return { success: true, error: null };
       }
 
@@ -2217,9 +2230,9 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
                   const rewardTable = [25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1];
                   stage_reward = rewardTable[stage_position - 1] ?? 1;
 
-                  const MAX_TOKENS = 80;
+                  const MAX_TOKENS = 99999;
                   const oldBalance = team?.token_balance ?? 50;
-                  const newBalance = Math.min(MAX_TOKENS, oldBalance + stage_reward);
+                  const newBalance = oldBalance + stage_reward;
                   const actualAdded = newBalance - oldBalance;
                   if (team) {
                     team.token_balance = newBalance;
@@ -3619,7 +3632,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
 
           // Reward tokens for up to 12 teams: 1ª=25, 2ª=20, 3ª=16, 4ª=13, 5ª=10, 6ª=8, 7ª=6, 8ª=5, 9ª=4, 10ª=3, 11ª=2, 12ª=1
           const rewardTable = [25, 20, 16, 13, 10, 8, 6, 5, 4, 3, 2, 1];
-          const MAX_TOKENS = 80;
+          const MAX_TOKENS = 99999;
 
           const results = teamStats.map((stat: any, index: number) => {
             const position = index + 1;
@@ -3675,7 +3688,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
             let actualAdded = 0;
 
             if (!existingTx) {
-              newBalance = Math.min(MAX_TOKENS, oldBalance + reward);
+              newBalance = oldBalance + reward;
               actualAdded = newBalance - oldBalance;
               if (team) {
                 team.token_balance = newBalance;
