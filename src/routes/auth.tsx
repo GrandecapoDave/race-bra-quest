@@ -79,7 +79,12 @@ function AuthPage() {
     try {
       // Map username to internal Supabase Auth email format
       const formattedUsername = parsed.data.username.trim().toLowerCase();
-      const email = `${formattedUsername}@pechino.it`;
+      
+      // Se l'utente digita per sbaglio l'email intera, non aggiungiamo di nuovo @pechino.it
+      let email = formattedUsername;
+      if (!email.includes('@')) {
+        email = `${formattedUsername}@pechino.it`;
+      }
 
       // Clear any cached query states before fresh login
       queryClient.clear();
