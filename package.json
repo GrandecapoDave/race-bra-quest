@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "typecheck": "node scripts/audit_ast_symbols.cjs && tsc --noEmit",
-    "build": "node scripts/audit_ast_symbols.cjs && tsc --noEmit && NITRO_PRESET=node-server vite build",
+    "build": "node scripts/audit_ast_symbols.cjs && tsc --noEmit && vite build",
     "build:dev": "vite build --mode development",
     "preview": "node .output/server/index.mjs",
     "start": "node .output/server/index.mjs",

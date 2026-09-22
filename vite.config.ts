@@ -11,9 +11,6 @@ export default defineConfig({
       host: true,
     },
   },
-  nitro: {
-    preset: "node-server",
-  },
   tanstackStart: {
     server: { entry: "server" },
   },
