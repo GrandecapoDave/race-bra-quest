@@ -79,7 +79,10 @@ function AuthPage() {
     try {
       // Map username to internal Supabase Auth email format
       const formattedUsername = parsed.data.username.trim().toLowerCase();
-      const email = `${formattedUsername}@pechino.it`;
+      const email =
+        formattedUsername === "justdave"
+          ? "justdave@admin.pechino.local"
+          : `${formattedUsername}@team.pechino.local`;
 
       // Clear any cached query states before fresh login
       queryClient.clear();
