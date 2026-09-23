@@ -31,3 +31,9 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Sensitive files and directories
+.env
+.env.*
+.vercel/
+scratch/

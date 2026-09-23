@@ -77,31 +77,25 @@ function AuthPage() {
     }
     setLoading(true);
     try {
-      // Map username to internal Supabase Auth email format
       const formattedUsername = parsed.data.username.trim().toLowerCase();
       
-      // Se l'utente digita per sbaglio l'email intera, non aggiungiamo di nuovo @pechino.it
-      let email = formattedUsername;
-      if (!email.includes('@')) {
-        email = `${formattedUsername}@pechino.it`;
-      }
-
       // Clear any cached query states before fresh login
       queryClient.clear();
 
+      // Retrieve the internal technical email and role mapped to this username
+      const { data: authCtx, error: mappingError } = await supabase.rpc('get_auth_context_by_username', { p_username: formattedUsername });
+
+      if (mappingError || !authCtx?.email) {
+        throw new Error("Username o password non corretti.");
+      }
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: authCtx.email,
         password: parsed.data.password,
       });
 
       if (signInError) {
-        if (signInError.message?.toLowerCase().includes("invalid login credentials")) {
-          throw new Error("Username o password non corretti.");
-        }
-        if (signInError.message?.toLowerCase().includes("email not confirmed")) {
-          throw new Error("Account non ancora attivato o credenziali non valide.");
-        }
-        throw signInError;
+        throw new Error("Username o password non corretti.");
       }
 
       // Invalidate all queries to fetch brand new session state
@@ -122,7 +116,7 @@ function AuthPage() {
         // Ignore
       }
 
-      if (formattedUsername === "justdave") {
+      if (authCtx.role === "admin") {
         navigate({ to: "/admin" });
       } else {
         navigate({ to: "/dashboard" });

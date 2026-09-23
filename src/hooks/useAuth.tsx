@@ -52,12 +52,7 @@ export function useIsAdmin(user: User | null | undefined) {
     queryFn: async () => {
       if (!user) return false;
       if (
-        user.id === "11111111-1111-1111-1111-111111111111" ||
-        user.email === "justdave@pechino.it" ||
-        user.email === "justdave@admin.pechino.local" ||
-        user.email === "admin@example.com" ||
-        user.email === "test@example.com" ||
-        user.email?.includes("admin")
+        user.id === "11111111-1111-1111-1111-111111111111"
       ) {
         return true;
       }

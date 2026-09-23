@@ -1762,49 +1762,43 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
       // 1. LOGIN
       if (action === "login") {
         const { email, password } = payload;
-        const username = email?.split("@")[0]?.toLowerCase().trim();
         const trimmedPassword = typeof password === "string" ? password.trim() : "";
+        const userId = email?.split("@")[0];
 
-        if (username === "justdave") {
-          const adminObj = (db.admin || []).find((a: any) => a.username === "justdave");
-          const isValid =
-            (adminObj &&
-              (adminObj.password_hash === password ||
-                adminObj.password_hash === trimmedPassword)) ||
-            password === "Zioporco01" ||
-            trimmedPassword === "Zioporco01";
-          if (isValid) {
+        const userRole = (db.user_roles || []).find((ur: any) => ur.user_id === userId);
+        if (!userRole) {
+          return { error: "Credenziali non valide. Controlla username e password.", session: null };
+        }
+
+        if (userRole.role === "admin") {
+          // Hardcoded fallback password per i test locali su DB fittizio
+          if (password === "Zioporco01" || trimmedPassword === "Zioporco01") {
             const session = {
               user: {
-                id: "11111111-1111-1111-1111-111111111111",
-                email: "justdave@admin.pechino.local",
+                id: userId,
+                email: email,
                 raw_user_meta_data: { display_name: "Admin Regia" },
               },
             };
             return { session, error: null };
           }
-        } else {
-          const team = (db.teams || []).find(
-            (t: any) => t.username?.toLowerCase().trim() === username,
-          );
-          if (
-            team &&
-            (team.password_plain === password || team.password_plain === trimmedPassword)
-          ) {
-            // Block only when active is explicitly false (never block undefined/null — those default to active)
+        } else if (userRole.role === "team") {
+          const team = (db.teams || []).find((t: any) => t.id === userRole.team_id);
+          if (team && (team.password_plain === password || team.password_plain === trimmedPassword)) {
             if (team.active === false) {
               return { error: "Account disattivato dall'amministratore", session: null };
             }
             const session = {
               user: {
-                id: team.id,
-                email: `${username}@team.pechino.local`,
+                id: userId,
+                email: email,
                 raw_user_meta_data: { display_name: team.nome_squadra },
               },
             };
             return { session, error: null };
           }
         }
+
         return { error: "Credenziali non valide. Controlla username e password.", session: null };
       }
 
@@ -2033,9 +2027,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
 
         // Apply privacy stripping for Black Box mode
         if (table === "leaderboard") {
-          const isAdmin =
-            currentUserId === "justdave" ||
-            db.admin?.some((a: any) => a.id === currentUserId || a.username === currentUserId);
+          const isAdmin = db.user_roles?.some((ur: any) => ur.user_id === currentUserId && ur.role === 'admin');
           const hasBonus =
             currentUserId &&
             db.marketplace_transactions?.some(
@@ -2063,9 +2055,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
         }
 
         if (table === "teams") {
-          const isAdmin =
-            currentUserId === "justdave" ||
-            db.admin?.some((a: any) => a.id === currentUserId || a.username === currentUserId);
+          const isAdmin = db.user_roles?.some((ur: any) => ur.user_id === currentUserId && ur.role === 'admin');
           rows = rows.map((r: any) => {
             const isSelf = r.id === currentUserId;
             if (isSelf || isAdmin) {
@@ -2078,9 +2068,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
         }
 
         if (table === "scores") {
-          const isAdmin =
-            currentUserId === "justdave" ||
-            db.admin?.some((a: any) => a.id === currentUserId || a.username === currentUserId);
+          const isAdmin = db.user_roles?.some((ur: any) => ur.user_id === currentUserId && ur.role === 'admin');
           if (!isAdmin && currentUserId) {
             rows = rows.filter((r: any) => r.team_id === currentUserId);
           }
@@ -2484,12 +2472,22 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           return { data: null, error: null };
         }
 
+        if (fnName === "get_auth_context_by_username") {
+          const { p_username } = args;
+          const userRole = db.user_roles.find((ur: any) => ur.username?.toLowerCase() === p_username?.toLowerCase());
+          if (userRole) {
+            // Local fallback simulates the tech email format and returns the role
+            return { data: { email: `${userRole.user_id}@auth.local`, role: userRole.role }, error: null };
+          }
+          return { data: null, error: { message: "Username non trovato" } };
+        }
+
         if (fnName === "get_or_assign_poster") {
           const { p_team_id } = args;
           const assigned = db.team_posters.find((tp: any) => tp.team_id === p_team_id);
           if (assigned) {
             const poster = db.posters.find((p: any) => p.id === assigned.poster_id);
-            return { data: { assigned, poster }, error: null };
+            return { data: { id: poster.id, file_name: poster.file_name, titolo: poster.titolo }, error: null };
           }
 
           const activePosters = db.posters.filter((p: any) => p.active);
@@ -2511,7 +2509,8 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
 
           const minCount = Math.min(...Object.values(assignmentCounts));
           const candidates = activePosters.filter((p: any) => assignmentCounts[p.id] === minCount);
-          const chosenPoster = candidates[Math.floor(Math.random() * candidates.length)];
+          candidates.sort((a: any, b: any) => a.id.localeCompare(b.id));
+          const chosenPoster = candidates[0];
 
           const newAssignment = {
             id: uuid(),
@@ -2523,7 +2522,7 @@ export const runLocalDbAction = createServerFn({ method: "POST" })
           db.team_posters.push(newAssignment);
           saveDb(db);
 
-          return { data: { assigned: newAssignment, poster: chosenPoster }, error: null };
+          return { data: { id: chosenPoster.id, file_name: chosenPoster.file_name, titolo: chosenPoster.titolo }, error: null };
         }
 
         if (fnName === "evaluate_poster") {
