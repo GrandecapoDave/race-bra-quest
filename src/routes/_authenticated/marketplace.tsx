@@ -833,7 +833,8 @@ function MarketplacePage() {
               </p>
             </div>
           </div>
-        )}\n
+        )}
+
         {/* BLACKOUT MERCATO ALERT — shown when this team has active blackout */}
         {activeBlackout && (
           <div className="surface p-5 border border-rose-500/50 bg-rose-950/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top duration-300 shadow-xl shadow-rose-950/20">
@@ -857,7 +858,8 @@ function MarketplacePage() {
               </span>
             </div>
           </div>
-        )}\n
+        )}
+
 
         {/* CATEGORY FILTER PILLS (HeroUI Chip variant="dot" Style) */}
         <div className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md py-2.5 -mx-3 px-3 sm:-mx-4 sm:px-4 border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-lg">
