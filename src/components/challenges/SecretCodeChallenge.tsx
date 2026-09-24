@@ -59,11 +59,18 @@ export function SecretCodeChallenge({
     if (!team) return;
     setBuying(true);
     try {
-      const { error } = await supabase.rpc("buy_secret_code_part");
+      const { data, error } = await supabase.rpc("buy_secret_code_part");
       if (error) {
         toast.error(error.message || "Errore durante l'acquisto del frammento");
       } else {
-        toast.success("Frammento acquistato con successo!");
+        const res = data as { barter_points?: number; missing_tokens?: number } | null;
+        if (res?.barter_points && res.barter_points > 0) {
+          toast.success(
+            `Frammento acquistato con il baratto! Token mancanti: ${res.missing_tokens} (pagati con −${res.barter_points} punti).`,
+          );
+        } else {
+          toast.success("Frammento acquistato con successo!");
+        }
         await codeStateQuery.refetch();
         await queryClient.invalidateQueries();
       }
@@ -251,12 +258,20 @@ export function SecretCodeChallenge({
                 <div>
                   <p className="text-[10px] font-bold text-zinc-400 uppercase">Sblocca il 2° frammento</p>
                   <p className="text-sm font-black text-yellow-400">{match.token_cost} Token</p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">
+                    Si paga a: <span className="font-bold text-zinc-200">{match.seller_name}</span>
+                  </p>
+                  {(team?.token_balance || 0) < match.token_cost && (
+                    <p className="text-[10px] text-amber-400 mt-0.5 leading-snug">
+                      Baratto: paghi i token che hai e {((match.token_cost - (team?.token_balance || 0)) * 3)} punti per il resto.
+                    </p>
+                  )}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleBuyPart}
-                disabled={buying || (team?.token_balance || 0) < match.token_cost}
+                disabled={buying}
                 className="accent-gradient px-4 py-2 rounded-lg text-xs font-extrabold text-accent-foreground shadow cursor-pointer hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
               >
                 {buying ? <Loader2 className="size-3.5 animate-spin inline mr-1" /> : <Key className="size-3.5 inline mr-1" />}
