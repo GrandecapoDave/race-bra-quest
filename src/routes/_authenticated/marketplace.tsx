@@ -414,31 +414,6 @@ function MarketplacePage() {
 
   const isAccessible = isAdmin.data || (isMarketplaceActive && hasCompletedTappa1 && !isRaceCompleted);
 
-  // Render access denied for players who haven't discovered the Marketplace yet or if it is closed
-  if (!isAccessible && !teamQuery.isLoading && !gameSettings.isLoading) {
-    return (
-      <AppShell isAdmin={false}>
-        <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-dashed border-red-500/30 rounded-3xl mt-12 bg-red-950/5">
-          <div className="size-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto border border-red-500/20 text-red-500">
-            <Lock className="size-8" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-display font-black uppercase text-red-500">
-              {isRaceCompleted ? "Gara Terminata" : "Area Riservata"}
-            </h1>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {isRaceCompleted
-                ? "La gara è terminata! Non è più possibile effettuare acquisti o compiere azioni nel Marketplace."
-                : !hasCompletedTappa1
-                ? "Il Marketplace si sbloccherà automaticamente dopo il completamento della Tappa 1 (Foto ufficiale)."
-                : "Il Marketplace è temporaneamente chiuso dalla Regia."}
-            </p>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
-
   const team = teamQuery.data;
   const myScore = boardQuery.data?.find((r) => r.team_id === team?.id);
   const currentPoints = myScore?.total_points ?? 0;
@@ -528,6 +503,31 @@ function MarketplacePage() {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [activeBlackout?.id, queryClient]);
+
+  // Render access denied for players who haven't discovered the Marketplace yet or if it is closed
+  if (!isAccessible && !teamQuery.isLoading && !gameSettings.isLoading) {
+    return (
+      <AppShell isAdmin={false}>
+        <div className="surface p-8 max-w-lg mx-auto text-center space-y-6 border border-dashed border-red-500/30 rounded-3xl mt-12 bg-red-950/5">
+          <div className="size-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto border border-red-500/20 text-red-500">
+            <Lock className="size-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-display font-black uppercase text-red-500">
+              {isRaceCompleted ? "Gara Terminata" : "Area Riservata"}
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {isRaceCompleted
+                ? "La gara è terminata! Non è più possibile effettuare acquisti o compiere azioni nel Marketplace."
+                : !hasCompletedTappa1
+                ? "Il Marketplace si sbloccherà automaticamente dopo il completamento della Tappa 1 (Foto ufficiale)."
+                : "Il Marketplace è temporaneamente chiuso dalla Regia."}
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   const formatBlackoutTime = (sec: number) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");
