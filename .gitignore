@@ -37,3 +37,6 @@ dist-ssr
 .env.*
 .vercel/
 scratch/
+
+# foto di test generate dal database locale di sviluppo
+public/uploads/
