@@ -933,13 +933,13 @@ function MarketplacePage() {
                   >
                     <div className="space-y-3">
                       <div className="flex justify-between items-start gap-2">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className={`size-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 text-white shadow-md`}>
                             <item.icon className="size-5" />
                           </div>
-                          <div>
-                            <h3 className="font-extrabold text-sm text-foreground leading-tight">{item.nome}</h3>
-                            <span className="text-[10px] text-emerald-400 font-bold font-mono">{item.effetto}</span>
+                          <div className="min-w-0">
+                            <h3 className="font-extrabold text-sm text-foreground leading-tight break-words">{item.nome}</h3>
+                            <span className="text-[10px] text-emerald-400 font-bold font-mono block break-words mt-0.5">{item.effetto}</span>
                           </div>
                         </div>
                         <span className="text-xs font-black bg-zinc-900 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-orange-400 shrink-0 flex items-center gap-1">
@@ -1161,13 +1161,13 @@ function MarketplacePage() {
                   >
                     <div className="space-y-3">
                       <div className="flex justify-between items-start gap-2">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className={`size-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 text-white shadow-md`}>
                             <item.icon className="size-5" />
                           </div>
-                          <div>
-                            <h3 className="font-extrabold text-sm text-foreground leading-tight">{item.nome}</h3>
-                            <span className="text-[10px] text-red-400 font-bold font-mono">{item.effetto}</span>
+                          <div className="min-w-0">
+                            <h3 className="font-extrabold text-sm text-foreground leading-tight break-words">{item.nome}</h3>
+                            <span className="text-[10px] text-red-400 font-bold font-mono block break-words mt-0.5">{item.effetto}</span>
                           </div>
                         </div>
                         <span className="text-xs font-black bg-zinc-900 px-2.5 py-1.5 rounded-xl border border-zinc-800 text-orange-400 shrink-0 flex items-center gap-1">
@@ -1225,9 +1225,9 @@ function MarketplacePage() {
 
                   return (
                     <li key={b.id} className="flex flex-col gap-2 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-foreground">{details?.nome || b.item_id}</span>
-                        <span className="text-[10px] text-emerald-400 font-bold">-{itemCost} 🪙</span>
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-extrabold text-foreground min-w-0 break-words">{details?.nome || b.item_id}</span>
+                        <span className="text-[10px] text-emerald-400 font-bold shrink-0">-{itemCost} 🪙</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-zinc-500">
                         <span>Stato: <strong className="text-zinc-300">{isUsed ? "Utilizzato" : b.stato === "blocked" ? "Bloccato" : "Attivo"}</strong></span>
@@ -1344,11 +1344,11 @@ function MarketplacePage() {
                 const itemCost = t.costo ?? t.costo_token ?? (isReward ? 0 : (details as any)?.costo ?? 0);
 
                 return (
-                  <div key={t.id} className="flex justify-between items-center py-3 text-xs">
-                    <div className="space-y-0.5">
-                      <p className="font-extrabold text-foreground flex items-center gap-1.5">
-                        {details?.nome || t.item_id}
-                        <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black ${
+                  <div key={t.id} className="flex justify-between items-start py-3 text-xs gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <p className="font-extrabold text-foreground flex flex-wrap items-center gap-1.5 min-w-0">
+                        <span className="min-w-0 break-words">{details?.nome || t.item_id}</span>
+                        <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black shrink-0 ${
                           isReward 
                             ? "bg-yellow-500/10 text-yellow-400"
                             : details?.categoria === "BONUS"
