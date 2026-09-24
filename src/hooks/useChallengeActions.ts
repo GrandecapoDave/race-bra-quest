@@ -16,6 +16,8 @@ export function useCompleteChallenge() {
         base_points?: number;
         multiplier_2x_bonus?: number;
         dimezza_penalty?: number;
+        stage_dimezza_penalty?: number;
+        position?: number;
         polizza_refund?: number;
         bonus?: number;
         stage_completed: boolean;
@@ -32,8 +34,9 @@ export function useCompleteChallenge() {
             duration: 6000,
           });
         }
-        if (result.dimezza_penalty && result.dimezza_penalty > 0) {
-          toast.error(`⚠️ Malus Dimezza Punti subito: Punteggio prova dimezzato (-${result.dimezza_penalty} PT)!`, {
+        const dimezzaPenalty = result.stage_dimezza_penalty ?? result.dimezza_penalty;
+        if (dimezzaPenalty && dimezzaPenalty > 0) {
+          toast.error(`⚠️ Malus Dimezza Punti subito: Punteggio tappa dimezzato (-${dimezzaPenalty} PT)!`, {
             duration: 6000,
           });
         }
@@ -49,7 +52,7 @@ export function useCompleteChallenge() {
         }
         if (result.stage_completed && result.stage_reward && result.stage_reward > 0) {
           const medals = ["🥇", "🥈", "🥉"];
-          const pos = result.stage_position ?? 1;
+          const pos = result.position ?? result.stage_position ?? 1;
           const medal = medals[pos - 1] || `${pos}°`;
           const placementText = pos === 1 ? "Hai completato la tappa per primo!" : `Posizione di arrivo: ${pos}°`;
           toast.success(

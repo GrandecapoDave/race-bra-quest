@@ -674,7 +674,7 @@ function AdminMarketplacePage() {
       </div>
 
       {/* CATALOGO ARTICOLI & LISTINO UFFICIALE */}
-      <div className="surface p-6 border rounded-2xl bg-zinc-950/40 border-zinc-800 shadow-xl space-y-4">
+      <div className="surface p-6 border rounded-2xl bg-zinc-950/40 border-zinc-800 shadow-xl space-y-4 lg:col-span-3 min-w-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/10 pb-4">
           <div>
             <h3 className="font-extrabold text-sm uppercase tracking-wider text-primary flex items-center gap-2">

@@ -5,15 +5,16 @@ import { Check, X, Lock, Film, Sparkles, AlertCircle, Loader2 } from "lucide-rea
 import { supabase } from "@/integrations/supabase/client";
 import type { Challenge, Team } from "@/lib/race";
 
+// Titoli e lettere sono verificati lato server (submit_emoji_movie_answer): qui solo le emoji da mostrare.
 export const MOVIES = [
-  { index: 1, emojis: "🖤👅🕷️👹", title: "Venom", letter: "V" },
-  { index: 2, emojis: "🧠😢😡🤢😱", title: "Inside Out", letter: "I" },
-  { index: 3, emojis: "🚢🧊💔🎻", title: "Titanic", letter: "T" },
-  { index: 4, emojis: "🤠🚀🧸👦", title: "Toy Story", letter: "T" },
-  { index: 5, emojis: "🌊👑🐔🌴", title: "Oceania", letter: "O" },
-  { index: 6, emojis: "🐭👨‍🍳🍽️🇫🇷", title: "Ratatouille", letter: "R" },
-  { index: 7, emojis: "🤡🎈🔴🚸", title: "It", letter: "I" },
-  { index: 8, emojis: "💙🌳🪐👽", title: "Avatar", letter: "A" }
+  { index: 1, emojis: "🖤👅🕷️👹" },
+  { index: 2, emojis: "🧠😢😡🤢😱" },
+  { index: 3, emojis: "🚢🧊💔🎻" },
+  { index: 4, emojis: "🤠🚀🧸👦" },
+  { index: 5, emojis: "🌊👑🐔🌴" },
+  { index: 6, emojis: "🐭👨‍🍳🍽️🇫🇷" },
+  { index: 7, emojis: "🤡🎈🔴🚸" },
+  { index: 8, emojis: "💙🌳🪐👽" }
 ];
 
 export function EmojiMoviesChallenge({
@@ -56,6 +57,7 @@ export function EmojiMoviesChallenge({
       isCorrect: ans?.is_correct ?? false,
       lastAnswer: ans?.last_answer ?? "",
       letter: ans?.letter ?? null,
+      title: ans?.title ?? null,
       isResolved: (ans?.is_correct ?? false) || (ans?.attempts ?? 0) >= 3,
     };
   };
@@ -64,80 +66,25 @@ export function EmojiMoviesChallenge({
   const submitAnswer = useMutation({
     mutationFn: async ({ index, answer }: { index: number; answer: string }) => {
       if (!team) return;
-      const movie = MOVIES.find((m) => m.index === index);
-      if (!movie) return;
-
-      const currentState = getMovieState(index);
-      const nextAttempts = currentState.attempts + 1;
-
-      // Validate answer (case insensitive, trimmed)
-      const cleanInput = answer.trim().toLowerCase();
-      const cleanSolution = movie.title.trim().toLowerCase();
-      const isCorrect = cleanInput === cleanSolution;
-      const points = isCorrect ? 1 : 0;
-      const letter = movie.letter;
-
-      // Save or update answer in team_emoji_movies table
-      const existing = answers.find((a) => a.movie_index === index);
-      if (existing) {
-        const { error } = await (supabase as any)
-          .from("team_emoji_movies")
-          .update({
-            attempts: nextAttempts,
-            last_answer: answer,
-            is_correct: isCorrect,
-            points,
-            letter,
-          })
-          .eq("id", existing.id);
-        if (error) throw new Error(error.message);
-      } else {
-        const { error } = await (supabase as any)
-          .from("team_emoji_movies")
-          .insert({
-            team_id: team.id,
-            movie_index: index,
-            attempts: nextAttempts,
-            last_answer: answer,
-            is_correct: isCorrect,
-            points,
-            letter,
-          });
-        if (error) throw new Error(error.message);
-      }
-
-      // Log score or penalty
-      if (isCorrect) {
-        const { error: scoreErr } = await (supabase as any)
-          .from("scores")
-          .insert({
-            team_id: team.id,
-            challenge_id: challenge.id,
-            punti: 1,
-            tipo_modificatore: "challenge_points",
-            motivo: `Indovinato film dalle emoji: ${movie.title} (${index}/8)`
-          });
-        if (scoreErr) console.warn("Score insert warning:", scoreErr.message);
-      } else {
-        const { error: scoreErr } = await (supabase as any)
-          .from("scores")
-          .insert({
-            team_id: team.id,
-            challenge_id: challenge.id,
-            punti: -2,
-            tipo_modificatore: "penalty",
-            motivo: `Errore film emoji #${index}: "${answer}" (-2 PT)`
-          });
-        if (scoreErr) console.warn("Penalty score insert warning:", scoreErr.message);
-      }
-
-      return { isCorrect, nextAttempts, title: movie.title };
+      const { data, error } = await (supabase as any).rpc("submit_emoji_movie_answer", {
+        p_movie_index: index,
+        p_answer: answer,
+      });
+      if (error) throw new Error(error.message);
+      return {
+        isCorrect: Boolean(data?.is_correct),
+        nextAttempts: Number(data?.attempts ?? 0),
+        title: (data?.title ?? null) as string | null,
+        alreadyResolved: Boolean(data?.already_resolved),
+      };
     },
     onSuccess: (data, variables) => {
-      if (data?.isCorrect) {
+      if (data?.alreadyResolved) {
+        toast.info("Questo film è già stato risolto.");
+      } else if (data?.isCorrect) {
         toast.success(`🎉 Esatto! Hai indovinato: ${data.title} (+1 PT)`);
       } else {
-        toast.error(`❌ Sbagliato (-2 PT)! ${data?.nextAttempts === 3 ? `Risposta corretta: ${data.title}` : `Tentativo ${data?.nextAttempts} di 3.`}`);
+        toast.error(`❌ Sbagliato (-2 PT)! ${data?.nextAttempts === 3 ? `Risposta corretta: ${data.title ?? ""}` : `Tentativo ${data?.nextAttempts} di 3.`}`);
       }
       queryClient.invalidateQueries();
     },
@@ -160,7 +107,7 @@ export function EmojiMoviesChallenge({
   // Compute final word letters array
   const finalWord = MOVIES.map((m) => {
     const state = getMovieState(m.index);
-    return state.isResolved ? m.letter : "_";
+    return state.isResolved && state.letter ? state.letter : "_";
   });
 
   return (
@@ -225,12 +172,12 @@ export function EmojiMoviesChallenge({
                       {state.isCorrect ? (
                         <div className="flex items-center gap-1.5 text-green-500 font-bold bg-green-950/20 border border-green-800/30 rounded-xl px-3 py-2 text-xs sm:text-sm">
                           <Check className="size-4 shrink-0" />
-                          <span>{movie.title}</span>
+                          <span>{state.title ?? state.lastAnswer}</span>
                         </div>
                       ) : state.attempts >= 3 ? (
                         <div className="flex items-center gap-1.5 text-red-400 font-medium bg-red-950/20 border border-red-900/30 rounded-xl px-3 py-2 text-xs sm:text-sm">
                           <Lock className="size-4 shrink-0" />
-                          <span>{movie.title} <span className="text-[10px] text-zinc-500 font-normal sm:inline hidden">(Risposta corretta)</span></span>
+                          <span>{state.title ?? "—"} <span className="text-[10px] text-zinc-500 font-normal sm:inline hidden">(Risposta corretta)</span></span>
                         </div>
                       ) : (
                         <div className="space-y-1">

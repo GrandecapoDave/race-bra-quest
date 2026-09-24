@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { triggerHaptic } from "@/lib/haptics";
 import {
+  challengeMaxPoints,
   challengeState,
   challengesQuery,
   formatDuration,
@@ -1207,7 +1208,7 @@ function Dashboard() {
             {nextChallenge && (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
                 <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
-                +{nextChallenge.points} Punti
+                +{challengeMaxPoints(nextChallenge)} Punti
               </span>
             )}
           </div>

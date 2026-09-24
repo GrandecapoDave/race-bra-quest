@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import {
+  challengeMaxPoints,
   challengeState,
   challengesQuery,
   myTeamQuery,
@@ -124,7 +125,7 @@ function StagePage() {
                 {isJackpot ? (
                   <p className="text-[10px] font-black text-purple-400 uppercase tracking-wider mt-0.5">Scommessa Bonus</p>
                 ) : (
-                  <p className="text-xs font-bold text-gold">{c.points} punti</p>
+                  <p className="text-xs font-bold text-gold">{challengeMaxPoints(c)} punti</p>
                 )}
               </div>
               {state === "available" && <Play className="size-4 sm:size-5 text-primary shrink-0" />}

@@ -39,6 +39,13 @@ export type Challenge = {
   points: number;
 };
 
+// Punti massimi realmente ottenibili per prova. I punteggi assegnati restano quelli di gioco:
+// quiz = 5 domande x 3 + 20 al completamento, film emoji = 8 x 1 + 20, banca = 4 enigmi x 5, codice segreto = 30 al PIN.
+const REAL_MAX_POINTS: Record<string, number> = { quiz: 35, emoji_movies: 28, banca: 20, codice: 30 };
+export function challengeMaxPoints(c: { type: string; points: number }): number {
+  return REAL_MAX_POINTS[c.type] ?? c.points;
+}
+
 export type Team = {
   id: string;
   name: string;

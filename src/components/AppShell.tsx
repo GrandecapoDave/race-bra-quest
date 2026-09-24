@@ -142,6 +142,9 @@ function AppShellInner({
   const [isUnluckySpinning, setIsUnluckySpinning] = useState(false);
   const [showUnluckyPrize, setShowUnluckyPrize] = useState(false);
   const [unluckyOutcome, setUnluckyOutcome] = useState<any>(null);
+  // Freeze uscito dalla Ruota Sfortunata: blocca la squadra per la durata estratta (persistito per resistere ai refresh)
+  const [wheelFreezeUntil, setWheelFreezeUntil] = useState<number | null>(null);
+  const [wheelSecondsLeft, setWheelSecondsLeft] = useState(0);
 
   // Manual Refresh state & handlers (especially useful when installed as mobile PWA/standalone)
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -250,7 +253,46 @@ function AppShellInner({
   const isCurrentEnigma = currentActiveMalusTx?.item_id === "enigma_extra";
   const isCurrentWheel = currentActiveMalusTx?.item_id === "ruota_sfortunata";
 
-  const isFrozen = isCurrentFreeze && secondsLeft > 0;
+  const isQueueFreezeActive = isCurrentFreeze && secondsLeft > 0;
+  const isFrozen = isQueueFreezeActive || wheelSecondsLeft > 0;
+  const frozenSecondsLeft = isQueueFreezeActive ? secondsLeft : wheelSecondsLeft;
+
+  const wheelFreezeKey = team.data?.id ? `wheel_freeze_until_${team.data.id}` : null;
+  useEffect(() => {
+    if (!wheelFreezeKey) return;
+    try {
+      const stored = Number(localStorage.getItem(wheelFreezeKey)) || 0;
+      setWheelFreezeUntil(stored > Date.now() ? stored : null);
+    } catch {
+      setWheelFreezeUntil(null);
+    }
+  }, [wheelFreezeKey]);
+
+  useEffect(() => {
+    if (!wheelFreezeUntil) {
+      setWheelSecondsLeft(0);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.ceil((wheelFreezeUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setWheelSecondsLeft(0);
+        setWheelFreezeUntil(null);
+        if (wheelFreezeKey) {
+          try {
+            localStorage.removeItem(wheelFreezeKey);
+          } catch {
+            // ignore
+          }
+        }
+      } else {
+        setWheelSecondsLeft(remaining);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [wheelFreezeUntil, wheelFreezeKey]);
 
   useEffect(() => {
     if (!isCurrentFreeze || !currentActiveMalusTx) {
@@ -264,9 +306,23 @@ function AppShellInner({
       return;
     }
 
-    const startMs = currentActiveMalusTx.data_acquisto
-      ? new Date(currentActiveMalusTx.data_acquisto).getTime()
-      : (currentActiveMalusTx.timestamp ? new Date(currentActiveMalusTx.timestamp).getTime() : Date.now());
+    // Ogni freeze parte dal momento in cui diventa il malus attivo in coda (non dall'acquisto),
+    // così più malus si scontano uno dopo l'altro. L'inizio è salvato per resistere ai refresh.
+    const freezeStartKey = `freeze_active_start_${txId}`;
+    let startMs = 0;
+    try {
+      startMs = Number(localStorage.getItem(freezeStartKey)) || 0;
+    } catch {
+      startMs = 0;
+    }
+    if (!startMs) {
+      startMs = Date.now();
+      try {
+        localStorage.setItem(freezeStartKey, String(startMs));
+      } catch {
+        // storage non disponibile: il timer resta valido solo per questa sessione
+      }
+    }
 
     const durationMs = 120 * 1000;
     const targetExpiryMs = startMs + durationMs;
@@ -307,7 +363,10 @@ function AppShellInner({
   const attackerTeam = currentActiveMalusTx
     ? allTeamsQuery.data?.find((t: any) => t.id === currentActiveMalusTx.buyer_team_id)
     : null;
-  const attackerName = attackerTeam?.nome_squadra || "Una squadra avversaria";
+  // Ricorda l'ultimo attaccante noto: dopo lo spin la transazione passa a "used" e sparisce dalla coda
+  const lastAttackerNameRef = useRef("");
+  if (attackerTeam?.nome_squadra) lastAttackerNameRef.current = attackerTeam.nome_squadra;
+  const attackerName = attackerTeam?.nome_squadra || lastAttackerNameRef.current || "Una squadra avversaria";
 
   const handleSubmitEnigmaExtra = async (e: any) => {
     e.preventDefault();
@@ -356,6 +415,15 @@ function AppShellInner({
       if (data && data.outcome) {
         const outcome = data.outcome;
         setUnluckyOutcome(outcome);
+        if (outcome.id === "freeze_2min" && wheelFreezeKey) {
+          const until = Date.now() + (Number(outcome.freeze_seconds) || 120) * 1000;
+          try {
+            localStorage.setItem(wheelFreezeKey, String(until));
+          } catch {
+            // ignore
+          }
+          setWheelFreezeUntil(until);
+        }
         
         const sliceIndex = UNLUCKY_WHEEL_SLICES.findIndex((s) => s.id === outcome.id);
         if (sliceIndex === -1) {
@@ -808,7 +876,7 @@ function AppShellInner({
               </div>
 
               <div className="text-5xl font-black font-mono text-cyan-400 tracking-widest bg-zinc-950/80 px-8 py-5 rounded-2xl border border-cyan-500/20 shadow-inner drop-shadow-[0_0_12px_rgba(34,211,238,0.25)]">
-                {formatTime(secondsLeft)}
+                {formatTime(frozenSecondsLeft)}
               </div>
 
               <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-extrabold">

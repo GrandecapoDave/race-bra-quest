@@ -20,7 +20,7 @@ import { BoxeChallenge } from "@/components/challenges/BoxeChallenge";
 import JackpotChallenge from "@/components/challenges/JackpotChallenge";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { useCompleteChallenge, useStartChallenge } from "@/hooks/useChallengeActions";
-import { challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery } from "@/lib/race";
+import { challengeMaxPoints, challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery } from "@/lib/race";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/challenge/$challengeId")({
@@ -256,7 +256,7 @@ function ChallengePage() {
         {challenge.title}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">{challenge.description}</p>
-      <p className="mt-1 text-xs font-bold text-gold">{challenge.points} punti in palio</p>
+      <p className="mt-1 text-xs font-bold text-gold">{challengeMaxPoints(challenge)} punti in palio</p>
 
       <div className="mt-6 w-full min-w-0">
         {state === "locked" ? (
