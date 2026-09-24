@@ -29,7 +29,7 @@ export function CornholeChallenge({ challenge, team, completed, onComplete, comp
   const { data: allTeams, isLoading: loadingTeams } = useQuery({
     queryKey: ["teams_all_cornhole"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("teams").select("*");
+      const { data, error } = await (supabase as any).from("teams_public").select("*");
       if (error) throw error;
       return data || [];
     }

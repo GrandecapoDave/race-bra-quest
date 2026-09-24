@@ -152,8 +152,8 @@ function Dashboard() {
     staleTime: 0,
     refetchInterval: 5000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teams")
+      const { data, error } = await (supabase as any)
+        .from("teams_public")
         .select("*")
         .eq("active", true);
       if (error) {
@@ -222,34 +222,6 @@ function Dashboard() {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [gameSettings.data, stages.data, challenges.data, progress.data]);
-
-  // Reactive Toast notification when new stage completion reward is granted (even via admin approval)
-  const notifiedStageTxRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!team.data?.id || !transactionsQuery.data) return;
-    const stageRewards = transactionsQuery.data.filter(
-      (t: any) =>
-        (t.buyer_team_id === team.data?.id || t.team_id === team.data?.id) &&
-        (t.item_id === "reward_stage" || t.marketplace_item_id === "reward_stage") &&
-        t.stato === "completed"
-    );
-    stageRewards.forEach((tx: any) => {
-      if (!notifiedStageTxRef.current.has(tx.id)) {
-        notifiedStageTxRef.current.add(tx.id);
-        const outcome = tx.outcome || tx.dettagli;
-        const pos = outcome?.position;
-        const tokens = outcome?.reward_tokens ?? Math.abs(tx.costo_token ?? tx.costo ?? 0);
-        const stageName = outcome?.stage_name || `Tappa ${outcome?.stage_index || ""}`;
-        const medals = ["🥇", "🥈", "🥉"];
-        const posLabel = pos === 1 ? "1° posto" : pos === 2 ? "2° posto" : pos === 3 ? "3° posto" : `${pos}° posto`;
-        const medal = (pos && medals[pos - 1]) || "🏆";
-        toast.success(
-          `${medal} ${stageName} completata! Vi siete classificati al ${posLabel} (+${tokens} Token)!`,
-          { duration: 8000 }
-        );
-      }
-    });
-  }, [team.data?.id, transactionsQuery.data]);
 
   if (team.isLoading || stages.isLoading || challenges.isLoading) {
     return (

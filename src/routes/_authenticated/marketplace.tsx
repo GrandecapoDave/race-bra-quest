@@ -268,10 +268,9 @@ function MarketplacePage() {
   const targetTeamDetailsQuery = useQuery({
     queryKey: ["target-team-details", targetTeamId],
     queryFn: async () => {
-      if (!targetTeamId) return { scores: [], progress: [] };
-      const { data: sc } = await (supabase as any).from("scores").select("*").eq("team_id", targetTeamId);
-      const { data: pr } = await (supabase as any).from("team_progress").select("*").eq("team_id", targetTeamId);
-      return { scores: sc || [], progress: pr || [] };
+      if (!targetTeamId) return { summary: [] as Array<{ stage_id: string; completed_challenges: number; earned_points: number }> };
+      const { data } = await (supabase as any).rpc("get_target_stage_summary", { p_target_team_id: targetTeamId });
+      return { summary: (data || []) as Array<{ stage_id: string; completed_challenges: number; earned_points: number }> };
     },
     enabled: !!targetTeamId && selectedMalus?.id === "dimezza_punti",
     refetchInterval: 3000,
@@ -352,8 +351,8 @@ function MarketplacePage() {
   const teamsQuery = useQuery({
     queryKey: ["all-teams-list"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teams")
+      const { data, error } = await (supabase as any)
+        .from("teams_public")
         .select("*")
         .eq("active", true);
       if (error) {
@@ -1558,14 +1557,10 @@ function MarketplacePage() {
                         .map((s: any) => {
                           const sNum = s.numero_tappa || s.order_index;
                           const sChs = (challenges.data ?? []).filter((c: any) => c.stage_id === s.id);
-                          const compChs = (targetTeamDetailsQuery.data?.progress ?? []).filter(
-                            (p: any) => (p.stage_id === s.id || sChs.some((c: any) => c.id === p.challenge_id)) &&
-                                        (p.stato === "completed" || p.status === "completed")
-                          );
-                          const isDone = sChs.length > 0 && compChs.length >= sChs.length;
-                          const earnedPts = (targetTeamDetailsQuery.data?.scores ?? [])
-                            .filter((sc: any) => sc.stage_id === s.id && sc.tipo_modificatore !== "penalty_dimezza_tappa")
-                            .reduce((sum: number, sc: any) => sum + (sc.punti || 0), 0);
+                          const stageSummary = (targetTeamDetailsQuery.data?.summary ?? []).find((x) => x.stage_id === s.id);
+                          const compCount = stageSummary?.completed_challenges ?? 0;
+                          const isDone = sChs.length > 0 && compCount >= sChs.length;
+                          const earnedPts = stageSummary?.earned_points ?? 0;
                           const availablePts = sChs.reduce((sum: number, c: any) => sum + (c.punteggio_massimo || 0), 0);
 
                           const isSelected = selectedStageId === s.id;
@@ -1590,12 +1585,12 @@ function MarketplacePage() {
                                     className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${
                                       isDone
                                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                        : compChs.length > 0
+                                        : compCount > 0
                                         ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                                         : "bg-zinc-800 text-zinc-400 border border-zinc-700"
                                     }`}
                                   >
-                                    {isDone ? "✓ Completata" : compChs.length > 0 ? "★ In corso" : "🔒 Da svolgere"}
+                                    {isDone ? "✓ Completata" : compCount > 0 ? "★ In corso" : "🔒 Da svolgere"}
                                   </span>
                                 </div>
                                 <p className="text-[10px] font-mono">

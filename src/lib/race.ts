@@ -171,7 +171,7 @@ export const allTeamsQuery = queryOptions({
   queryKey: ["all-teams-colors"],
   queryFn: async (): Promise<Array<{ id: string; name: string; avatar_url: string | null; color: string | null }>> => {
     const { data, error } = await (supabase as any)
-      .from("teams")
+      .from("teams_public")
       .select("id,name:nome_squadra,avatar_url,color:colore");
     if (error) {
       console.warn("[race] allTeamsQuery error:", error);

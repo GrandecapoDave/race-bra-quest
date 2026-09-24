@@ -29,7 +29,7 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
   const { data: allTeams, isLoading: loadingTeams } = useQuery({
     queryKey: ["teams_all_boxe"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("teams").select("*");
+      const { data, error } = await (supabase as any).from("teams_public").select("*");
       if (error) throw error;
       return data || [];
     }

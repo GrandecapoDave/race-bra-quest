@@ -44,6 +44,8 @@ import {
   gameSettingsQuery,
 } from "@/lib/race";
 import { triggerHaptic } from "@/lib/haptics";
+import { useSession } from "@/hooks/useAuth";
+import { useTeamNotifications } from "@/hooks/useTeamNotifications";
 import { AdminDecisionModal } from "@/components/AdminDecisionModal";
 import {
   Sidebar,
@@ -216,12 +218,16 @@ function AppShellInner({
   // Query database state to determine if Marketplace is unlocked and active
   const team = useQuery({ ...myTeamQuery, enabled: !isAdmin, refetchInterval: 3000 });
 
+  // Notifiche di gioco (premi tappa, malus subiti) valide in tutte le pagine, una sola volta per evento
+  const { user: sessionUser } = useSession();
+  useTeamNotifications(team.data?.id, sessionUser?.id, !isAdmin);
+
   // Query all teams list to identify attacker name
   const allTeamsQuery = useQuery({
     queryKey: ["all-teams-list-for-freeze"],
     enabled: !isAdmin && !!team.data?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("teams").select("id, nome_squadra");
+      const { data } = await (supabase as any).from("teams_public").select("id, nome_squadra");
       return data ?? [];
     }
   });

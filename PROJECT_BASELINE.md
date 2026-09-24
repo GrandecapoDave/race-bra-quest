@@ -119,6 +119,7 @@ The marketplace allows teams to buy items using their Token balance.
 
 ## Security & Integrity Rules
 1.  **Team Isolation**: No team can read or write points, tokens, or status parameters of another team (IDOR prevention).
+    *   Enforced by row-level security (migrations 21-22): a team reads only its own rows of `scores`, `team_progress`, `marketplace_transactions` (plus those where it is the target), `submissions`, `cattiveria_ledger`, `activity_log`, `team_posters`; the final report table is admin-only. Other teams' names/avatars come from the `teams_public` view (no tokens, freeze state or credentials). Progress and emoji answers are written only through RPCs.
 2.  **Black Box Enforcement**: Leaderboard score totals and token balances of opposing teams are stripped out of API responses unless the requesting team is an Admin or has an active `bonus_classifica`.
 3.  **Negative Scores Allowed**: Point penalties and Malus are always applied in full (e.g. Penalità Punti = -20 PT) even if the team's score falls below `0`; negative scores are regulated. Token balances have no maximum (they only cannot go below 0 when spent).
 4.  **Double Purchase / Double Click Protection**: All marketplace and gameplay actions are checked synchronously for idempotency to prevent duplicated requests.

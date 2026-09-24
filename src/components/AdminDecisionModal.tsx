@@ -131,6 +131,10 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean | undefined 
           rLower.includes("passaparola") ||
           rLower.includes("tassa") ||
           rLower.includes("jackpot") ||
+          rLower.includes("subita da") ||
+          rLower.includes("dimezza") ||
+          rLower.includes("baratto") ||
+          rLower.includes("polizza") ||
           rLower.includes("sfida") ||
           rLower.includes("tappa") ||
           s.tipo_modificatore === "marketplace" ||

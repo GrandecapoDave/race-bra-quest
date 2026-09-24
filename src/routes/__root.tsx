@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { installToastSanitizer } from "@/lib/notify";
 import { supabase } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
@@ -90,6 +91,8 @@ function RootPendingComponent() {
   );
 }
 
+installToastSanitizer();
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -165,7 +168,7 @@ function RootComponent() {
       <AuthSync />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" />
     </QueryClientProvider>
   );
 }
