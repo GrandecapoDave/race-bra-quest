@@ -693,18 +693,18 @@ function AdminMarketplacePage() {
           {MARKETPLACE_ITEMS.map((item) => (
             <div
               key={item.id}
-              className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 flex items-start justify-between gap-3"
+              className="p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/80 flex items-start justify-between gap-3 min-w-0"
             >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${
                     item.categoria === "BONUS" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
                   }`}>
                     {item.categoria}
                   </span>
-                  <h4 className="text-xs font-extrabold text-foreground">{item.nome}</h4>
+                  <h4 className="text-xs font-extrabold text-foreground min-w-0 break-words">{item.nome}</h4>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed break-words">{item.desc}</p>
               </div>
               <span className="text-xs font-black font-mono px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 shrink-0">
                 {item.costo} 🪙
