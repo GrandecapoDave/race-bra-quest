@@ -932,7 +932,7 @@ function MarketplacePage() {
                     }`}
                   >
                     <div className="space-y-3">
-                      <div className="flex justify-between items-start gap-2">
+                      <div className="flex justify-between items-start gap-2 min-w-0">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`size-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 text-white shadow-md`}>
                             <item.icon className="size-5" />
@@ -1160,7 +1160,7 @@ function MarketplacePage() {
                     }`}
                   >
                     <div className="space-y-3">
-                      <div className="flex justify-between items-start gap-2">
+                      <div className="flex justify-between items-start gap-2 min-w-0">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`size-10 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 text-white shadow-md`}>
                             <item.icon className="size-5" />
@@ -1209,7 +1209,7 @@ function MarketplacePage() {
         {/* TEAM DASHBOARD METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
           {/* BONUS DISPONIBILI */}
-          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl">
+          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
             <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2 border-b border-border/20 pb-2">
               <Sparkles className="size-4 text-emerald-400" /> 🎁 Bonus Acquistati
             </h3>
@@ -1225,7 +1225,7 @@ function MarketplacePage() {
 
                   return (
                     <li key={b.id} className="flex flex-col gap-2 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800 text-xs">
-                      <div className="flex justify-between items-start gap-2">
+                      <div className="flex justify-between items-start gap-2 min-w-0">
                         <span className="font-extrabold text-foreground min-w-0 break-words">{details?.nome || b.item_id}</span>
                         <span className="text-[10px] text-emerald-400 font-bold shrink-0">-{itemCost} 🪙</span>
                       </div>
@@ -1263,7 +1263,7 @@ function MarketplacePage() {
           </div>
 
           {/* MALUS INVIATI */}
-          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl">
+          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
             <h3 className="text-sm font-black uppercase tracking-wider text-rose-400 flex items-center gap-2 border-b border-border/20 pb-2">
               <Zap className="size-4 text-rose-400" /> ⚔️ Malus Inviati
             </h3>
@@ -1293,7 +1293,7 @@ function MarketplacePage() {
           </div>
 
           {/* MALUS RICEVUTI */}
-          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl">
+          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
             <h3 className="text-sm font-black uppercase tracking-wider text-amber-500 flex items-center gap-2 border-b border-border/20 pb-2">
               <AlertTriangle className="size-4 text-amber-500" /> ⚠️ Malus Ricevuti
             </h3>
@@ -1326,7 +1326,7 @@ function MarketplacePage() {
         </div>
 
         {/* TRANSACTIONS HISTORY LOG */}
-        <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl">
+        <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
           <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 border-b border-border/20 pb-2">
             <History className="size-4 text-orange-500" /> Storico Completo Acquisti Gara
           </h2>
@@ -1344,7 +1344,7 @@ function MarketplacePage() {
                 const itemCost = t.costo ?? t.costo_token ?? (isReward ? 0 : (details as any)?.costo ?? 0);
 
                 return (
-                  <div key={t.id} className="flex justify-between items-start py-3 text-xs gap-2">
+                  <div key={t.id} className="flex justify-between items-start py-3 text-xs gap-2 min-w-0">
                     <div className="space-y-0.5 min-w-0">
                       <p className="font-extrabold text-foreground flex flex-wrap items-center gap-1.5 min-w-0">
                         <span className="min-w-0 break-words">{details?.nome || t.item_id}</span>
