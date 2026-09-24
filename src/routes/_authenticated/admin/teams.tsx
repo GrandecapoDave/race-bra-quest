@@ -18,6 +18,16 @@ import {
   Minus,
 } from "lucide-react";
 import { formatDuration } from "@/lib/race";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/teams")({
   component: AdminTeamsPage,
@@ -52,6 +62,7 @@ function AdminTeamsPage() {
   const queryClient = useQueryClient();
 
   // Form states locally managed to declutter Layout route
+  const [teamToDelete, setTeamToDelete] = useState<{ id: string; name: string } | null>(null);
   const [teamName, setTeamName] = useState("");
   const [teamUser, setTeamUser] = useState("");
   const [teamPass, setTeamPass] = useState("");
@@ -95,10 +106,13 @@ function AdminTeamsPage() {
   }
 
   async function handleDeleteTeam(id: string) {
-    if (!confirm("Sei sicuro di voler eliminare questa squadra? Verranno eliminati tutti i suoi progressi e sottomissioni.")) return;
-    const { error } = await (supabase as any).from("teams").delete().eq("id", id);
+    const { data, error } = await (supabase as any).from("teams").delete().eq("id", id).select("id");
     if (error) {
       toast.error("Errore: " + error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast.error("Squadra non eliminata: il database ha rifiutato l'operazione (sessione admin scaduta?). Ricarica la pagina e riprova.");
       return;
     }
     toast.success("Squadra eliminata");
@@ -1123,7 +1137,7 @@ function AdminTeamsPage() {
                             <Lock className="size-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteTeam(t.id)}
+                            onClick={() => setTeamToDelete({ id: t.id, name: t.nome_squadra })}
                             className="p-2 border border-border rounded-lg text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                             title="Elimina squadra"
                           >
@@ -1140,6 +1154,27 @@ function AdminTeamsPage() {
         </div>
         </div>
       )}
+      <AlertDialog open={!!teamToDelete} onOpenChange={(open) => { if (!open) setTeamToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare la squadra {teamToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Verranno eliminati tutti i suoi progressi, punteggi e sottomissioni. L&apos;operazione non si può annullare.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (teamToDelete) void handleDeleteTeam(teamToDelete.id);
+                setTeamToDelete(null);
+              }}
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
