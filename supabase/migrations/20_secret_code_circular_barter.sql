@@ -1,7 +1,7 @@
 -- 20_secret_code_circular_barter.sql
 -- Codice Segreto: ogni squadra paga una squadra DIVERSA (catena circolare, nessun venditore ripetuto, funziona anche con squadre dispari),
 -- costo casuale 1-6 token fissato all'avvio della gara. Se mancano token: BARATTO (paga i token che ha, il resto in punti: 3 PT per token mancante).
--- Prima tutti pagavano la squadra piu' vecchia (costo fisso 4).
+-- Prima tutti pagavano la squadra piu' vecchia (costo fisso 4). L'avvio gara ricostruisce la catena finche' nessuno ha comprato.
 
 CREATE OR REPLACE FUNCTION public.build_secret_code_matches()
  RETURNS integer
@@ -305,8 +305,9 @@ BEGIN
     activated_by = COALESCE(p_admin_id, activated_by)
   WHERE id = 'settings_01';
 
-  -- Codice Segreto: catena circolare di venditori e costi casuali 1-6, creata una sola volta a inizio gara
-  IF NOT EXISTS (SELECT 1 FROM public.team_code_matches) THEN
+  -- Codice Segreto: catena circolare di venditori e costi casuali 1-6, ricostruita a inizio gara sulle squadre attive di quel momento.
+  -- Non si rimescola se qualcuno ha gia' comprato un frammento (riavvio a gara in corso).
+  IF NOT EXISTS (SELECT 1 FROM public.code_purchase_transactions) THEN
     PERFORM public.build_secret_code_matches();
   END IF;
 
