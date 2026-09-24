@@ -279,6 +279,145 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
         </div>
       </div>
 
+          {/* Regia Controls - Only visible to ADMIN */}
+          {isAdmin && (
+            <div className="surface border border-primary/20 bg-primary/5 rounded-3xl p-6 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/10 pb-3">
+                <h3 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                  <Swords className="size-4 animate-pulse" /> Console Arbitro Regia (Boxe)
+                </h3>
+                <div className="flex items-center gap-3">
+                  {lastCompletedMatch && !isTournamentCompleted && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (window.confirm(`Annullare il risultato dell'ultimo match disputato (${getTeamName(lastCompletedMatch.team1_id)} vs ${getTeamName(lastCompletedMatch.team2_id)})?`)) {
+                          setRollingBackMatchId(lastCompletedMatch.id);
+                          await rollbackMutation.mutateAsync(lastCompletedMatch.id);
+                        }
+                      }}
+                      disabled={rollbackMutation.isPending}
+                      className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      {rollbackMutation.isPending && rollingBackMatchId === lastCompletedMatch.id ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Undo className="size-3" />
+                      )}
+                      Annulla Ultimo Risultato
+                    </button>
+                  )}
+
+                  {/* 🔄 PULSANTE RESET TORNEO BOXE */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm("⚠️ Sei sicuro di voler resettare il Torneo Boxe Gonfiabile? Tutti i match e i punteggi assegnati a questa sfida verranno azzerati.")) {
+                        await resetTournamentMutation.mutateAsync();
+                      }
+                    }}
+                    disabled={resetTournamentMutation.isPending}
+                    className="px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {resetTournamentMutation.isPending ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <span>🔄 Reset Torneo</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {isTournamentCompleted ? (
+                <div className="text-center py-6 space-y-3 bg-zinc-950/40 border border-success/30 rounded-2xl p-6">
+                  <p className="text-base font-black text-success uppercase">🏆 Il torneo di Boxe è terminato!</p>
+                  <p className="text-xs text-muted-foreground">Tutti i punti sono stati accreditati correttamente nella classifica.</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm("Vuoi azzerare il torneo per ripeterlo da capo?")) {
+                        await resetTournamentMutation.mutateAsync();
+                      }
+                    }}
+                    disabled={resetTournamentMutation.isPending}
+                    className="mt-3 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-border text-foreground font-bold rounded-xl text-xs cursor-pointer inline-flex items-center gap-2"
+                  >
+                    {resetTournamentMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : "🔄 Riavvia / Reset Torneo"}
+                  </button>
+                </div>
+              ) : activeMatches.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Highlighted ACTIVE MATCH card */}
+                  <div className="bg-red-950/20 border border-red-500/30 p-6 rounded-2xl text-center space-y-4 shadow-lg shadow-red-950/10">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-red-500 animate-pulse">
+                      🔴 MATCH ATTIVO — {getRoundLabel(activeMatches[0].round)}
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+                      {/* Team 1 Button */}
+                      <div className="flex-1 w-full">
+                        <button
+                          onClick={async () => {
+                            setSubmittingMatchId(activeMatches[0].id);
+                            await submitWinnerMutation.mutateAsync({ matchId: activeMatches[0].id, winnerId: activeMatches[0].team1_id });
+                          }}
+                          disabled={submitWinnerMutation.isPending}
+                          className="w-full py-4.5 px-5 bg-gradient-to-r from-blue-900/60 to-blue-700/30 hover:from-blue-800/80 border border-blue-500/40 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-blue-950/20"
+                        >
+                          🏆 {getTeamName(activeMatches[0].team1_id)} VINCE
+                        </button>
+                      </div>
+
+                      <span className="text-xs font-black uppercase tracking-widest text-red-500 px-3 py-1 bg-red-950/30 rounded-full border border-red-500/20 shrink-0">
+                        VS
+                      </span>
+
+                      {/* Team 2 Button */}
+                      <div className="flex-1 w-full">
+                        <button
+                          onClick={async () => {
+                            setSubmittingMatchId(activeMatches[0].id);
+                            await submitWinnerMutation.mutateAsync({ matchId: activeMatches[0].id, winnerId: activeMatches[0].team2_id });
+                          }}
+                          disabled={submitWinnerMutation.isPending}
+                          className="w-full py-4.5 px-5 bg-gradient-to-r from-orange-900/60 to-orange-700/30 hover:from-orange-800/80 border border-orange-500/40 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-950/20"
+                        >
+                          🏆 {getTeamName(activeMatches[0].team2_id)} VINCE
+                        </button>
+                      </div>
+                    </div>
+                    {submitWinnerMutation.isPending && submittingMatchId === activeMatches[0].id && (
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-primary font-bold">
+                        <Loader2 className="size-3.5 animate-spin" /> Salvataggio verdetto in corso...
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Other pending matches list if any */}
+                  {activeMatches.length > 1 && (
+                    <div className="space-y-2 border-t border-border/10 pt-4">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">Prossimi incontri in coda:</p>
+                      <div className="grid gap-2">
+                        {activeMatches.slice(1).map((m: any) => (
+                          <div key={m.id} className="bg-zinc-900/40 border border-border/20 px-4 py-2.5 rounded-xl flex items-center justify-between text-xs">
+                            <span className="font-bold text-muted-foreground">{getRoundLabel(m.round)} — Match {m.match_index + 1}</span>
+                            <span className="font-black text-foreground">{getTeamName(m.team1_id)} vs {getTeamName(m.team2_id)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-xs text-muted-foreground font-bold">
+                    In attesa che si completino i match del turno precedente per attivare i successivi.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
       {/* If tournament matches are not generated yet */}
       {sortedMatches.length === 0 ? (
         <div className="space-y-6">
@@ -423,144 +562,6 @@ export function BoxeChallenge({ challenge, team, completed, onComplete, completi
             </div>
           </div>
 
-          {/* Regia Controls - Only visible to ADMIN */}
-          {isAdmin && (
-            <div className="surface border border-primary/20 bg-primary/5 rounded-3xl p-6 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/10 pb-3">
-                <h3 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
-                  <Swords className="size-4 animate-pulse" /> Console Arbitro Regia (Boxe)
-                </h3>
-                <div className="flex items-center gap-3">
-                  {lastCompletedMatch && !isTournamentCompleted && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (window.confirm(`Annullare il risultato dell'ultimo match disputato (${getTeamName(lastCompletedMatch.team1_id)} vs ${getTeamName(lastCompletedMatch.team2_id)})?`)) {
-                          setRollingBackMatchId(lastCompletedMatch.id);
-                          await rollbackMutation.mutateAsync(lastCompletedMatch.id);
-                        }
-                      }}
-                      disabled={rollbackMutation.isPending}
-                      className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                    >
-                      {rollbackMutation.isPending && rollingBackMatchId === lastCompletedMatch.id ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        <Undo className="size-3" />
-                      )}
-                      Annulla Ultimo Risultato
-                    </button>
-                  )}
-
-                  {/* 🔄 PULSANTE RESET TORNEO BOXE */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (window.confirm("⚠️ Sei sicuro di voler resettare il Torneo Boxe Gonfiabile? Tutti i match e i punteggi assegnati a questa sfida verranno azzerati.")) {
-                        await resetTournamentMutation.mutateAsync();
-                      }
-                    }}
-                    disabled={resetTournamentMutation.isPending}
-                    className="px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    {resetTournamentMutation.isPending ? (
-                      <Loader2 className="size-3 animate-spin" />
-                    ) : (
-                      <span>🔄 Reset Torneo</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {isTournamentCompleted ? (
-                <div className="text-center py-6 space-y-3 bg-zinc-950/40 border border-success/30 rounded-2xl p-6">
-                  <p className="text-base font-black text-success uppercase">🏆 Il torneo di Boxe è terminato!</p>
-                  <p className="text-xs text-muted-foreground">Tutti i punti sono stati accreditati correttamente nella classifica.</p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (window.confirm("Vuoi azzerare il torneo per ripeterlo da capo?")) {
-                        await resetTournamentMutation.mutateAsync();
-                      }
-                    }}
-                    disabled={resetTournamentMutation.isPending}
-                    className="mt-3 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-border text-foreground font-bold rounded-xl text-xs cursor-pointer inline-flex items-center gap-2"
-                  >
-                    {resetTournamentMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : "🔄 Riavvia / Reset Torneo"}
-                  </button>
-                </div>
-              ) : activeMatches.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Highlighted ACTIVE MATCH card */}
-                  <div className="bg-red-950/20 border border-red-500/30 p-6 rounded-2xl text-center space-y-4 shadow-lg shadow-red-950/10">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-red-500 animate-pulse">
-                      🔴 MATCH ATTIVO — {getRoundLabel(activeMatches[0].round)}
-                    </p>
-                    
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-                      {/* Team 1 Button */}
-                      <div className="flex-1 w-full">
-                        <button
-                          onClick={async () => {
-                            setSubmittingMatchId(activeMatches[0].id);
-                            await submitWinnerMutation.mutateAsync({ matchId: activeMatches[0].id, winnerId: activeMatches[0].team1_id });
-                          }}
-                          disabled={submitWinnerMutation.isPending}
-                          className="w-full py-4.5 px-5 bg-gradient-to-r from-blue-900/60 to-blue-700/30 hover:from-blue-800/80 border border-blue-500/40 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-blue-950/20"
-                        >
-                          🏆 {getTeamName(activeMatches[0].team1_id)} VINCE
-                        </button>
-                      </div>
-
-                      <span className="text-xs font-black uppercase tracking-widest text-red-500 px-3 py-1 bg-red-950/30 rounded-full border border-red-500/20 shrink-0">
-                        VS
-                      </span>
-
-                      {/* Team 2 Button */}
-                      <div className="flex-1 w-full">
-                        <button
-                          onClick={async () => {
-                            setSubmittingMatchId(activeMatches[0].id);
-                            await submitWinnerMutation.mutateAsync({ matchId: activeMatches[0].id, winnerId: activeMatches[0].team2_id });
-                          }}
-                          disabled={submitWinnerMutation.isPending}
-                          className="w-full py-4.5 px-5 bg-gradient-to-r from-orange-900/60 to-orange-700/30 hover:from-orange-800/80 border border-orange-500/40 rounded-2xl text-foreground font-black text-sm active:scale-95 transition-all cursor-pointer shadow-lg shadow-orange-950/20"
-                        >
-                          🏆 {getTeamName(activeMatches[0].team2_id)} VINCE
-                        </button>
-                      </div>
-                    </div>
-                    {submitWinnerMutation.isPending && submittingMatchId === activeMatches[0].id && (
-                      <div className="flex items-center justify-center gap-1.5 text-xs text-primary font-bold">
-                        <Loader2 className="size-3.5 animate-spin" /> Salvataggio verdetto in corso...
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Other pending matches list if any */}
-                  {activeMatches.length > 1 && (
-                    <div className="space-y-2 border-t border-border/10 pt-4">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">Prossimi incontri in coda:</p>
-                      <div className="grid gap-2">
-                        {activeMatches.slice(1).map((m: any) => (
-                          <div key={m.id} className="bg-zinc-900/40 border border-border/20 px-4 py-2.5 rounded-xl flex items-center justify-between text-xs">
-                            <span className="font-bold text-muted-foreground">{getRoundLabel(m.round)} — Match {m.match_index + 1}</span>
-                            <span className="font-black text-foreground">{getTeamName(m.team1_id)} vs {getTeamName(m.team2_id)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-xs text-muted-foreground font-bold">
-                    In attesa che si completino i match del turno precedente per attivare i successivi.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Team-only Special Bye Info Section */}
           {!isAdmin && !isTournamentCompleted && (
