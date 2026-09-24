@@ -269,7 +269,6 @@ function AdminSettingsPage() {
                                   <th className="pb-1.5 pr-2">Squadra</th>
                                   <th className="pb-1.5 pr-2 text-right">Ricompensa Token</th>
                                   <th className="pb-1.5 pr-2 text-right">Saldo Token</th>
-                                  <th className="pb-1.5 text-right">Stato</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-zinc-800/40">
@@ -290,17 +289,8 @@ function AdminSettingsPage() {
                                     <td className="py-2 pr-2 text-right text-emerald-400 font-mono font-black">
                                       +{row.reward} TK
                                     </td>
-                                    <td className="py-2 pr-2 text-right text-zinc-400 font-mono font-medium">
+                                    <td className="py-2 text-right text-zinc-400 font-mono font-medium">
                                       {row.oldBalance} → {row.newBalance}
-                                    </td>
-                                    <td className="py-2 text-right font-bold">
-                                      {row.capped ? (
-                                        <span className="text-[9px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase tracking-widest font-black">
-                                          Cap 80
-                                        </span>
-                                      ) : (
-                                        <span className="text-[9px] text-zinc-500 font-medium">OK</span>
-                                      )}
                                     </td>
                                   </tr>
                                 ))}

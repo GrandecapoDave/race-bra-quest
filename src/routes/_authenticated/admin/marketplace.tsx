@@ -538,11 +538,6 @@ function AdminMarketplacePage() {
                                               <span>Punti bersaglio dopo:</span>
                                               <span>{tr.outcome.target_points_after} PT</span>
                                             </div>
-                                            {tr.outcome.points_deducted < 20 && (
-                                              <div className="text-[7px] text-orange-400 italic mt-0.5">
-                                                Motivo: Punteggio insufficiente
-                                              </div>
-                                            )}
                                           </div>
                                         )}
                                       </>
@@ -632,7 +627,7 @@ function AdminMarketplacePage() {
                               )}
                               {isReward && tr.outcome && (
                                 <span className="block text-[9px] text-zinc-500 italic font-medium mt-0.5 leading-normal">
-                                  Posizione: {tr.outcome.position}ª · Saldo: {tr.outcome.old_balance} → {tr.outcome.new_balance} {tr.outcome.capped ? "(CAP)" : ""}
+                                  Posizione: {tr.outcome.position}ª · Saldo: {tr.outcome.old_balance} → {tr.outcome.new_balance}
                                 </span>
                               )}
                             </div>

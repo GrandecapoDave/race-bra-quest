@@ -66,6 +66,8 @@ The marketplace allows teams to buy items using their Token balance.
     *   `trappola`: +12 PT (all'attaccante all'applicazione)
     *   `penalita_punti`: +10 PT (all'attaccante all'applicazione)
     *   `tassa_passaggio`: +15 PT (all'attaccante all'esecuzione; i punti cattiveria rimangono dell'attaccante e sono esclusi dallo switch dei punti base)
+    *   `enigma_extra`: +9 PT, `blackout_mercato`: +10 PT, `dimezza_punti`: +12 PT (all'attaccante all'applicazione)
+    *   `penalita_punti` toglie sempre -20 PT al bersaglio, anche sotto zero (i punteggi negativi sono ammessi)
 *   **Cap per Tappa**: Massimo +30 Punti Cattiveria positivi maturabili per singola tappa. Il cap non limita le penalità negative.
 *   **Regola di Fine Tappa ("Chi non è cattivo paga")**:
     *   0 Malus usati nella tappa $\rightarrow$ -10 PT
@@ -118,7 +120,7 @@ The marketplace allows teams to buy items using their Token balance.
 ## Security & Integrity Rules
 1.  **Team Isolation**: No team can read or write points, tokens, or status parameters of another team (IDOR prevention).
 2.  **Black Box Enforcement**: Leaderboard score totals and token balances of opposing teams are stripped out of API responses unless the requesting team is an Admin or has an active `bonus_classifica`.
-3.  **Deduction Capping**: No point penalty or Malus can cause a team's score to fall below `0`. Deductions are dynamically capped.
+3.  **Negative Scores Allowed**: Point penalties and Malus are always applied in full (e.g. Penalità Punti = -20 PT) even if the team's score falls below `0`; negative scores are regulated. Token balances have no maximum (they only cannot go below 0 when spent).
 4.  **Double Purchase / Double Click Protection**: All marketplace and gameplay actions are checked synchronously for idempotency to prevent duplicated requests.
 
 ---

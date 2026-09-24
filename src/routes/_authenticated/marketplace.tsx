@@ -1366,7 +1366,7 @@ function MarketplacePage() {
                           <span> · Bersaglio: <strong className="text-zinc-400">{target.nome_squadra}</strong></span>
                         )}
                         {isReward && t.outcome && (
-                          <span> · Posizione: <strong className="text-zinc-400">{t.outcome.position}ª</strong>{t.outcome.capped ? " (Limite 80 raggiunto)" : ""}</span>
+                          <span> · Posizione: <strong className="text-zinc-400">{t.outcome.position}ª</strong></span>
                         )}
                       </p>
                     </div>

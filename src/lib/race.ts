@@ -24,7 +24,7 @@ export type Stage = {
       oldBalance: number;
       newBalance: number;
       actualAdded: number;
-      capped: boolean;
+      capped?: boolean;
     }>;
   } | null;
 };

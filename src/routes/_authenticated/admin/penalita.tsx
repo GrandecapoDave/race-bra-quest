@@ -176,11 +176,6 @@ function PenalitaAdmin() {
                                 <span>Punti Bersaglio Dopo:</span>
                                 <strong className="font-mono text-white">{outcome.target_points_after} PT</strong>
                               </div>
-                              {outcome.points_deducted < 20 && (
-                                <div className="text-[9px] text-orange-400 italic font-semibold">
-                                  Punteggio insufficiente
-                                </div>
-                              )}
                             </div>
                           ) : (
                             <span className="text-zinc-600">—</span>
