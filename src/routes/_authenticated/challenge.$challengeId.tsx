@@ -1,3 +1,4 @@
+import { BankWaitCard } from "@/components/BankWaitCard";
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +21,7 @@ import { BoxeChallenge } from "@/components/challenges/BoxeChallenge";
 import JackpotChallenge from "@/components/challenges/JackpotChallenge";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { useCompleteChallenge, useStartChallenge } from "@/hooks/useChallengeActions";
-import { challengeMaxPoints, challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery } from "@/lib/race";
+import { challengeMaxPoints, challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery, useBankGateClosed } from "@/lib/race";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/challenge/$challengeId")({
@@ -51,7 +52,8 @@ function ChallengePage() {
   const isRebusVisivo = challenge?.id === "999f4e1f-7443-42e7-9d7a-115f2122888f";
   const stageChallenges = (challenges.data ?? []).filter((c) => c.stage_id === challenge?.stage_id);
   const prog = progress.data ?? [];
-  const state = challenge ? challengeState(challenge, stageChallenges, prog) : "locked";
+  const gateClosed = useBankGateClosed();
+  const state = challenge ? challengeState(challenge, stageChallenges, prog, { gateClosed }) : "locked";
   const started = prog.some((p) => p.challenge_id === challengeId);
 
   const gameSettings = useQuery(gameSettingsQuery);
@@ -259,7 +261,9 @@ function ChallengePage() {
       <p className="mt-1 text-xs font-bold text-gold">{challengeMaxPoints(challenge)} punti in palio</p>
 
       <div className="mt-6 w-full min-w-0">
-        {state === "locked" ? (
+        {state === "waiting" ? (
+          <BankWaitCard />
+        ) : state === "locked" ? (
           <p className="surface flex items-center gap-2 p-5 text-sm text-muted-foreground">
             <Lock className="size-4" /> Completa prima le prove precedenti.
           </p>

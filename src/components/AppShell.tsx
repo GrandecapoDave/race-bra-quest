@@ -872,6 +872,20 @@ function AppShellInner({
             </div>
           </div>
         </header>
+        {!isAdmin && (gameSettings.data as any)?.race_paused === true && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="sticky top-[57px] z-20 w-full border-b border-cyan-500/30 bg-cyan-950/90 backdrop-blur-md"
+          >
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-3 sm:px-4 py-2 text-cyan-100">
+              <span className="text-lg" aria-hidden="true">⏸️</span>
+              <p className="text-xs font-bold leading-snug">
+                GARA IN PAUSA — il tempo è fermo per tutte le squadre. Prove e acquisti sono sospesi fino alla ripresa della Regia.
+              </p>
+            </div>
+          </div>
+        )}
 
         <main className="mx-auto w-full max-w-3xl min-w-0 px-3 sm:px-4 py-4 sm:py-5 pb-28 md:pb-12 box-border overflow-x-hidden">
           {isFrozen && !isUnluckySpinning && !showUnluckyPrize ? (

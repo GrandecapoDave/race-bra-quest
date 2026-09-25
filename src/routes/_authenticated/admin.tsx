@@ -349,60 +349,37 @@ function AdminLayout() {
 
   // Chronometer for elapsed race time (active / frozen when terminated / 00:00:00 when not started)
   const [raceTime, setRaceTime] = useState("00:00:00");
+  // Cronometro della Regia: tempo del server (le pause della gara non contano) e non dell'orologio del computer
+  const raceClock = useQuery({
+    queryKey: ["admin-race-clock"],
+    refetchInterval: 3000,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_race_clock");
+      if (error) return null;
+      return data as { status: string; paused: boolean; started_at: string | null; elapsed_seconds: number } | null;
+    },
+  });
   useEffect(() => {
-    const updateTime = () => {
-      const startedAtSetting = (settings.data ?? []).find(s => s.id === "game_started_at");
-      const statusSetting = (settings.data ?? []).find(s => s.id === "game_status");
-      const endedAtSetting = (settings.data ?? []).find(s => s.id === "game_ended_at");
-
-      const status = statusSetting?.value || "Gara non iniziata";
-
-      // 1. NON INIZIATA: timer always 00:00:00
-      if (!startedAtSetting?.value || status === "Gara non iniziata") {
-        setRaceTime("00:00:00");
-        return;
-      }
-
-      const startMs = new Date(startedAtSetting.value).getTime();
-      if (isNaN(startMs) || startMs <= 0) {
-        setRaceTime("00:00:00");
-        return;
-      }
-
-      // 2. GARA TERMINATA: timer FROZEN at (endedAt - startedAt)
-      let endMs = Date.now();
-      if (status === "Gara terminata") {
-        if (endedAtSetting?.value) {
-          const parsedEndMs = new Date(endedAtSetting.value).getTime();
-          if (!isNaN(parsedEndMs) && parsedEndMs > 0) {
-            endMs = parsedEndMs;
-          } else if (statusSetting?.updated_at) {
-            endMs = new Date(statusSetting.updated_at).getTime();
-          }
-        } else if (statusSetting?.updated_at) {
-          endMs = new Date(statusSetting.updated_at).getTime();
-        }
-      }
-
-      // 3. Compute formatted elapsed time
-      const diffMs = Math.max(0, endMs - startMs);
-      const totalSecs = Math.floor(diffMs / 1000);
-      const hours = String(Math.floor(totalSecs / 3600)).padStart(2, "0");
-      const minutes = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, "0");
-      const seconds = String(totalSecs % 60).padStart(2, "0");
-      setRaceTime(`${hours}:${minutes}:${seconds}`);
+    const c = raceClock.data;
+    const fmt = (total: number) => {
+      const h = String(Math.floor(total / 3600)).padStart(2, "0");
+      const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
+      const sec = String(total % 60).padStart(2, "0");
+      return `${h}:${m}:${sec}`;
     };
-
-    updateTime();
-
-    const statusSetting = (settings.data ?? []).find(s => s.id === "game_status");
-    // Only tick actively if the race is active
-    if (statusSetting?.value === "Gara attiva") {
-      const interval = setInterval(updateTime, 1000);
-      return () => clearInterval(interval);
+    if (!c || !c.started_at || c.status === "not_started") {
+      setRaceTime("00:00:00");
+      return undefined;
     }
-    return undefined;
-  }, [settings.data]);
+    const running = c.status === "in_progress" && !c.paused;
+    const fetchedAt = raceClock.dataUpdatedAt || Date.now();
+    const compute = () => fmt(c.elapsed_seconds + (running ? Math.max(0, Math.floor((Date.now() - fetchedAt) / 1000)) : 0));
+    setRaceTime(compute());
+    if (!running) return undefined;
+    const interval = setInterval(() => setRaceTime(compute()), 1000);
+    return () => clearInterval(interval);
+  }, [raceClock.data, raceClock.dataUpdatedAt]);
 
   // Global actions and operation states
   const [isConfirmingScore, setIsConfirmingScore] = useState<Record<string, boolean>>({});

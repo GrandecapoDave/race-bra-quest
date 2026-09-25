@@ -12,7 +12,7 @@ import {
   progressQuery,
   stagesQuery,
   isStageUnlocked,
-} from "@/lib/race";
+ useBankGateClosed } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/stage/$stageId")({
   head: () => ({
@@ -38,7 +38,8 @@ function StagePage() {
   const stage = (stages.data ?? []).find((s) => s.id === stageId);
   const stageChallenges = (challenges.data ?? []).filter((c) => c.stage_id === stageId);
   const prog = progress.data ?? [];
-  const done = stageChallenges.filter((c) => challengeState(c, stageChallenges, prog) === "completed");
+  const gateClosed = useBankGateClosed();
+  const done = stageChallenges.filter((c) => challengeState(c, stageChallenges, prog, { gateClosed }) === "completed");
 
   const unlocked = stage ? isStageUnlocked(stage, stages.data ?? [], challenges.data ?? [], prog) : true;
 
@@ -86,7 +87,7 @@ function StagePage() {
 
       <div className="mt-5 space-y-3 w-full min-w-0">
         {stageChallenges.map((c, i) => {
-          const state = challengeState(c, stageChallenges, prog);
+          const state = challengeState(c, stageChallenges, prog, { gateClosed });
           const isJackpot = c.type === "jackpot";
 
           const circleColorClass = state === "completed"
@@ -104,7 +105,7 @@ function StagePage() {
               >
                 {state === "completed" ? (
                   <Check className="size-4 sm:size-5" />
-                ) : state === "locked" ? (
+                ) : state === "locked" || state === "waiting" ? (
                   <Lock className="size-3.5 sm:size-4" />
                 ) : isJackpot ? (
                   "🎰"
@@ -132,9 +133,12 @@ function StagePage() {
             </div>
           );
 
-          return state === "locked" ? (
+          return state === "locked" || state === "waiting" ? (
             <div key={c.id} className="surface p-3.5 sm:p-4 opacity-50 w-full min-w-0 box-border overflow-hidden">
               {content}
+              {state === "waiting" && (
+                <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-amber-400">In attesa del via della Regia</p>
+              )}
             </div>
           ) : (
             <Link

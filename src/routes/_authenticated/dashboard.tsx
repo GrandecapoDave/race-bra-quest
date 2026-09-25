@@ -8,6 +8,8 @@ import { CircularProgress } from "@/components/ui/circular-progress";
 import { HeroAvatar } from "@/components/ui/avatar";
 import { RaceTimer } from "@/components/RaceTimer";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
+import { useRaceClock } from "@/hooks/useRaceClock";
+import { BankWaitCard } from "@/components/BankWaitCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { triggerHaptic } from "@/lib/haptics";
@@ -26,6 +28,7 @@ import {
   isStageUnlocked,
   reportStatusQuery,
   gameSettingsQuery,
+  useBankGateClosed,
 } from "@/lib/race";
 
 
@@ -127,6 +130,7 @@ function Dashboard() {
   const board = useQuery({ ...leaderboardQuery, refetchInterval: 3000 });
 
   const gameSettings = useQuery(gameSettingsQuery);
+  const gateClosed = useBankGateClosed();
 
   const reportStatus = useQuery({ ...reportStatusQuery, refetchInterval: 3000 });
 
@@ -164,64 +168,9 @@ function Dashboard() {
     },
   });
 
-  const [totalElapsed, setTotalElapsed] = useState<number | null>(null);
-
-  useEffect(() => {
-    const updateTimer = () => {
-      const settings = gameSettings.data;
-      if (settings?.race_status === "in_progress" && settings.race_started_at) {
-        const start = new Date(settings.race_started_at).getTime();
-        setTotalElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
-        return;
-      }
-      if (settings?.race_status === "completed" && settings.race_started_at && settings.race_ended_at) {
-        const start = new Date(settings.race_started_at).getTime();
-        const end = new Date(settings.race_ended_at).getTime();
-        setTotalElapsed(Math.max(0, Math.floor((end - start) / 1000)));
-        return;
-      }
-      if (settings?.race_status === "not_started") {
-        setTotalElapsed(null);
-        return;
-      }
-
-      // Fallback to cumulative stage timers if race_status not configured
-      if (!stages.data || !challenges.data || !progress.data) return;
-      const allStages = stages.data;
-      const allChs = challenges.data;
-      const progList = progress.data;
-      let sumSeconds = 0;
-
-      allStages.forEach((s) => {
-        const stageChs = allChs.filter((c) => c.stage_id === s.id);
-        if (stageChs.length === 0) return;
-
-        const stageProgs = progList.filter((p) => stageChs.some((c) => c.id === p.challenge_id));
-        if (stageProgs.length === 0) return;
-
-        const startTimes = stageProgs.map((p) => p.started_at ? new Date(p.started_at).getTime() : 0).filter(Boolean);
-        if (startTimes.length === 0) return;
-        const minStart = Math.min(...startTimes);
-
-        const completedChs = stageProgs.filter((p) => p.status === "completed");
-        if (completedChs.length === stageChs.length) {
-          const endTimes = stageProgs.map((p) => p.completed_at ? new Date(p.completed_at).getTime() : 0).filter(Boolean);
-          if (endTimes.length > 0) {
-            const maxEnd = Math.max(...endTimes);
-            sumSeconds += Math.max(0, Math.floor((maxEnd - minStart) / 1000));
-          }
-        } else {
-          sumSeconds += Math.max(0, Math.floor((Date.now() - minStart) / 1000));
-        }
-      });
-
-      setTotalElapsed(sumSeconds > 0 ? sumSeconds : null);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [gameSettings.data, stages.data, challenges.data, progress.data]);
+  // Orologio guidato dal server: pause della Regia, fine prove della squadra e tempo ufficiale
+  const clock = useRaceClock(Boolean(team.data?.id) && !isAdmin.data);
+  const [showTimeDetail, setShowTimeDetail] = useState(false);
 
   if (team.isLoading || stages.isLoading || challenges.isLoading) {
     return (
@@ -262,12 +211,14 @@ function Dashboard() {
   const currentStage = (stages.data ?? []).find((s) =>
     allChallenges
       .filter((c) => c.stage_id === s.id)
-      .some((c) => challengeState(c, allChallenges.filter((x) => x.stage_id === s.id), prog) !== "completed"),
+      .some((c) => challengeState(c, allChallenges.filter((x) => x.stage_id === s.id), prog, { gateClosed }) !== "completed"),
   );
   const stageChallenges = allChallenges.filter((c) => c.stage_id === currentStage?.id);
   const nextChallenge = stageChallenges.find(
-    (c) => challengeState(c, stageChallenges, prog) === "available",
+    (c) => challengeState(c, stageChallenges, prog, { gateClosed }) === "available",
   );
+  const isWaitingForGate =
+    !nextChallenge && stageChallenges.some((c) => challengeState(c, stageChallenges, prog, { gateClosed }) === "waiting");
   const activeSession = (sessions.data ?? []).find((s) => s.stage_id === currentStage?.id);
 
   const stage3 = stages.data?.find((s) => s.id === "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c");
@@ -1075,10 +1026,55 @@ function Dashboard() {
                 <span>Tempo</span>
               </div>
               <div className="font-display text-2xl sm:text-4xl font-black text-foreground mt-0.5 tracking-tight">
-                {totalElapsed !== null ? formatDuration(totalElapsed) : "--:--"}
+                {clock.realSeconds !== null ? formatDuration(clock.realSeconds) : "--:--"}
+              </div>
+              <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-400/90 min-h-[14px]">
+                {clock.paused ? "⏸ in pausa" : clock.finished ? "Prove concluse" : ""}
               </div>
             </div>
           </div>
+
+          {/* TEMPO UFFICIALE: promemoria di quello che conta per la classifica (effettivo + penalità - bonus) */}
+          {clock.officialSeconds !== null && (
+            <div className="mt-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => setShowTimeDetail((v) => !v)}
+                aria-expanded={showTimeDetail}
+                className="flex w-full items-center justify-between gap-2 text-left"
+              >
+                <span className="text-[11px] font-bold text-zinc-300">
+                  Tempo ufficiale{" "}
+                  <span className="font-black text-cyan-300 tabular-nums">{formatDuration(clock.officialSeconds)}</span>
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400">{showTimeDetail ? "Chiudi" : "Dettaglio"}</span>
+              </button>
+              {showTimeDetail && (
+                <div className="mt-2 space-y-1 border-t border-cyan-500/15 pt-2 text-[11px] text-zinc-300">
+                  <p className="flex justify-between gap-3">
+                    <span>Tempo di gara effettivo</span>
+                    <span className="font-bold tabular-nums">{formatDuration(clock.realSeconds)}</span>
+                  </p>
+                  {clock.adjustments.length === 0 ? (
+                    <p className="text-zinc-500">Nessuna penalità o bonus di tempo.</p>
+                  ) : (
+                    clock.adjustments.map((a, i) => (
+                      <p key={i} className="flex justify-between gap-3">
+                        <span className="min-w-0 truncate">{a.label}</span>
+                        <span className={`font-bold tabular-nums ${a.seconds > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                          {a.seconds > 0 ? "+" : "−"}
+                          {formatDuration(Math.abs(a.seconds))}
+                        </span>
+                      </p>
+                    ))
+                  )}
+                  <p className="pt-1 text-[10px] text-zinc-500">
+                    Il tempo ufficiale conta per la classifica finale. Le pause della gara non vengono contate.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* OVERALL RACE PROGRESS WITH CIRCULARPROGRESS RING (HeroUI CircularProgress Style) */}
           <div className="mt-5 pt-4 border-t border-border/40 flex items-center justify-between gap-4">
@@ -1221,6 +1217,8 @@ function Dashboard() {
                 </Link>
               </div>
             </div>
+          ) : isWaitingForGate ? (
+            <BankWaitCard />
           ) : (
             <div className="rounded-3xl p-6 flex items-center gap-3.5 bg-emerald-950/30 border border-emerald-500/30 shadow-lg backdrop-blur-md">
               <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30 shadow-sm">
@@ -1346,7 +1344,7 @@ function Dashboard() {
             {(stages.data ?? []).map((stage) => {
               const sc = allChallenges.filter((c) => c.stage_id === stage.id);
               const done = sc.filter(
-                (c) => challengeState(c, sc, prog) === "completed",
+                (c) => challengeState(c, sc, prog, { gateClosed }) === "completed",
               ).length;
               const isStageDone = sc.length > 0 && done === sc.length;
 

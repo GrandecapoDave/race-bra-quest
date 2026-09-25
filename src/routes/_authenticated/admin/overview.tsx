@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { formatDuration } from "@/lib/race";
 import { useAdminContext } from "../admin";
+import { AdminRaceControls } from "@/components/AdminRaceControls";
 
 export const Route = createFileRoute("/_authenticated/admin/overview")({
   component: AdminOverviewPage,
@@ -12,12 +13,22 @@ function AdminOverviewPage() {
     challenges,
     sortedLeaderboard,
     activityLog,
-    setSelectedTeamId
+    setSelectedTeamId,
+    gameSettings,
+    allTeams,
+    allProgress,
   } = useAdminContext();
   const navigate = useNavigate();
 
   return (
     <div className="space-y-6">
+      {/* COMANDI DELLA REGIA: pausa del tempo e sblocco dopo la banca */}
+      <AdminRaceControls
+        gameSettings={gameSettings.data}
+        allTeams={allTeams.data ?? []}
+        allProgress={allProgress.data ?? []}
+      />
+
       {/* LIVE MONITOR SQUADRE */}
       <div className="surface p-5 space-y-4 border border-border/40 bg-zinc-950/40 rounded-2xl">
         <h2 className="text-xl font-display font-black uppercase tracking-wider text-muted-foreground">Monitoraggio Live Squadre</h2>

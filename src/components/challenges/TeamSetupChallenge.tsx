@@ -44,6 +44,29 @@ const AVATARS = [
   "🔥", "🛡️", "⚔️", "🏆", "🚗", "🚂", "🗺️", "🚀"
 ];
 
+/** Motto assegnato dal database quando la squadra viene creata dalla Regia: non e' una scelta della squadra. */
+const DEFAULT_MOTTO = "In corsa per la vittoria!";
+
+const COLOR_NAMES: Record<string, string> = {
+  "#ef4444": "Rosso", "#f97316": "Arancione", "#eab308": "Giallo", "#84cc16": "Lime", "#22c55e": "Verde", "#14b8a6": "Verde acqua",
+  "#06b6d4": "Ciano", "#3b82f6": "Blu", "#6366f1": "Indaco", "#8b5cf6": "Viola", "#d946ef": "Fucsia", "#ec4899": "Rosa",
+  "#dc2626": "Rosso scuro", "#ea580c": "Arancio bruciato", "#ca8a04": "Oro antico", "#4d7c0f": "Verde oliva", "#15803d": "Verde bosco",
+  "#0f766e": "Verde petrolio", "#0e7490": "Blu pavone", "#1d4ed8": "Blu reale", "#4338ca": "Indaco scuro", "#7c3aed": "Ametista",
+  "#a21caf": "Porpora", "#be185d": "Ciclamino",
+};
+
+/** Colore leggibile (bianco o nero) da mettere sopra uno sfondo dato. */
+function onColor(hex: string): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#000000" : "#ffffff";
+}
+
+const AVATAR_GROUPS: Array<{ title: string; items: string[] }> = [
+  { title: "Animali", items: ["🐅", "🦊", "🐺", "🦅", "🐢", "🐉", "🦁", "🐝", "🐼", "🐨", "🐙", "🦖", "🦄"] },
+  { title: "Avventura", items: ["🏔️", "🧭", "🎒", "🔥", "🛡️", "⚔️", "🏆", "🚗", "🚂", "🗺️", "🚀"] },
+];
+
 const teamSchema = z.object({
   motto: z.string().trim().min(2, { message: "Motto obbligatorio (minimo 2 caratteri)" }).max(120),
 });
@@ -63,7 +86,7 @@ export function TeamSetupChallenge({
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(team?.name ?? "");
-  const [motto, setMotto] = useState(team?.motto ?? "");
+  const [motto, setMotto] = useState(team?.motto && team.motto.trim() !== DEFAULT_MOTTO ? team.motto : "");
   const [color, setColor] = useState(team?.color ?? COLORS[0]!);
   const [avatar, setAvatar] = useState(team?.avatar_url ?? "");
   
@@ -441,153 +464,128 @@ export function TeamSetupChallenge({
         )}
       </div>
 
-      {/* ── AVATAR SECTION WITH LUXURY FRAMES (CORNICI) ── */}
-      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">
-            Scegli Avatar *
-          </p>
-          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
-            avatar
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-              : "bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse"
-          }`}>
-            {avatar ? `Scelto: ${avatar}` : "Obbligatorio"}
-          </span>
+      {/* ── ANTEPRIMA CARTA SQUADRA ── */}
+      <div
+        className="rounded-2xl border-2 p-4 flex items-center gap-4 shadow-lg"
+        style={{ borderColor: color + "aa", background: `linear-gradient(135deg, ${color}2e, rgba(9,9,11,0.6))` }}
+      >
+        <div
+          className="size-16 shrink-0 rounded-2xl border-2 flex items-center justify-center text-4xl"
+          style={{ borderColor: color, backgroundColor: color + "33", boxShadow: `0 0 18px -4px ${color}` }}
+          aria-hidden="true"
+        >
+          {avatar || "❔"}
         </div>
-
-        {/* ACTIVE AVATAR SHOWCASE FRAME (CORNICE EMBLEMA SELEZIONATO) */}
-        {avatar && (
-          <div className="p-3.5 rounded-2xl border-2 border-primary/40 bg-zinc-900/90 shadow-lg shadow-primary/20 flex items-center gap-4 animate-in zoom-in-95 duration-200">
-            <div
-              className="p-1.5 rounded-2xl border-2 shadow-xl shrink-0"
-              style={{
-                borderColor: color || "#f97316",
-                backgroundColor: (color || "#f97316") + "26",
-                boxShadow: `0 0 15px -2px ${(color || "#f97316")}55`,
-              }}
-            >
-              <HeroAvatar
-                emoji={avatar}
-                size="lg"
-                radius="lg"
-                color={color}
-                isBordered
-                className="size-14 text-3xl shadow-inner bg-zinc-950/80"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-primary">
-                Cornice Avatar Ufficiale
-              </span>
-              <h4 className="text-sm font-extrabold text-white truncate">
-                Emblema Selezionato: <span className="text-lg">{avatar}</span>
-              </h4>
-              <p className="text-[10px] text-muted-foreground">
-                Questo stemma incorniciato apparirà accanto al vostro nome su tutti i tabelloni di gara.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* AVATAR GRID WITH FRAMES (CORNICI RIFINITE PER OGNI AVATAR) */}
-        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2.5">
-          {AVATARS.map((a) => {
-            const isMine  = avatar === a;
-            const isTaken = !isMine && takenAvatars.has(a);
-            const owner   = isTaken ? avatarOwner(a) : null;
-
-            return (
-              <div
-                key={a}
-                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : undefined}
-                onClick={() => {
-                  if (!completed && !isTaken) {
-                    setAvatar(a);
-                    triggerHaptic("light");
-                  }
-                }}
-                className={`p-1 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex items-center justify-center ${
-                  isMine
-                    ? "border-primary bg-primary/20 shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/40 ring-offset-2 ring-offset-zinc-950"
-                    : isTaken || completed
-                    ? "border-zinc-800/40 bg-zinc-950/40 opacity-30 cursor-not-allowed"
-                    : "border-zinc-700/80 bg-zinc-900/90 hover:border-primary/60 hover:bg-zinc-800/80 hover:scale-105"
-                }`}
-              >
-                <HeroAvatar
-                  emoji={a}
-                  size="md"
-                  radius="md"
-                  color={color}
-                  isBordered={isMine}
-                  isDisabled={completed || isTaken}
-                  className="size-11 text-2xl shadow-sm pointer-events-none"
-                  badge={
-                    isTaken ? (
-                      <span className="flex size-4 items-center justify-center rounded-full bg-zinc-800 ring-1 ring-zinc-700 shadow-sm">
-                        <Lock className="size-2.5 text-zinc-300" />
-                      </span>
-                    ) : isMine ? (
-                      <span className="flex size-4 items-center justify-center rounded-full bg-primary text-black ring-1 ring-white shadow-sm font-bold">
-                        <Check className="size-2.5 stroke-[3]" />
-                      </span>
-                    ) : null
-                  }
-                />
-              </div>
-            );
-          })}
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Anteprima della vostra squadra</p>
+          <p className="font-display text-xl font-black text-white truncate">{name.trim() || team?.name || "La vostra squadra"}</p>
+          <p className="text-xs text-zinc-300 italic truncate">{motto.trim() ? `“${motto.trim()}”` : "Il vostro motto apparirà qui"}</p>
         </div>
       </div>
 
-      {/* ── COLOR GRID ── */}
-      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-3">
-        <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">Colore Squadra</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {COLORS.map((c) => {
-            const isMine  = color === c;
-            const isTaken = !isMine && takenColors.has(c);
-            const owner   = isTaken ? colorOwner(c) : null;
+      {/* ── SCELTA EMOJI ── */}
+      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">Scegli l&apos;emoji della squadra *</p>
+          <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+            avatar ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+          }`}>
+            {avatar ? "Scelta" : "Obbligatoria"}
+          </span>
+        </div>
 
+        {AVATAR_GROUPS.map((group) => (
+          <div key={group.title} className="space-y-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">{group.title}</p>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+              {group.items.map((a) => {
+                const isMine = avatar === a;
+                const isTaken = !isMine && takenAvatars.has(a);
+                const owner = isTaken ? avatarOwner(a) : null;
+                return (
+                  <button
+                    key={a}
+                    type="button"
+                    disabled={completed || isTaken}
+                    aria-pressed={isMine}
+                    aria-label={isTaken ? `Emoji ${a} già scelta da ${owner}` : `Emoji ${a}`}
+                    title={completed ? "Prova completata" : isTaken ? `Già scelta da: ${owner}` : undefined}
+                    onClick={() => {
+                      setAvatar(a);
+                      triggerHaptic("light");
+                    }}
+                    className={cn(
+                      "relative aspect-square rounded-2xl border-2 flex items-center justify-center text-4xl transition-all duration-150 active:scale-90",
+                      isMine
+                        ? "border-primary bg-primary/25 ring-2 ring-primary/50 ring-offset-2 ring-offset-zinc-950 scale-105"
+                        : isTaken || completed
+                        ? "border-zinc-800 bg-zinc-950/60 opacity-35 cursor-not-allowed"
+                        : "border-zinc-700 bg-zinc-900 hover:border-primary/60 cursor-pointer",
+                    )}
+                  >
+                    <span aria-hidden="true">{a}</span>
+                    {isTaken && (
+                      <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-zinc-800 ring-1 ring-zinc-600">
+                        <Lock className="size-3 text-zinc-300" />
+                      </span>
+                    )}
+                    {isMine && (
+                      <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-black ring-1 ring-white">
+                        <Check className="size-3 stroke-[3]" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        <p className="text-[11px] text-zinc-500">Le emoji con il lucchetto sono già state scelte da un&apos;altra squadra.</p>
+      </div>
+
+      {/* ── SCELTA COLORE ── */}
+      <div className="bg-zinc-950/60 p-5 rounded-2xl border border-white/10 shadow-lg space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-black tracking-widest text-muted-foreground uppercase">Colore della squadra</p>
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-300">
+            <span className="size-3 rounded-full border border-white/40" style={{ backgroundColor: color }} />
+            {COLOR_NAMES[color] ?? "Personalizzato"}
+          </span>
+        </div>
+        <div className="grid grid-cols-6 gap-3">
+          {COLORS.map((c) => {
+            const isMine = color === c;
+            const isTaken = !isMine && takenColors.has(c);
+            const owner = isTaken ? colorOwner(c) : null;
             return (
               <button
                 key={c}
                 type="button"
                 disabled={completed || isTaken}
+                aria-pressed={isMine}
+                aria-label={`${COLOR_NAMES[c] ?? c}${isTaken ? `, già scelto da ${owner}` : ""}`}
+                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : COLOR_NAMES[c]}
                 onClick={() => {
-                  if (!completed && !isTaken) {
-                    setColor(c);
-                    triggerHaptic("light");
-                  }
+                  setColor(c);
+                  triggerHaptic("light");
                 }}
-                title={completed ? "Prova completata" : isTaken ? `Già scelto da: ${owner}` : c}
-                style={{
-                  backgroundColor: c,
-                  cursor: completed ? "not-allowed" : isTaken ? "not-allowed" : "pointer",
-                  pointerEvents: "all",
-                  outline: isMine ? `3px solid white` : "none",
-                  outlineOffset: "2px",
-                }}
-                className={[
-                  "relative size-10 rounded-full border-2 transition-all duration-200",
+                style={{ backgroundColor: c }}
+                className={cn(
+                  "relative aspect-square min-h-11 rounded-full border-2 flex items-center justify-center transition-all duration-150 active:scale-90",
                   isMine
-                    ? "border-white scale-110 shadow-lg"
+                    ? "border-white ring-2 ring-white/60 ring-offset-2 ring-offset-zinc-950 scale-110 shadow-lg"
                     : isTaken || completed
-                    ? "border-transparent opacity-30 grayscale"
-                    : "border-transparent hover:scale-110 hover:border-white/50",
-                ].join(" ")}
-                aria-label={`Colore ${c}${isTaken ? ` (scelto da ${owner})` : ""}`}
-              >
-                {(isTaken || (completed && !isMine)) && (
-                  <span className="absolute inset-0 flex items-center justify-center rounded-full">
-                    <Lock className="size-3 text-white/70 drop-shadow" />
-                  </span>
+                    ? "border-transparent opacity-30 grayscale cursor-not-allowed"
+                    : "border-white/10 hover:border-white/60 cursor-pointer",
                 )}
+              >
+                {isMine && <Check className="size-5 stroke-[3.5]" style={{ color: onColor(c) }} />}
+                {isTaken && <Lock className="size-4" style={{ color: onColor(c) }} />}
               </button>
             );
           })}
         </div>
+        <p className="text-[11px] text-zinc-500">I colori grigi con il lucchetto sono già di un&apos;altra squadra.</p>
       </div>
 
       {!completed && savedAt && (

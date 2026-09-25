@@ -1,3 +1,4 @@
+import { BankWaitCard } from "@/components/BankWaitCard";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -257,6 +258,8 @@ export function BancaChallenge({
                 La sfida è superata con successo!
               </p>
             </div>
+
+            <BankWaitCard />
 
             <button
               onClick={onComplete}

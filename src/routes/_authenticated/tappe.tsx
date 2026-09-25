@@ -15,8 +15,7 @@ import {
   progressQuery,
   sessionsQuery,
   stagesQuery,
-  isStageUnlocked,
-} from "@/lib/race";
+  isStageUnlocked, useBankGateClosed } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/tappe")({
   head: () => ({
@@ -47,6 +46,7 @@ function TappePage() {
 
   const all = challenges.data ?? [];
   const prog = progress.data ?? [];
+  const gateClosed = useBankGateClosed();
   const qs = questions.data ?? [];
   const ans = answers.data ?? [];
 
@@ -72,7 +72,7 @@ function TappePage() {
             const sc = all
               .filter((c) => c.stage_id === stage.id)
               .sort((a, b) => a.order_index - b.order_index);
-            const done = sc.filter((c) => challengeState(c, sc, prog) === "completed").length;
+            const done = sc.filter((c) => challengeState(c, sc, prog, { gateClosed }) === "completed").length;
             const isStageDone = sc.length > 0 && done === sc.length;
             const session = (sessions.data ?? []).find((s) => s.stage_id === stage.id);
             const unlocked = isStageUnlocked(stage, stages.data ?? [], all, prog);
@@ -134,7 +134,7 @@ function TappePage() {
                 {/* CHALLENGES MINI-LIST */}
                 <div className="mt-4 space-y-2.5 pt-3 border-t border-border/40">
                   {sc.map((c) => {
-                    const state = challengeState(c, sc, prog);
+                    const state = challengeState(c, sc, prog, { gateClosed });
                     const cQs = qs
                       .filter((q) => q.challenge_id === c.id)
                       .sort((a, b) => a.order_index - b.order_index);
@@ -159,6 +159,8 @@ function TappePage() {
                               ? "Fatta"
                               : state === "available"
                               ? "Attiva"
+                              : state === "waiting"
+                              ? "In attesa"
                               : "Bloccata"}
                           </span>
                         </div>
