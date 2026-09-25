@@ -117,7 +117,7 @@ function describeUnluckyOutcome(o: any): string {
   const minutes = Number(o.minutes) || 0;
   const points = Number(o.points) || 0;
   const tokens = Number(o.tokens) || 0;
-  if (freeze > 0) parts.push(`Il vostro account è congelato per ${Math.round(freeze / 60)} minuti: non potrete compiere alcuna azione.`);
+  if (freeze > 0) parts.push(`Il vostro account è congelato per ${Math.round(freeze / 60)} minuti: non potrete compiere alcuna azione. Questi minuti vengono aggiunti al vostro tempo ufficiale.`);
   if (minutes > 0) parts.push(`+${minutes} minuti di penalità sono stati aggiunti al vostro tempo ufficiale.`);
   if (points > 0) parts.push(`${points} punti sono stati sottratti dal vostro punteggio.`);
   if (tokens > 0) parts.push(`${tokens} token sono stati detratti dal vostro saldo.`);
@@ -917,6 +917,9 @@ function AppShellInner({
 
               <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-extrabold">
                 Le azioni di gara riprenderanno automaticamente alla scadenza del timer
+              </p>
+              <p className="mt-2 text-[11px] font-semibold text-cyan-300/90 max-w-xs mx-auto leading-snug">
+                Il tempo del congelamento viene aggiunto al vostro tempo ufficiale (+2 minuti).
               </p>
             </div>
           ) : activeEnigmaTx && !isUnluckySpinning && !showUnluckyPrize ? (

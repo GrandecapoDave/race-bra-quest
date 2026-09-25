@@ -35,7 +35,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { myTeamQuery, stagesQuery, challengesQuery, progressQuery, isStageUnlocked, leaderboardQuery, rankLeaderboard, formatDuration, gameSettingsQuery } from "@/lib/race";
+import { myTeamQuery, stagesQuery, challengesQuery, progressQuery, isStageUnlocked, leaderboardQuery, rankLeaderboard, formatDuration, gameSettingsQuery, challengeMaxPoints } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/marketplace")({
   head: () => ({
@@ -645,13 +645,20 @@ function MarketplacePage() {
       } else if (itemId === "trappola") {
         const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "Bersaglio";
         toast.success("🪤 TRAPPOLA ATTIVATA!", {
-          description: `Hai rubato punti a "${targetName}"!`,
+          description:
+            typeof (data as any)?.outcome?.stolen_points === "number"
+              ? (data as any).outcome.stolen_points > 0
+                ? `Hai rubato ${(data as any).outcome.stolen_points} punti a "${targetName}"!`
+                : `"${targetName}" non aveva punti da rubare: il colpo non ha avuto effetto.`
+              : `Hai rubato punti a "${targetName}"!`,
           duration: 6000,
         });
       } else if (itemId === "penalita_punti") {
         const targetName = (teamsQuery.data ?? []).find((t: any) => t.id === targetId)?.nome_squadra || "Bersaglio";
         toast.success("💥 PENALITÀ PUNTI INFLITTA!", {
-          description: `Sottratti -20 PT a "${targetName}"!`,
+          description: `Sottratti -${(data as any)?.outcome?.points_deducted ?? 20} PT a "${targetName}"!${
+            (data as any)?.outcome?.refunded_points > 0 ? ` La sua Polizza ha rimborsato ${(data as any).outcome.refunded_points} PT.` : ""
+          }`,
           duration: 6000,
         });
       } else if (itemId === "tassa_passaggio") {
@@ -727,7 +734,7 @@ function MarketplacePage() {
         });
       } else if (itemId === "bonus_classifica") {
         toast.success("👁️ BONUS CLASSIFICA ATTIVATO!", {
-          description: "Ora puoi visualizzare la classifica generale in tempo reale.",
+          description: "Apri la Classifica: vedrai UNA sola volta la fotografia dei punteggi di tutte le squadre al momento dell'apertura. Uscendo dalla pagina il bonus si consuma.",
           duration: 6000,
         });
       } else if (itemId === "partenza_anticipata") {
@@ -1565,7 +1572,7 @@ function MarketplacePage() {
                           const compCount = stageSummary?.completed_challenges ?? 0;
                           const isDone = sChs.length > 0 && compCount >= sChs.length;
                           const earnedPts = stageSummary?.earned_points ?? 0;
-                          const availablePts = sChs.reduce((sum: number, c: any) => sum + (c.punteggio_massimo || 0), 0);
+                          const availablePts = sChs.filter((c: any) => c.type !== "jackpot").reduce((sum: number, c: any) => sum + challengeMaxPoints(c), 0);
 
                           const isSelected = selectedStageId === s.id;
 
