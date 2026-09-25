@@ -30,9 +30,43 @@ function AdminOverviewPage() {
       />
 
       {/* LIVE MONITOR SQUADRE */}
-      <div className="surface p-5 space-y-4 border border-border/40 bg-zinc-950/40 rounded-2xl">
-        <h2 className="text-xl font-display font-black uppercase tracking-wider text-muted-foreground">Monitoraggio Live Squadre</h2>
-        <div className="overflow-x-auto">
+      <div className="surface p-4 sm:p-5 space-y-4 border border-border/40 bg-zinc-950/40 rounded-2xl">
+        <h2 className="text-base sm:text-xl font-display font-black uppercase tracking-wider text-muted-foreground">Monitoraggio Live Squadre</h2>
+
+        {/* MOBILE: una scheda per squadra, tutto leggibile senza scorrere di lato */}
+        <div className="space-y-2 md:hidden">
+          {monitorRows.map((row: any) => (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => {
+                setSelectedTeamId(row.id);
+                navigate({ to: "/admin/teams" });
+              }}
+              className="w-full text-left rounded-xl border border-border/40 bg-secondary/40 p-3 space-y-2 active:scale-[0.99] transition-transform cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: row.color || "#f97316" }} />
+                  <span className="font-black text-foreground truncate">{row.nome_squadra}</span>
+                </span>
+                <span className="font-display text-lg font-black text-gold shrink-0">{row.points} PT</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground font-semibold">
+                <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full ${row.statusColor}`}>{row.statusLabel}</span>
+                <span>{row.currentStageName}</span>
+                <span className="text-primary font-bold">{row.completedCount}/{(challenges.data ?? []).length} prove</span>
+                <span className="font-mono">{formatDuration(row.totalDurationSeconds)}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                <span className="text-foreground/90 font-semibold">{row.lastActionText}</span>
+                {row.lastActionTime ? ` · ${row.lastActionTime}` : ""}
+              </p>
+            </button>
+          ))}
+        </div>
+
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full min-w-[850px] text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-border/40 text-[10px] text-muted-foreground uppercase font-bold tracking-widest">

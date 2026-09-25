@@ -832,7 +832,7 @@ function AppShellInner({
       {/* ── Main content ── */}
       <SidebarInset className="min-w-0 w-full max-w-full flex-1 pb-24 md:pb-0 overflow-x-hidden box-border">
         <header className="sticky top-0 z-30 w-full border-b border-white/[0.06] bg-background/80 backdrop-blur-md safe-top">
-          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-3 sm:px-4 py-3 box-border">
+          <div className={`mx-auto flex w-full max-w-3xl${isAdmin ? " md:max-w-5xl 2xl:max-w-7xl" : ""} items-center justify-between gap-2 px-3 sm:px-4 py-3 box-border`}>
             <div className="flex items-center gap-2 min-w-0">
               <SidebarTrigger />
               <Link
@@ -878,7 +878,7 @@ function AppShellInner({
             aria-live="polite"
             className="sticky top-[57px] z-20 w-full border-b border-cyan-500/30 bg-cyan-950/90 backdrop-blur-md"
           >
-            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-3 sm:px-4 py-2 text-cyan-100">
+            <div className={`mx-auto flex w-full max-w-3xl${isAdmin ? " md:max-w-5xl 2xl:max-w-7xl" : ""} items-center gap-2 px-3 sm:px-4 py-2 text-cyan-100`}>
               <span className="text-lg" aria-hidden="true">⏸️</span>
               <p className="text-xs font-bold leading-snug">
                 GARA IN PAUSA — il tempo è fermo per tutte le squadre. Prove e acquisti sono sospesi fino alla ripresa della Regia.
@@ -887,7 +887,7 @@ function AppShellInner({
           </div>
         )}
 
-        <main className="mx-auto w-full max-w-3xl min-w-0 px-3 sm:px-4 py-4 sm:py-5 pb-28 md:pb-12 box-border overflow-x-hidden">
+        <main className={`mx-auto w-full max-w-3xl${isAdmin ? " md:max-w-5xl 2xl:max-w-7xl" : ""} min-w-0 px-3 sm:px-4 py-4 sm:py-5 pb-28 md:pb-12 box-border overflow-x-hidden`}>
           {isFrozen && !isUnluckySpinning && !showUnluckyPrize ? (
             <div className="flex flex-col items-center justify-center bg-zinc-950/40 border border-cyan-500/20 backdrop-blur-md rounded-3xl p-8 py-16 text-center space-y-6 my-10 animate-in fade-in zoom-in-95 duration-300 max-w-lg mx-auto shadow-2xl shadow-cyan-950/20">
               <div className="size-20 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center animate-pulse shadow-lg shadow-cyan-500/5">

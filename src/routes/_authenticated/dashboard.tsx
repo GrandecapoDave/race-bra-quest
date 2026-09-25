@@ -67,6 +67,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const [mktTab, setMktTab] = useState<"bonus" | "sent" | "received">("bonus");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -386,6 +387,8 @@ function Dashboard() {
     <AppShell isAdmin={isAdmin.data}>
       <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto">
         
+        {/* AVVISI: compatti, chiudibili con la X */}
+        <div className="space-y-2.5 empty:hidden [&>div]:!p-3 [&>div]:!rounded-xl [&>div]:!gap-2.5 [&_button]:!px-2.5 [&_button]:!py-1.5 [&_button]:!text-[11px] [&_button]:!leading-none">
         {/* PUBLISHED FINAL RECAP CARD */}
         {isRaceCompleted && isReportPublished && (
           <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-amber-500/40 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-xl shadow-amber-950/30 animate-in slide-in-from-top-4 duration-300">
@@ -467,7 +470,7 @@ function Dashboard() {
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 transition-all shrink-0 cursor-pointer"
                 title="Chiudi avviso"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
@@ -546,7 +549,7 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(cs.id)}
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-blue-900/40 border border-blue-500/30 hover:bg-blue-800/50 transition-all shrink-0 cursor-pointer"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
@@ -574,45 +577,11 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(pa.id)}
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition-all shrink-0 cursor-pointer"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
         })}
-
-        {/* 3-5. ACTIVE EFFECT BANNERS (2X, POLIZZA, SCUDO) - comprimibili */}
-        {active2x && (
-          <CollapsibleEffectBanner
-            storageKey={`effect-collapsed:${active2x.id}`}
-            tone="amber"
-            icon={<Zap className="size-5 animate-pulse" />}
-            title="✨ MOLTIPLICATORE 2X ATTIVO"
-            description="I punti della prova scelta sono raddoppiati (x2)!"
-            badge="Attivo"
-          />
-        )}
-
-        {activePolizza && (
-          <CollapsibleEffectBanner
-            storageKey={`effect-collapsed:${activePolizza.id}`}
-            tone="emerald"
-            icon={<Shield className="size-5" />}
-            title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
-            description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
-            badge="Pronta"
-          />
-        )}
-
-        {activeShield && (
-          <CollapsibleEffectBanner
-            storageKey={`effect-collapsed:${activeShield.id}`}
-            tone="blue"
-            icon={<Shield className="size-5 animate-pulse" />}
-            title="🛡️ SCUDO PROTETTIVO ATTIVO"
-            description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
-            badge="Protetto"
-          />
-        )}
 
         {/* 6. RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
         {activeDimezza && (
@@ -644,7 +613,7 @@ function Dashboard() {
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 text-rose-200 transition-all shrink-0 cursor-pointer"
                 title="Chiudi notifica"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           </div>
@@ -682,7 +651,7 @@ function Dashboard() {
                   className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-red-900/40 border border-red-500/30 hover:bg-red-800/50 text-red-200 transition-all shrink-0 cursor-pointer"
                   title="Chiudi notifica"
                 >
-                  ✕ Chiudi
+                  ✕
                 </button>
               </div>
             </div>
@@ -750,7 +719,7 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(u2x.id)}
                 className="text-xs font-black hover:text-white px-3 py-2 rounded-xl bg-amber-900/40 border border-amber-500/30 hover:bg-amber-800/50 transition-all shrink-0 cursor-pointer text-center sm:self-center"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
@@ -775,7 +744,7 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(up.id)}
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 transition-all shrink-0 cursor-pointer"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
@@ -800,7 +769,7 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(tr.id)}
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 transition-all shrink-0 cursor-pointer"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
@@ -825,7 +794,7 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(pr.id)}
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 transition-all shrink-0 cursor-pointer"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
@@ -850,36 +819,23 @@ function Dashboard() {
                 onClick={() => handleDismissNotification(tr.id)}
                 className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-purple-900/40 border border-purple-500/30 hover:bg-purple-800/50 transition-all shrink-0 cursor-pointer"
               >
-                ✕ Chiudi
+                ✕
               </button>
             </div>
           );
         })}
+        </div>
 
         {/* TEAM COCKPIT HERO (UI/UX Pro Max Edition) */}
         <section
-          className="hud-panel-glow animate-pop-in relative overflow-hidden p-5 sm:p-7 transition-all duration-300 w-full min-w-0 box-border"
+          className="hud-panel-glow animate-pop-in relative overflow-hidden p-4 sm:p-7 transition-all duration-300 w-full min-w-0 box-border"
           style={{
             borderColor: team.data?.color ? `${team.data.color}66` : undefined,
           }}
         >
           {/* BADGES CONTAINER (HeroUI Chip variant="dot" style) */}
-          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || isMarketplaceFrozen || activeShield || activePassaparola || pendingPassaparola || activePartenza || usedPartenza || active2x || activePolizza || activeDimezza) && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-3 sm:absolute sm:top-5 sm:right-5 sm:mb-0 sm:flex-col sm:items-end z-10">
-              {active2x && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-amber-400 animate-ping" />
-                  <Zap className="size-3 text-amber-300 stroke-[3]" />
-                  <span>2X Attivo</span>
-                </div>
-              )}
-              {activePolizza && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-                  <Shield className="size-3 text-emerald-300 stroke-[3]" />
-                  <span>Polizza 50%</span>
-                </div>
-              )}
+          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || isMarketplaceFrozen || activePassaparola || pendingPassaparola || activePartenza || usedPartenza || activeDimezza) && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-2.5 sm:absolute sm:top-5 sm:right-5 sm:mb-0 sm:flex-col sm:items-end z-10">
               {activeDimezza && (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/60 border border-red-500/40 text-red-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
                   <span className="size-2 rounded-full bg-red-400 animate-ping" />
@@ -910,13 +866,6 @@ function Dashboard() {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
                   <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
                   <span>❄️ Congelato</span>
-                </div>
-              )}
-              {activeShield && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-500/40 text-blue-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-blue-400 animate-ping" />
-                  <Shield className="size-3 text-blue-300 stroke-[3]" />
-                  <span>Scudo Attivo</span>
                 </div>
               )}
               {activePassaparola && (
@@ -964,7 +913,7 @@ function Dashboard() {
                 isBordered
                 radius="lg"
                 size="xl"
-                className="size-16 sm:size-20 text-3xl sm:text-4xl shadow-inner bg-zinc-950/80"
+                className="size-14 sm:size-20 text-3xl sm:text-4xl shadow-inner bg-zinc-950/80"
               />
             </div>
             <div className="min-w-0 flex-1">
@@ -980,7 +929,7 @@ function Dashboard() {
           </div>
 
           {/* GAME METERS / GAUGES (HeroUI isBordered style with glow) */}
-          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
             {/* PUNTI */}
             <div className="group rounded-2xl bg-secondary/50 hover:bg-secondary/70 border border-border/60 hover:border-primary/40 p-3 sm:p-4 text-center flex flex-col justify-between shadow-sm transition-all duration-200">
               <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
@@ -1061,7 +1010,7 @@ function Dashboard() {
           )}
 
           {/* OVERALL RACE PROGRESS WITH CIRCULARPROGRESS RING (HeroUI CircularProgress Style) */}
-          <div className="mt-5 pt-4 border-t border-border/40 flex items-center justify-between gap-4">
+          <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between gap-4">
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="uppercase tracking-widest text-[10px] font-black text-muted-foreground">Avanzamento Tappe</span>
@@ -1087,68 +1036,6 @@ function Dashboard() {
             </div>
           </div>
         </section>
-
-        {/* PASSAPAROLA ACTIVE / PENDING / ANSWERED BANNER */}
-        {activePassaparola && (
-          <div className="hud-panel p-4.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
-                <PhoneCall className="size-5" />
-              </div>
-              <div className="space-y-0.5">
-                <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
-                  📞 Bonus Passaparola Disponibile
-                </h4>
-                <p className="text-[11px] text-muted-foreground">
-                  Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setUsePassaparolaTx(activePassaparola)}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
-            >
-              <PhoneCall className="size-4" />
-              <span>Fai la Domanda</span>
-            </button>
-          </div>
-        )}
-
-        {pendingPassaparola && (
-          <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                <Clock className="size-3.5" />
-                Passaparola: In attesa di risposta dalla Regia
-              </span>
-              <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
-            </div>
-            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
-              "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
-            </div>
-          </div>
-        )}
-
-        {answeredPassaparola && (
-          <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <PhoneCall className="size-3.5 text-emerald-400" />
-                Risposta Regia Passaparola
-              </span>
-              <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
-                (answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ"
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-300 border-rose-500/30"
-              }`}>
-                Risposta: {(answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ" ? "✅ SÌ" : "❌ NO"}
-              </span>
-            </div>
-            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
-              "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
-            </div>
-          </div>
-        )}
 
         {/* MEGA-CARD: MISSIONE ATTIVA (HeroUI Card isFooterBlurred & Button variant="shadow") */}
         <section className="space-y-2.5">
@@ -1215,11 +1102,107 @@ function Dashboard() {
           )}
         </section>
 
+        {/* 3-5. ACTIVE EFFECT BANNERS (2X, POLIZZA, SCUDO) - comprimibili */}
+        {active2x && (
+          <CollapsibleEffectBanner
+            storageKey={`effect-collapsed:${active2x.id}`}
+            tone="amber"
+            icon={<Zap className="size-5 animate-pulse" />}
+            title="✨ MOLTIPLICATORE 2X ATTIVO"
+            description="I punti della prova scelta sono raddoppiati (x2)!"
+            badge="Attivo"
+          />
+        )}
+
+        {activePolizza && (
+          <CollapsibleEffectBanner
+            storageKey={`effect-collapsed:${activePolizza.id}`}
+            tone="emerald"
+            icon={<Shield className="size-5" />}
+            title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
+            description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
+            badge="Pronta"
+          />
+        )}
+
+        {activeShield && (
+          <CollapsibleEffectBanner
+            storageKey={`effect-collapsed:${activeShield.id}`}
+            tone="blue"
+            icon={<Shield className="size-5 animate-pulse" />}
+            title="🛡️ SCUDO PROTETTIVO ATTIVO"
+            description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
+            badge="Protetto"
+          />
+        )}
+
+        {/* PASSAPAROLA ACTIVE / PENDING / ANSWERED BANNER */}
+        {activePassaparola && (
+          <div className="hud-panel p-4.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                <PhoneCall className="size-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
+                  📞 Bonus Passaparola Disponibile
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setUsePassaparolaTx(activePassaparola)}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
+            >
+              <PhoneCall className="size-4" />
+              <span>Fai la Domanda</span>
+            </button>
+          </div>
+        )}
+
+        {pendingPassaparola && (
+          <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                <Clock className="size-3.5" />
+                Passaparola: In attesa di risposta dalla Regia
+              </span>
+              <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
+            </div>
+            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
+              "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
+            </div>
+          </div>
+        )}
+
+        {answeredPassaparola && (
+          <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <PhoneCall className="size-3.5 text-emerald-400" />
+                Risposta Regia Passaparola
+              </span>
+              <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
+                (answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ"
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                  : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+              }`}>
+                Risposta: {(answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ" ? "✅ SÌ" : "❌ NO"}
+              </span>
+            </div>
+            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
+              "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
+            </div>
+          </div>
+        )}
+
         {/* MARKETPLACE SUMMARY SECTION */}
         {isMarketplaceUnlocked && (
           <section className="space-y-3 animate-fade-in">
             <div className="flex justify-between items-center pl-1">
-              <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wider text-muted-foreground/80">
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
                 🛒 Marketplace
               </h2>
               <Link
@@ -1230,90 +1213,77 @@ function Dashboard() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Bonus Acquistati */}
-              <div className="hud-panel p-4 rounded-2xl space-y-2 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 block">
-                    🎁 Bonus Acquistati
-                  </span>
-                  <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
-                    {myBonuses.length === 0 ? (
-                      <p className="text-[11px] text-muted-foreground italic font-semibold">Nessun bonus attivo</p>
-                    ) : (
-                      myBonuses.map((b) => {
-                        const item = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id);
-                        const name = item?.nome || b.item_id;
-                        const cost = b.costo ?? b.costo_token ?? (item as any)?.costo ?? 0;
-                        return (
-                          <div key={b.id} className="text-xs font-bold text-foreground bg-secondary/70 px-2.5 py-1.5 rounded-lg border border-border/50 flex items-center justify-between gap-1">
-                            <span className="truncate">{name}</span>
-                            <span className="text-[10px] text-emerald-400 font-black shrink-0">-{cost} 🪙</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
+            <div className="hud-panel p-3 rounded-2xl space-y-3">
+              <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-secondary/60 border border-border/40">
+                {([
+                  ["bonus", "🎁 Bonus", myBonuses.length, "text-emerald-400"],
+                  ["sent", "⚔️ Inviati", mySentMaluses.length, "text-rose-400"],
+                  ["received", "⚠️ Ricevuti", myReceivedMaluses.length, "text-amber-400"],
+                ] as const).map(([key, label, n, tone]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setMktTab(key)}
+                    aria-pressed={mktTab === key}
+                    className={`h-10 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      mktTab === key ? "bg-background/80 shadow-sm border border-border/60 " + tone : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    <span className={`min-w-5 px-1 rounded-full text-[10px] ${mktTab === key ? "bg-white/10" : "bg-white/5"}`}>{n}</span>
+                  </button>
+                ))}
               </div>
 
-              {/* Malus Inviati */}
-              <div className="hud-panel p-4 rounded-2xl space-y-2 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-black tracking-widest text-rose-400 block">
-                    ⚔️ Malus Inviati
-                  </span>
-                  <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
-                    {mySentMaluses.length === 0 ? (
-                      <p className="text-[11px] text-muted-foreground italic font-semibold">Nessun malus inviato</p>
-                    ) : (
-                      mySentMaluses.map((m) => {
-                        const item = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
-                        const name = item?.nome || m.item_id;
-                        const target = allTeams.find((t) => t.id === m.target_team_id)?.nome_squadra || "Sconosciuta";
-                        const cost = m.costo ?? m.costo_token ?? (item as any)?.costo ?? 0;
-                        return (
-                          <div key={m.id} className="text-[11px] font-bold text-foreground bg-secondary/70 px-2.5 py-1.5 rounded-lg border border-border/50 flex flex-col gap-0.5 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="truncate">{name}</span>
-                              <span className="text-[10px] text-rose-400 font-black shrink-0">-{cost} 🪙</span>
-                            </div>
-                            <span className="text-[9px] text-rose-400/90 font-extrabold truncate">→ {target}</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
+              <div className="space-y-1.5">
+                {mktTab === "bonus" && (myBonuses.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground italic font-semibold px-1 py-2">Nessun bonus attivo</p>
+                ) : myBonuses.map((b) => {
+                  const item = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id);
+                  const name = item?.nome || b.item_id;
+                  const cost = b.costo ?? b.costo_token ?? (item as any)?.costo ?? 0;
+                  return (
+                    <div key={b.id} className="text-xs font-bold text-foreground bg-secondary/70 px-3 py-2.5 rounded-xl border border-border/50 flex items-center justify-between gap-2">
+                      <span className="truncate">{name}</span>
+                      <span className="text-[11px] text-emerald-400 font-black shrink-0">-{cost} 🪙</span>
+                    </div>
+                  );
+                }))}
 
-              {/* Malus Ricevuti */}
-              <div className="hud-panel p-4 rounded-2xl space-y-2 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 block">
-                    ⚠️ Malus Ricevuti
-                  </span>
-                  <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
-                    {myReceivedMaluses.length === 0 ? (
-                      <p className="text-[11px] text-muted-foreground italic font-semibold">Nessun malus ricevuto</p>
-                    ) : (
-                      myReceivedMaluses.map((m) => {
-                        const name = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id)?.nome || m.item_id;
-                        const buyer = allTeams.find((t) => t.id === (m.buyer_team_id || m.team_id))?.nome_squadra || "Sconosciuta";
-                        const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
-                        return (
-                          <div key={m.id} className="text-[11px] font-bold text-foreground bg-secondary/70 px-2.5 py-1.5 rounded-lg border border-border/50 flex flex-col gap-0.5 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="truncate">{name}</span>
-                              {isBlocked && <span className="text-[9px] text-emerald-400 font-black shrink-0">🛡️ Bloccato</span>}
-                            </div>
-                            <span className="text-[9px] text-amber-400 font-extrabold truncate">← {buyer}</span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
+                {mktTab === "sent" && (mySentMaluses.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground italic font-semibold px-1 py-2">Nessun malus inviato</p>
+                ) : mySentMaluses.map((m) => {
+                  const item = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
+                  const name = item?.nome || m.item_id;
+                  const target = allTeams.find((t) => t.id === m.target_team_id)?.nome_squadra || "Sconosciuta";
+                  const cost = m.costo ?? m.costo_token ?? (item as any)?.costo ?? 0;
+                  return (
+                    <div key={m.id} className="text-xs font-bold text-foreground bg-secondary/70 px-3 py-2.5 rounded-xl border border-border/50 flex items-center justify-between gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <span className="block truncate">{name}</span>
+                        <span className="block text-[10px] text-rose-400/90 font-extrabold truncate">→ {target}</span>
+                      </div>
+                      <span className="text-[11px] text-rose-400 font-black shrink-0">-{cost} 🪙</span>
+                    </div>
+                  );
+                }))}
+
+                {mktTab === "received" && (myReceivedMaluses.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground italic font-semibold px-1 py-2">Nessun malus ricevuto</p>
+                ) : myReceivedMaluses.map((m) => {
+                  const name = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id)?.nome || m.item_id;
+                  const buyer = allTeams.find((t) => t.id === (m.buyer_team_id || m.team_id))?.nome_squadra || "Sconosciuta";
+                  const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
+                  return (
+                    <div key={m.id} className="text-xs font-bold text-foreground bg-secondary/70 px-3 py-2.5 rounded-xl border border-border/50 flex items-center justify-between gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <span className="block truncate">{name}</span>
+                        <span className="block text-[10px] text-amber-400 font-extrabold truncate">← {buyer}</span>
+                      </div>
+                      {isBlocked && <span className="text-[10px] text-emerald-400 font-black shrink-0">🛡️ Bloccato</span>}
+                    </div>
+                  );
+                }))}
               </div>
             </div>
           </section>

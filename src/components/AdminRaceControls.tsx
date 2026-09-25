@@ -57,9 +57,9 @@ export function AdminRaceControls({ gameSettings, allTeams, allProgress }: Props
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
       {/* PAUSA / RIPRESA */}
-      <div className={`surface space-y-3 rounded-2xl border p-4 ${paused ? "border-cyan-500/40 bg-cyan-500/5" : "border-border/40 bg-zinc-950/40"}`}>
+      <div className={`surface space-y-2.5 sm:space-y-3 rounded-2xl border p-3.5 sm:p-4 ${paused ? "border-cyan-500/40 bg-cyan-500/5" : "border-border/40 bg-zinc-950/40"}`}>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-black uppercase tracking-wider text-muted-foreground">Tempo di gara</h3>
           <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase ${
@@ -68,7 +68,7 @@ export function AdminRaceControls({ gameSettings, allTeams, allProgress }: Props
             {paused ? "In pausa" : inProgress ? "In corso" : raceStatus === "completed" ? "Terminata" : "Non iniziata"}
           </span>
         </div>
-        <p className="text-xs leading-snug text-muted-foreground">
+        <p className={`text-xs leading-snug text-muted-foreground ${paused ? "" : "hidden sm:block"}`}>
           {paused
             ? "Il tempo è fermo su tutti i telefoni. Prove, risposte e acquisti sono sospesi. Alla ripresa il tempo riparte per tutti insieme."
             : "La pausa ferma il tempo di tutte le squadre nello stesso istante e sospende prove e acquisti."}
@@ -97,7 +97,7 @@ export function AdminRaceControls({ gameSettings, allTeams, allProgress }: Props
       </div>
 
       {/* BLOCCO BANCA */}
-      <div className={`surface space-y-3 rounded-2xl border p-4 ${gateOpen ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+      <div className={`surface space-y-2.5 sm:space-y-3 rounded-2xl border p-3.5 sm:p-4 ${gateOpen ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
         <div className="flex items-center justify-between gap-2">
           <h3 className="flex items-center gap-1.5 text-sm font-black uppercase tracking-wider text-muted-foreground">
             <Landmark className="size-4" /> Banca BPER
@@ -111,9 +111,11 @@ export function AdminRaceControls({ gameSettings, allTeams, allProgress }: Props
         <p className="text-xs leading-snug text-muted-foreground">
           Squadre arrivate alla banca (Banca risolta):{" "}
           <strong className="text-foreground">{atBank} / {activeTeams.length}</strong>.{" "}
-          {gateOpen
-            ? "Le sfide successive sono aperte a tutte le squadre."
-            : "Le squadre che hanno risolto la Banca restano ferme: le sfide successive si aprono per tutte insieme quando sblocchi."}
+          <span className={gateOpen ? "hidden sm:inline" : ""}>
+            {gateOpen
+              ? "Le sfide successive sono aperte a tutte le squadre."
+              : "Le squadre che hanno risolto la Banca restano ferme: le sfide successive si aprono per tutte insieme quando sblocchi."}
+          </span>
         </p>
         {gateOpen ? (
           <button

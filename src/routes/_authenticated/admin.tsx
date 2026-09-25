@@ -721,7 +721,13 @@ function AdminLayout() {
   );
 
   const statusSetting = (settings.data ?? []).find(s => s.id === "game_status");
-  const gameStatus = statusSetting?.value || "Gara attiva";
+  // Lo stato reale e' quello del server (get_race_clock); l'impostazione "game_status" resta come ripiego
+  const clockStatus = raceClock.data?.status;
+  const gameStatus =
+    clockStatus === "in_progress" ? "Gara attiva"
+    : clockStatus === "completed" ? "Gara terminata"
+    : clockStatus === "not_started" ? "Gara non iniziata"
+    : statusSetting?.value || "Gara attiva";
 
   const totalTeamsCount = allTeams.data?.length ?? 0;
   const activeTeamsCount = allTeams.data?.filter((t: any) => t.active).length ?? 0;
@@ -930,7 +936,7 @@ function AdminLayout() {
         </div>
 
         {/* SWIPEABLE CATEGORIZED NAVIGATION BAR (Ergonomico su Mobile) */}
-        <div className="w-full overflow-x-auto no-scrollbar py-1">
+        <div className="w-full overflow-x-auto no-scrollbar py-1 md:hidden">
           <div className="flex items-center gap-2 min-w-max pb-1">
             {adminNavCategories.flatMap((cat) =>
               cat.links.map((link) => {
