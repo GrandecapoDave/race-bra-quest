@@ -809,58 +809,49 @@ function MarketplacePage() {
 
   return (
     <AppShell isAdmin={isAdmin.data}>
-      <div className="space-y-8 pb-10">
-        {/* HEADER SECTION */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2.5 text-4xl sm:text-5xl leading-none">
-              <ShoppingBag className="size-8 text-primary animate-bounce" /> Marketplace
+      <div className="space-y-5 sm:space-y-8 pb-10">
+        {/* HEADER SECTION: titolo e saldo sulla stessa riga */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="flex items-center gap-2 text-3xl sm:text-5xl leading-none min-w-0">
+              <ShoppingBag className="size-6 sm:size-8 text-primary shrink-0" /> <span className="truncate">Marketplace</span>
             </h1>
-            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
-              PECHINO EXPRESS BRA — Budget iniziale: 50 Token 🪙. Massimo un acquisto per singolo prodotto durante la gara.
-            </p>
-          </div>
 
-          {/* TOKEN BALANCE */}
-          <div className="relative overflow-hidden flex items-center gap-3.5 bg-zinc-950/40 p-4 px-6 rounded-2xl border border-orange-500/20 shadow-lg shadow-orange-500/5 min-w-[200px]">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="size-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0 border border-orange-500/20">
-              <Coins className="size-5 text-orange-500" />
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-extrabold tracking-widest text-muted-foreground block">
-                Token Disponibili
-              </span>
-              <span className="text-2xl font-black text-foreground flex items-center gap-1.5">
-                {balance} <span className="text-xs text-orange-500 font-bold">🪙</span>
-              </span>
+            {/* TOKEN BALANCE */}
+            <div className="relative overflow-hidden flex items-center gap-2.5 bg-zinc-950/40 py-2 pl-2.5 pr-4 rounded-2xl border border-orange-500/25 shadow-lg shadow-orange-500/5 shrink-0">
+              <div className="size-9 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0 border border-orange-500/20">
+                <Coins className="size-4.5 text-orange-500" />
+              </div>
+              <div className="leading-tight">
+                <span className="text-[9px] uppercase font-extrabold tracking-widest text-muted-foreground block">Token</span>
+                <span className="text-xl font-black text-foreground tabular-nums">{balance} <span className="text-xs text-orange-500 font-bold">🪙</span></span>
+              </div>
             </div>
           </div>
+          <p className="text-[11px] sm:text-sm text-muted-foreground">
+            Budget iniziale 50 Token. Un solo acquisto per prodotto durante la gara.
+          </p>
         </div>
 
-        {/* HERO STATUS BANNER */}
+        {/* STATO MERCATO: riga compatta */}
         {!isMarketplaceActive ? (
-          <div className="surface p-6 border border-warning/30 bg-warning/5 rounded-2xl flex flex-col md:flex-row items-center gap-4 animate-pulse">
-            <div className="size-12 rounded-full bg-warning/10 flex items-center justify-center text-warning shrink-0 border border-warning/20">
-              <Lock className="size-6 animate-pulse" />
+          <div className="surface px-4 py-3 border border-warning/30 bg-warning/5 rounded-2xl flex items-center gap-3">
+            <div className="size-9 rounded-full bg-warning/10 flex items-center justify-center text-warning shrink-0 border border-warning/20">
+              <Lock className="size-4.5" />
             </div>
-            <div className="text-center md:text-left space-y-1">
-              <h3 className="font-extrabold text-sm text-warning uppercase tracking-wide">🔒 Marketplace chiuso</h3>
-              <p className="text-xs text-zinc-300">
-                Il Marketplace è stato scoperto, ma il Regista non ha ancora aperto gli scambi. Rimanete pronti: l'apertura potrebbe avvenire in qualsiasi momento.
-              </p>
+            <div className="min-w-0">
+              <h3 className="font-extrabold text-xs text-warning uppercase tracking-wide">🔒 Marketplace chiuso</h3>
+              <p className="text-[11px] text-zinc-300 leading-snug">Il Regista non ha ancora aperto gli scambi: restate pronti.</p>
             </div>
           </div>
         ) : (
-          <div className="surface p-6 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top duration-300">
-            <div className="size-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/20">
-              <ShoppingBag className="size-6 text-emerald-400 animate-bounce" />
+          <div className="surface px-4 py-3 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top duration-300">
+            <div className="size-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/20">
+              <ShoppingBag className="size-4.5 text-emerald-400" />
             </div>
-            <div className="text-center md:text-left space-y-1">
-              <h3 className="font-extrabold text-sm text-emerald-400 uppercase tracking-wide">🟢 Marketplace Aperto</h3>
-              <p className="text-xs text-zinc-300">
-                Il Marketplace è ufficialmente aperto! Potete utilizzare i vostri Token.
-              </p>
+            <div className="min-w-0">
+              <h3 className="font-extrabold text-xs text-emerald-400 uppercase tracking-wide">🟢 Marketplace aperto</h3>
+              <p className="text-[11px] text-zinc-300 leading-snug">Potete spendere i vostri Token.</p>
             </div>
           </div>
         )}

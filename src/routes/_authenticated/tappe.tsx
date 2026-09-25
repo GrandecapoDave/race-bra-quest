@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Check, MapPin, X, Lock } from "lucide-react";
+import { Check, ChevronDown, MapPin, X, Lock } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
@@ -166,6 +166,11 @@ function TappePage() {
                         </div>
 
                         {cQs.length > 0 && (
+                          <details className="group">
+                            <summary className="flex cursor-pointer list-none select-none items-center gap-1 py-1 text-[11px] font-black uppercase tracking-wider text-primary [&::-webkit-details-marker]:hidden">
+                              <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+                              Risposte ({cQs.length})
+                            </summary>
                           <ul className="mt-1 space-y-1.5 pl-1">
                             {cQs.map((q) => {
                               const a = ans.find((x) => x.question_id === q.id);
@@ -194,6 +199,7 @@ function TappePage() {
                               );
                             })}
                           </ul>
+                          </details>
                         )}
 
                         {cMedia.length > 0 && (
