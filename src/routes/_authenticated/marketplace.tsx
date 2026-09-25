@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { WheelSliceText } from "@/components/WheelSliceText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -215,15 +216,15 @@ const MARKETPLACE_ITEMS = [
 ];
 
 const WHEEL_SLICES = [
-  { id: "jackpot", emoji: "🏆", label: "JACKPOT (+20)", color: "#eab308", text: "#000000" },
+  { id: "jackpot", emoji: "🏆", label: "JACKPOT +20", color: "#eab308", text: "#000000" },
   { id: "dave_help", emoji: "🧠", label: "AIUTO DAVE", color: "#a855f7", text: "#ffffff" },
-  { id: "mega_bonus", emoji: "💎", label: "MEGA (+15 PT)", color: "#3b82f6", text: "#ffffff" },
-  { id: "bonus", emoji: "⭐", label: "BONUS (+10 PT)", color: "#10b981", text: "#ffffff" },
-  { id: "piccolo_bonus", emoji: "🎁", label: "PICCOLO (+5 PT)", color: "#f97316", text: "#ffffff" },
-  { id: "gettoni_bonus", emoji: "🪙", label: "+10 TOKEN", color: "#06b6d4", text: "#000000" },
-  { id: "doppio_premio", emoji: "🎯", label: "DOPPIO (+5/+5)", color: "#ec4899", text: "#ffffff" },
-  { id: "fortuna", emoji: "🍀", label: "+5 TOKEN", color: "#84cc16", text: "#ffffff" },
-  { id: "sorpresa", emoji: "🎉", label: "+3 PUNTI", color: "#ef4444", text: "#ffffff" },
+  { id: "mega_bonus", emoji: "💎", label: "MEGA +15 PT", color: "#3b82f6", text: "#ffffff" },
+  { id: "bonus", emoji: "⭐", label: "BONUS +10 PT", color: "#059669", text: "#ffffff" },
+  { id: "piccolo_bonus", emoji: "🎁", label: "PICCOLO +5 PT", color: "#ea580c", text: "#ffffff" },
+  { id: "gettoni_bonus", emoji: "🪙", label: "+10 TOKEN", color: "#22d3ee", text: "#000000" },
+  { id: "doppio_premio", emoji: "🎯", label: "DOPPIO 5+5", color: "#db2777", text: "#ffffff" },
+  { id: "fortuna", emoji: "🍀", label: "+5 TOKEN", color: "#a3e635", text: "#000000" },
+  { id: "sorpresa", emoji: "🎉", label: "+3 PUNTI", color: "#dc2626", text: "#ffffff" },
 ];
 
 const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -604,8 +605,8 @@ function MarketplacePage() {
         if (data.outcome) {
           const raw = data.outcome;
           const label = raw.outcome_label || raw.label || "PREMIO RUOTA";
-          const points = raw.outcome_points ?? raw.points ?? 0;
-          const tokens = raw.outcome_tokens ?? raw.tokens ?? 0;
+          const points = raw.points_awarded ?? raw.outcome_points ?? raw.points ?? 0;
+          const tokens = raw.tokens_awarded ?? raw.outcome_tokens ?? raw.tokens ?? 0;
           const isJackpot = label.toLowerCase().includes("jackpot") || raw.id === "jackpot" || raw.outcome_id === "jackpot";
           const isDave = raw.dave_help === true || label.toLowerCase().includes("dave") || raw.id === "dave_help";
 
@@ -630,6 +631,9 @@ function MarketplacePage() {
             tokens: tokens,
             isJackpot: isJackpot,
             isDave: isDave,
+            // saldo e punteggio DOPO la vincita, calcolati al momento dell'acquisto (i valori a schermo si aggiornano dopo e li conterebbero due volte)
+            newBalance: balance - itemCost + tokens,
+            newPoints: currentPoints + points,
           };
 
           setWheelOutcome(normalizedOutcome);
@@ -1771,7 +1775,7 @@ function MarketplacePage() {
             </div>
 
             {/* MODAL BODY */}
-            <div className="flex-1 flex flex-col justify-center items-center py-4 space-y-6 overflow-y-auto">
+            <div className="flex-1 flex flex-col justify-center items-center py-4 pb-24 space-y-6 overflow-y-auto">
               {!showPrize ? (
                 <>
                   <div className="text-center space-y-1">
@@ -1784,7 +1788,7 @@ function MarketplacePage() {
                   </div>
 
                   {/* Graphic rotating SVG Wheel */}
-                  <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] shrink-0 my-2">
+                  <div className="relative w-[300px] h-[300px] sm:w-[340px] sm:h-[340px] shrink-0 my-2">
                     {/* The Wheel SVG */}
                     <svg
                       viewBox="0 0 400 400"
@@ -1809,33 +1813,7 @@ function MarketplacePage() {
                               stroke="#18181b"
                               strokeWidth="2.5"
                             />
-                            <g transform={`rotate(${midAngle} 200 200)`}>
-                              {/* Large Emoji */}
-                              <text
-                                x="200"
-                                y="60"
-                                textAnchor="middle"
-                                dominantBaseline="central"
-                                fontSize="24"
-                                transform="rotate(90 200 60)"
-                              >
-                                {slice.emoji}
-                              </text>
-                              {/* Bold Label */}
-                              <text
-                                x="200"
-                                y="118"
-                                textAnchor="middle"
-                                dominantBaseline="central"
-                                fill={slice.text}
-                                fontSize="11.5"
-                                fontWeight="900"
-                                letterSpacing="0.2"
-                                transform="rotate(90 200 118)"
-                              >
-                                {slice.label}
-                              </text>
-                            </g>
+                            <WheelSliceText emoji={slice.emoji} label={slice.label} color={slice.color} text={slice.text} midAngle={midAngle} />
                           </g>
                         );
                       })}
@@ -1918,7 +1896,7 @@ function MarketplacePage() {
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-400 font-medium">Nuovo Punteggio:</span>
                           <span className="font-extrabold text-gold text-sm">
-                            {(currentPoints + (wheelOutcome.points || 20))} PT
+                            {wheelOutcome.newPoints ?? (currentPoints + (wheelOutcome.points || 20))} PT
                           </span>
                         </div>
                       </div>
@@ -1945,7 +1923,7 @@ function MarketplacePage() {
                           <div className="flex justify-between">
                             <span className="text-zinc-500 font-medium">Nuovo Punteggio:</span>
                             <span className="font-extrabold text-gold">
-                              {(currentPoints + wheelOutcome.points)} PT
+                              {wheelOutcome.newPoints ?? (currentPoints + wheelOutcome.points)} PT
                             </span>
                           </div>
                         )}
@@ -1953,7 +1931,7 @@ function MarketplacePage() {
                           <div className="flex justify-between">
                             <span className="text-zinc-500 font-medium">Nuovo Saldo:</span>
                             <span className="font-extrabold text-orange-400">
-                              {(balance + wheelOutcome.tokens)} 🪙
+                              {wheelOutcome.newBalance ?? (balance + wheelOutcome.tokens)} 🪙
                             </span>
                           </div>
                         )}

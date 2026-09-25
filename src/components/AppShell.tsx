@@ -47,6 +47,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { useSession } from "@/hooks/useAuth";
 import { useTeamNotifications } from "@/hooks/useTeamNotifications";
 import { AdminDecisionModal } from "@/components/AdminDecisionModal";
+import { WheelSliceText } from "@/components/WheelSliceText";
 import {
   Sidebar,
   SidebarContent,
@@ -101,12 +102,27 @@ const describeArc = (x: number, y: number, radius: number, startAngle: number, e
 
 const UNLUCKY_WHEEL_SLICES = [
   { id: "freeze_2min", emoji: "❄️", label: "FREEZE (2m)", color: "#06b6d4", text: "#000000" },
-  { id: "minus_20_points", emoji: "💸", label: "-20 PUNTI", color: "#dc2626", text: "#ffffff" },
+  { id: "minus_15_points", emoji: "💸", label: "-15 PUNTI", color: "#dc2626", text: "#ffffff" },
   { id: "minus_10_tokens", emoji: "🪙", label: "-10 TOKEN", color: "#ea580c", text: "#ffffff" },
   { id: "plus_2_min", emoji: "⏱️", label: "+2 MINUTI", color: "#eab308", text: "#000000" },
   { id: "heavy_backpack", emoji: "🎒", label: "ZAINO (+3m)", color: "#16a34a", text: "#ffffff" },
-  { id: "minus_10_points_minus_5_tokens", emoji: "💥", label: "-10PT / -5TK", color: "#4f46e5", text: "#ffffff" }
+  { id: "minus_10_points_minus_5_tokens", emoji: "💥", label: "-10 PT -5 TK", color: "#4f46e5", text: "#ffffff" }
 ];
+
+/** Testo esplicativo dell'esito della Ruota Sfortunata: parte sempre dai valori reali applicati dal server, mai vuoto. */
+function describeUnluckyOutcome(o: any): string {
+  if (!o) return "";
+  const parts: string[] = [];
+  const freeze = Number(o.freeze_seconds) || 0;
+  const minutes = Number(o.minutes) || 0;
+  const points = Number(o.points) || 0;
+  const tokens = Number(o.tokens) || 0;
+  if (freeze > 0) parts.push(`Il vostro account è congelato per ${Math.round(freeze / 60)} minuti: non potrete compiere alcuna azione.`);
+  if (minutes > 0) parts.push(`+${minutes} minuti di penalità sono stati aggiunti al vostro tempo ufficiale.`);
+  if (points > 0) parts.push(`${points} punti sono stati sottratti dal vostro punteggio.`);
+  if (tokens > 0) parts.push(`${tokens} token sono stati detratti dal vostro saldo.`);
+  return parts.length > 0 ? parts.join(" ") : "La penalità è stata applicata alla vostra squadra.";
+}
 
 function AppShellInner({
   children,
@@ -1023,33 +1039,7 @@ function AppShellInner({
                               stroke="#09090b"
                               strokeWidth="2.5"
                             />
-                            <g transform={`rotate(${midAngle} 200 200)`}>
-                              {/* Large Emoji */}
-                              <text
-                                x="200"
-                                y="65"
-                                textAnchor="middle"
-                                dominantBaseline="central"
-                                fontSize="26"
-                                transform="rotate(90 200 65)"
-                              >
-                                {slice.emoji}
-                              </text>
-                              {/* Crisp Bold Label */}
-                              <text
-                                x="200"
-                                y="122"
-                                textAnchor="middle"
-                                dominantBaseline="central"
-                                fill={slice.text}
-                                fontSize="13.5"
-                                fontWeight="900"
-                                letterSpacing="0.4"
-                                transform="rotate(90 200 122)"
-                              >
-                                {slice.label}
-                              </text>
-                            </g>
+                            <WheelSliceText emoji={slice.emoji} label={slice.label} color={slice.color} text={slice.text} midAngle={midAngle} />
                           </g>
                         );
                       })}
@@ -1093,12 +1083,7 @@ function AppShellInner({
                       {unluckyOutcome?.label || "Esito applicato"}
                     </h4>
                     <p className="text-xs text-zinc-400 max-w-xs mx-auto leading-relaxed font-medium">
-                      {unluckyOutcome?.id === "freeze_2min" && "L'account della tua squadra è stato congelato per 120 secondi. Non potrai compiere alcuna azione."}
-                      {unluckyOutcome?.id === "minus_20_points" && "20 punti sono stati immediatamente sottratti dal vostro punteggio globale."}
-                      {unluckyOutcome?.id === "minus_10_tokens" && "10 Token sono stati detratti dal vostro saldo di squadra."}
-                      {unluckyOutcome?.id === "plus_2_min" && "Una penalità temporale di +2 minuti è stata applicata al vostro tempo ufficiale."}
-                      {unluckyOutcome?.id === "heavy_backpack" && "Zaino Pesante! +3 minuti di penalità sono stati aggiunti al vostro tempo ufficiale."}
-                      {unluckyOutcome?.id === "minus_10_points_minus_5_tokens" && "10 punti e 5 Token sono stati sottratti dal vostro punteggio e dal saldo."}
+                      {describeUnluckyOutcome(unluckyOutcome)}
                     </p>
                   </div>
                   

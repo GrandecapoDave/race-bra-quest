@@ -346,3 +346,22 @@
   z-index: 99999 !important;
 }
 
+
+/* Toast di sistema (non "custom"): tema scuro coerente con l'app, bordo colorato per tipo.
+   Le regole di Sonner hanno alta specificita', per questo !important. */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  background: rgba(9, 9, 11, 0.96) !important;
+  color: #f4f4f5 !important;
+  border: 1px solid #27272a !important;
+  border-left-width: 4px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"] { border-left-color: #34d399 !important; }
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="error"] { border-left-color: #f43f5e !important; }
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="warning"] { border-left-color: #fbbf24 !important; }
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="info"] { border-left-color: #38bdf8 !important; }
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] { color: #f4f4f5 !important; font-weight: 700; }
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] { color: #a1a1aa !important; }
