@@ -294,7 +294,7 @@ export function CoordinateFinaliChallenge({ challenge, team, completed: initComp
           )}
           <div className="border-t border-border/10 pt-3 text-center">
             <p className="text-xs font-bold text-primary">🏁 DESTINAZIONE SBLOCCATA</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Raggiungete il traguardo finale alla Chiesa di San Matteo.</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Raggiungete il traguardo finale: il campo verde indicato sulla mappa.</p>
           </div>
         </div>
 
