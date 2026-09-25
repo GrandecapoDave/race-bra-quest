@@ -37,8 +37,7 @@ function AdminPassaparolaPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teams")
-        .select("*")
-        .eq("active", true);
+        .select("*");
       if (error) return [];
       return data ?? [];
     },
@@ -264,7 +263,7 @@ function AdminPassaparolaPage() {
                         ●
                       </span>
                       <strong className="text-sm font-black uppercase text-foreground leading-none">
-                        {team?.nome_squadra || "Squadra Sconosciuta"}
+                        {team?.nome_squadra || "Squadra Sconosciuta"}{team && team.active === false ? " (disattivata)" : ""}
                       </strong>
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-bold">
@@ -360,11 +359,11 @@ function AdminPassaparolaPage() {
                             Risposta data dalla Regia:
                           </span>
                           <span className={`text-xs font-black px-3 py-1 rounded-lg border ml-2 ${
-                            tr.response_text === "SÌ" 
+                            /^s[iìí]$/i.test(String(tr.response_text ?? "").trim()) 
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
                               : "bg-rose-500/10 text-rose-400 border-rose-500/20"
                           }`}>
-                            {tr.response_text === "SÌ" ? "✅ SÌ" : "❌ NO"}
+                            {/^s[iìí]$/i.test(String(tr.response_text ?? "").trim()) ? "✅ SÌ" : "❌ NO"}
                           </span>
                         </div>
                         {tr.response_timestamp && (

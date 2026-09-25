@@ -247,7 +247,7 @@ function Dashboard() {
   const usedPartenza = myPurchases.find((t) => t.item_id === "partenza_anticipata" && t.stato === "used");
   const activePassaparola = myPurchases.find((t) => t.item_id === "passaparola" && (t.stato === "completed" || t.stato === "pending"));
   const pendingPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "pending");
-  const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used");
+  const answeredPassaparola = myPurchases.find((t) => t.item_id === "passaparola" && t.stato === "used" && !dismissedNotifications.includes(t.id));
 
   const activeDimezza = myReceivedMaluses.find((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "completed" && !dismissedNotifications.includes(t.id));
   const usedDimezzaList = myReceivedMaluses.filter((t) => (t.item_id === "dimezza_punti" || t.marketplace_item_id === "dimezza_punti") && t.stato === "used" && !dismissedNotifications.includes(t.id));
@@ -1101,100 +1101,121 @@ function Dashboard() {
           )}
         </section>
 
-        {/* 3-5. ACTIVE EFFECT BANNERS (2X, POLIZZA, SCUDO) - comprimibili */}
-        {active2x && (
-          <CollapsibleEffectBanner
-            storageKey={`effect-collapsed:${active2x.id}`}
-            tone="amber"
-            icon={<Zap className="size-5 animate-pulse" />}
-            title="✨ MOLTIPLICATORE 2X ATTIVO"
-            description="I punti della prova scelta sono raddoppiati (x2)!"
-            badge="Attivo"
-          />
-        )}
+        {/* I TUOI BONUS ATTIVI: effetti in corso (2X, Polizza, Scudo) e Passaparola */}
+        {(active2x || activePolizza || activeShield || activePassaparola || pendingPassaparola || answeredPassaparola) && (
+          <section className="space-y-2.5" aria-label="I tuoi bonus attivi">
+            <div className="flex items-center justify-between pl-1">
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">✨ I tuoi bonus attivi</h2>
+              <span className="min-w-6 rounded-full border border-border/50 bg-secondary/70 px-2 py-0.5 text-center text-[11px] font-black text-foreground">
+                {[active2x, activePolizza, activeShield, activePassaparola || pendingPassaparola || answeredPassaparola].filter(Boolean).length}
+              </span>
+            </div>
+            <div className="space-y-2">
+            {active2x && (
+              <CollapsibleEffectBanner
+                storageKey={`effect-collapsed:${active2x.id}`}
+                tone="amber"
+                icon={<Zap className="size-5 animate-pulse" />}
+                title="✨ MOLTIPLICATORE 2X ATTIVO"
+                description="I punti della prova scelta sono raddoppiati (x2)!"
+                badge="Attivo"
+              />
+            )}
 
-        {activePolizza && (
-          <CollapsibleEffectBanner
-            storageKey={`effect-collapsed:${activePolizza.id}`}
-            tone="emerald"
-            icon={<Shield className="size-5" />}
-            title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
-            description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
-            badge="Pronta"
-          />
-        )}
+            {activePolizza && (
+              <CollapsibleEffectBanner
+                storageKey={`effect-collapsed:${activePolizza.id}`}
+                tone="emerald"
+                icon={<Shield className="size-5" />}
+                title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
+                description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
+                badge="Pronta"
+              />
+            )}
 
-        {activeShield && (
-          <CollapsibleEffectBanner
-            storageKey={`effect-collapsed:${activeShield.id}`}
-            tone="blue"
-            icon={<Shield className="size-5 animate-pulse" />}
-            title="🛡️ SCUDO PROTETTIVO ATTIVO"
-            description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
-            badge="Protetto"
-          />
-        )}
+            {activeShield && (
+              <CollapsibleEffectBanner
+                storageKey={`effect-collapsed:${activeShield.id}`}
+                tone="blue"
+                icon={<Shield className="size-5 animate-pulse" />}
+                title="🛡️ SCUDO PROTETTIVO ATTIVO"
+                description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
+                badge="Protetto"
+              />
+            )}
 
-        {/* PASSAPAROLA ACTIVE / PENDING / ANSWERED BANNER */}
-        {activePassaparola && (
-          <div className="hud-panel p-4.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
-                <PhoneCall className="size-5" />
+            {activePassaparola && (
+              <div className="hud-panel p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                    <PhoneCall className="size-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
+                      📞 Bonus Passaparola Disponibile
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground">
+                      Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setUsePassaparolaTx(activePassaparola)}
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
+                >
+                  <PhoneCall className="size-4" />
+                  <span>Fai la Domanda</span>
+                </button>
               </div>
-              <div className="space-y-0.5">
-                <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
-                  📞 Bonus Passaparola Disponibile
-                </h4>
-                <p className="text-[11px] text-muted-foreground">
-                  Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
-                </p>
+            )}
+
+            {pendingPassaparola && (
+              <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                    <Clock className="size-3.5" />
+                    Passaparola: In attesa di risposta dalla Regia
+                  </span>
+                  <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
+                </div>
+                <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
+                  "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
+                </div>
               </div>
-            </div>
-            <button
-              onClick={() => setUsePassaparolaTx(activePassaparola)}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
-            >
-              <PhoneCall className="size-4" />
-              <span>Fai la Domanda</span>
-            </button>
-          </div>
-        )}
+            )}
 
-        {pendingPassaparola && (
-          <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                <Clock className="size-3.5" />
-                Passaparola: In attesa di risposta dalla Regia
-              </span>
-              <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
+            {answeredPassaparola && (
+              <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                    <PhoneCall className="size-3.5 text-emerald-400" />
+                    Risposta Regia Passaparola
+                  </span>
+                  <span className="flex items-center gap-2">
+                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
+                    /^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim())
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                      : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                  }`}>
+                    Risposta: {/^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim()) ? "✅ SÌ" : "❌ NO"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDismissNotification(answeredPassaparola.id)}
+                    aria-label="Chiudi la risposta"
+                    className="size-7 rounded-full grid place-items-center text-emerald-300 bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 cursor-pointer text-xs font-black"
+                  >
+                    ✕
+                  </button>
+                  </span>
+                </div>
+                <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
+                  "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
+                </div>
+              </div>
+            )}
             </div>
-            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
-              "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
-            </div>
-          </div>
-        )}
-
-        {answeredPassaparola && (
-          <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <PhoneCall className="size-3.5 text-emerald-400" />
-                Risposta Regia Passaparola
-              </span>
-              <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
-                (answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ"
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-300 border-rose-500/30"
-              }`}>
-                Risposta: {(answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) === "SÌ" ? "✅ SÌ" : "❌ NO"}
-              </span>
-            </div>
-            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
-              "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
-            </div>
-          </div>
+          </section>
         )}
 
         {/* TAPPE LIST */}

@@ -95,7 +95,7 @@ function TassaAdmin() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table data-stack="1" className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border/20 bg-zinc-950/20 text-zinc-500 text-[10px] font-black uppercase tracking-wider">
                     <th className="py-3.5 px-5">Acquirente</th>
@@ -115,7 +115,7 @@ function TassaAdmin() {
                     return (
                       <tr key={tr.id} className="hover:bg-zinc-900/10 transition-colors">
                         {/* Acquirente */}
-                        <td className="py-4 px-5">
+                        <td data-label="Acquirente" className="py-4 px-5">
                           <div className="flex items-center gap-2">
                             <span
                               className="size-2 rounded-full shrink-0"
@@ -128,7 +128,7 @@ function TassaAdmin() {
                         </td>
 
                         {/* Bersaglio */}
-                        <td className="py-4 px-5">
+                        <td data-label="Bersaglio" className="py-4 px-5">
                           {tr.target_team_id ? (
                             <div className="flex items-center gap-2">
                               <span
@@ -145,12 +145,12 @@ function TassaAdmin() {
                         </td>
 
                         {/* Costo */}
-                        <td className="py-4 px-5 font-mono text-orange-400 font-bold">
+                        <td data-label="Costo" className="py-4 px-5 font-mono text-orange-400 font-bold">
                           {tr.costo} TK 🪙
                         </td>
 
                         {/* Punti Acquirente prima/dopo */}
-                        <td className="py-4 px-5">
+                        <td data-label="Punti Acquirente" className="py-4 px-5">
                           {isBlocked ? (
                             <span className="text-zinc-500">—</span>
                           ) : outcome ? (
@@ -165,7 +165,7 @@ function TassaAdmin() {
                         </td>
 
                         {/* Punti Bersaglio prima/dopo */}
-                        <td className="py-4 px-5">
+                        <td data-label="Punti Bersaglio" className="py-4 px-5">
                           {isBlocked ? (
                             <span className="text-zinc-500">—</span>
                           ) : outcome ? (
@@ -180,7 +180,7 @@ function TassaAdmin() {
                         </td>
 
                         {/* Data/Ora */}
-                        <td className="py-4 px-5 text-zinc-500 font-mono text-[10px]">
+                        <td data-label="Data/Ora" className="py-4 px-5 text-zinc-500 font-mono text-[10px]">
                           <div className="flex items-center gap-1">
                             <Calendar className="size-3 text-zinc-600" />
                             <span>{new Date(tr.timestamp).toLocaleString("it-IT")}</span>
@@ -188,7 +188,7 @@ function TassaAdmin() {
                         </td>
 
                         {/* Stato */}
-                        <td className="py-4 px-5">
+                        <td data-label="Stato" className="py-4 px-5">
                           {isBlocked ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border border-red-500/20 bg-red-500/5 text-red-400">
                               <ShieldAlert className="size-3" /> NEUTRALIZZATO

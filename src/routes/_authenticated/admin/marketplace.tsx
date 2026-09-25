@@ -4,6 +4,16 @@ import { Coins, History, Loader2, ShoppingBag, Snowflake } from "lucide-react";
 import { useAdminContext } from "../admin";
 import { useState, useEffect } from "react";
 
+/** Formattazione data/ora sicura: mai "Invalid Date" se il valore manca o non e' valido. */
+function fmtTime(v: unknown): string {
+  const d = v ? new Date(v as string) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleTimeString("it-IT") : "—";
+}
+function fmtDateTime(v: unknown): string {
+  const d = v ? new Date(v as string) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleString("it-IT") : "—";
+}
+
 export const Route = createFileRoute("/_authenticated/admin/marketplace")({
   component: AdminMarketplacePage,
 });
@@ -55,7 +65,7 @@ function AdminMarketplacePage() {
     const c = t.costo ?? t.costo_token ?? 0;
     return c > 0 ? acc + c : acc;
   }, 0);
-  const activatedAt = settings?.activated_at ? new Date(settings.activated_at).toLocaleString("it-IT") : "Non disponibile";
+  const activatedAt = settings?.activated_at ? fmtDateTime(settings.activated_at) : "Non disponibile";
   const activatedBy = settings?.activated_by || "Non disponibile";
 
   return (
@@ -290,10 +300,10 @@ function AdminMarketplacePage() {
                             {attacker ? `${attacker.avatar_url} ${attacker.nome_squadra}` : "Sconosciuta"}
                           </td>
                           <td className="py-2.5 text-right text-zinc-400 font-mono">
-                            {t.freeze_started_at ? new Date(t.freeze_started_at).toLocaleTimeString("it-IT") : "—"}
+                            {t.freeze_started_at ? fmtTime(t.freeze_started_at) : "—"}
                           </td>
                           <td className="py-2.5 text-right text-zinc-400 font-mono">
-                            {t.freeze_expires_at ? new Date(t.freeze_expires_at).toLocaleTimeString("it-IT") : "—"}
+                            {t.freeze_expires_at ? fmtTime(t.freeze_expires_at) : "—"}
                           </td>
                           <td className="py-2.5 text-right text-cyan-400 font-mono font-black animate-pulse">
                             {formatTime(remainingSec)}
@@ -410,7 +420,7 @@ function AdminMarketplacePage() {
                                         </span>
                                         {tr.outcome && (
                                           <span className="block text-[8px] text-zinc-500 leading-normal">
-                                            Inizio: {new Date(tr.outcome.freeze_started_at).toLocaleTimeString("it-IT")} · Fine: {new Date(tr.outcome.freeze_expires_at).toLocaleTimeString("it-IT")}
+                                            Inizio: {fmtTime(tr.outcome.freeze_started_at)} · Fine: {fmtTime(tr.outcome.freeze_expires_at)}
                                           </span>
                                         )}
                                       </>
@@ -433,10 +443,10 @@ function AdminMarketplacePage() {
                                         {tr.outcome && (
                                           <div className="text-[8px] text-zinc-500 space-y-0.5 leading-normal mt-1">
                                             <span className="block text-purple-400 font-bold">Soluzione: LANTERNA</span>
-                                            <span className="block">Assegnato: {new Date(tr.outcome.assigned_at).toLocaleString("it-IT")}</span>
+                                            <span className="block">Assegnato: {fmtDateTime(tr.outcome.assigned_at)}</span>
                                             {tr.outcome.solved_at && (
                                               <>
-                                                <span className="block">Risolto: {new Date(tr.outcome.solved_at).toLocaleString("it-IT")}</span>
+                                                <span className="block">Risolto: {fmtDateTime(tr.outcome.solved_at)}</span>
                                                 <span className="block text-zinc-400 font-semibold">
                                                   Risposta inviata: <strong className="text-white">"{tr.outcome.submitted_answer}"</strong>
                                                 </span>
@@ -465,7 +475,7 @@ function AdminMarketplacePage() {
                                           <div className="text-[8px] text-zinc-500 space-y-0.5 leading-normal mt-1">
                                             <span className="block text-amber-400 font-bold">Risultato: {tr.outcome.label}</span>
                                             {tr.outcome.spun_at && (
-                                              <span className="block">Ora Spin: {new Date(tr.outcome.spun_at).toLocaleTimeString("it-IT")}</span>
+                                              <span className="block">Ora Spin: {fmtTime(tr.outcome.spun_at)}</span>
                                             )}
                                           </div>
                                         )}
@@ -656,7 +666,7 @@ function AdminMarketplacePage() {
                             );
                           })()}
                           <td className="py-3 text-right text-zinc-500 text-[10px]">
-                            {new Date(tr.timestamp || tr.data_acquisto).toLocaleString("it-IT")}
+                            {fmtDateTime(tr.timestamp || tr.data_acquisto)}
                           </td>
                         </tr>
                       );

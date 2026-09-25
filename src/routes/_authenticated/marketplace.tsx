@@ -1060,9 +1060,9 @@ function MarketplacePage() {
                                 <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5">
                                   <span className="text-[11px] text-zinc-500">Risposta:</span>
                                   <span className={`text-[11px] font-black px-2 py-0.5 rounded ${
-                                    responseText === "SÌ" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                    /^s[iìí]$/i.test(String(responseText ?? "").trim()) ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                                   }`}>
-                                    {responseText === "SÌ" ? "✅ SÌ" : "❌ NO"}
+                                    {/^s[iìí]$/i.test(String(responseText ?? "").trim()) ? "✅ SÌ" : "❌ NO"}
                                   </span>
                                 </div>
                               </div>

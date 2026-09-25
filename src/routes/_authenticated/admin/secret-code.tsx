@@ -186,7 +186,7 @@ function AdminSecretCodePage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left border-collapse text-sm">
+          <table data-stack="1" className="w-full min-w-[900px] text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-border/40 text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
                 <th className="pb-3 pr-4">Squadra Acquirente</th>
@@ -210,12 +210,12 @@ function AdminSecretCodePage() {
 
                 return (
                   <tr key={team.id} className="hover:bg-zinc-900/30 transition-colors">
-                    <td className="py-3 pr-4 font-black text-foreground flex items-center gap-2">
+                    <td data-label="Squadra Acquirente" className="py-3 pr-4 font-black text-foreground flex items-center gap-2">
                       <span><AnimatedEmoji emoji={team.avatar_url || "🏳️"} /></span>
                       <span>{team.nome_squadra}</span>
                     </td>
 
-                    <td className="py-3 pr-4">
+                    <td data-label="Frammento Posseduto" className="py-3 pr-4">
                       {isEditingThis ? (
                         <select
                           value={editPartType}
@@ -234,7 +234,7 @@ function AdminSecretCodePage() {
                       )}
                     </td>
 
-                    <td className="py-3 pr-4">
+                    <td data-label="Partner Venditore" className="py-3 pr-4">
                       {isEditingThis ? (
                         <select
                           value={editSellerId}
@@ -253,7 +253,7 @@ function AdminSecretCodePage() {
                       )}
                     </td>
 
-                    <td className="py-3 pr-4 font-bold">
+                    <td data-label="Costo Frammento" className="py-3 pr-4 font-bold">
                       {isEditingThis ? (
                         <input
                           type="number"
@@ -270,7 +270,7 @@ function AdminSecretCodePage() {
                       )}
                     </td>
 
-                    <td className="py-3 pr-4">
+                    <td data-label="Stato Acquisto" className="py-3 pr-4">
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                         hasPurchased ? "bg-green-950/40 text-success border border-green-900/40" : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                       }`}>
@@ -278,7 +278,7 @@ function AdminSecretCodePage() {
                       </span>
                     </td>
 
-                    <td className="py-3 pr-4">
+                    <td data-label="Stato PIN" className="py-3 pr-4">
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                         isCompleted ? "bg-gold/20 text-gold border border-gold/20 animate-pulse" : "bg-zinc-900 text-zinc-500 border border-zinc-800"
                       }`}>
@@ -286,7 +286,7 @@ function AdminSecretCodePage() {
                       </span>
                     </td>
 
-                    <td className="py-3 text-right">
+                    <td data-label="Azioni" className="py-3 text-right">
                       <div className="flex justify-end gap-2">
                         {isEditingThis ? (
                           <>
@@ -409,7 +409,7 @@ function AdminSecretCodePage() {
           <p className="text-xs text-muted-foreground italic">Nessun tentativo registrato.</p>
         ) : (
           <div className="overflow-x-auto max-h-[250px]">
-            <table className="w-full text-left text-xs border-collapse">
+            <table data-stack="1" className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-border/40 text-[9px] text-muted-foreground uppercase font-black tracking-widest">
                   <th className="pb-2 pr-4">Squadra</th>
@@ -423,16 +423,16 @@ function AdminSecretCodePage() {
                   const teamObj = teamsList.find((t: any) => t.id === att.team_id);
                   return (
                     <tr key={att.id} className="hover:bg-zinc-900/30">
-                      <td className="py-2 pr-4 font-bold text-zinc-300">{teamObj?.nome_squadra || "Sconosciuta"}</td>
-                      <td className="py-2 pr-4 font-mono font-bold tracking-widest">{att.inserted_code}</td>
-                      <td className="py-2 pr-4">
+                      <td data-label="Squadra" className="py-2 pr-4 font-bold text-zinc-300">{teamObj?.nome_squadra || "Sconosciuta"}</td>
+                      <td data-label="Codice Inserito" className="py-2 pr-4 font-mono font-bold tracking-widest">{att.inserted_code}</td>
+                      <td data-label="Esito" className="py-2 pr-4">
                         <span className={`font-bold px-1.5 py-0.5 rounded text-[9px] uppercase ${
                           att.success ? "bg-green-950/40 text-success border border-green-900/40" : "bg-destructive/10 text-destructive border border-destructive/20"
                         }`}>
                           {att.success ? "Corretto" : "Errato"}
                         </span>
                       </td>
-                      <td className="py-2 text-zinc-500 font-mono">{new Date(att.timestamp).toLocaleString("it-IT")}</td>
+                      <td data-label="Timestamp" className="py-2 text-zinc-500 font-mono">{new Date(att.timestamp).toLocaleString("it-IT")}</td>
                     </tr>
                   );
                 })}

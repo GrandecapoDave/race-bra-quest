@@ -392,3 +392,37 @@
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="info"] { border-left-color: #38bdf8 !important; }
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] { color: #f4f4f5 !important; font-weight: 700; }
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] { color: #a1a1aa !important; }
+
+/* Tabelle "a schede" su telefono: ogni riga diventa una scheda, con l'etichetta della colonna (data-label) accanto al valore */
+@media (max-width: 767px) {
+  table[data-stack] { min-width: 0 !important; display: block; }
+  table[data-stack] thead { display: none; }
+  table[data-stack] tbody { display: block; }
+  table[data-stack] tr {
+    display: block;
+    margin-bottom: 0.6rem;
+    padding: 0.35rem 0;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 1rem;
+    background: rgb(255 255 255 / 0.03);
+  }
+  table[data-stack] td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0.85rem !important;
+    text-align: right !important;
+    min-width: 0;
+  }
+  table[data-stack] td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    text-align: left;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+}

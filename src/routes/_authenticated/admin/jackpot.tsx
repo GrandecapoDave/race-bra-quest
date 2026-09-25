@@ -134,7 +134,7 @@ function AdminJackpotPage() {
           <h2 className="text-sm font-black uppercase tracking-wider text-foreground">Giocate registrate</h2>
 
           <div className="overflow-x-auto rounded-xl border border-border/30 bg-zinc-950/40">
-            <table className="w-full text-xs text-left">
+            <table data-stack="1" className="w-full text-xs text-left">
               <thead className="bg-muted/10 text-muted-foreground uppercase text-[9px] tracking-wider border-b border-border/30">
                 <tr>
                   <th className="px-4 py-3">Squadra</th>
@@ -159,10 +159,10 @@ function AdminJackpotPage() {
                         selectedPlayId === team.id ? "bg-primary/5 text-primary" : ""
                       }`}
                     >
-                      <td className="px-4 py-3 font-bold text-foreground">
+                      <td data-label="Squadra" className="px-4 py-3 font-bold text-foreground">
                         {team.nome_squadra}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Stato" className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
                           isGiocata 
                             ? "bg-success/10 border-success/20 text-success" 
@@ -171,20 +171,20 @@ function AdminJackpotPage() {
                           {isGiocata ? "Giocata" : "Non giocata"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-black">
+                      <td data-label="Puntata" className="px-4 py-3 text-right font-black">
                         {isGiocata ? `${play.puntata} PT` : "—"}
                       </td>
-                      <td className="px-4 py-3 text-center text-sm font-semibold">
+                      <td data-label="Simboli" className="px-4 py-3 text-center text-sm font-semibold">
                         {isGiocata ? play.simboli.split(",").join(" ") : "—"}
                       </td>
-                      <td className="px-4 py-3 font-black">
+                      <td data-label="Risultato" className="px-4 py-3 font-black">
                         {isGiocata ? (
                           <span className={isVinta ? "text-success" : "text-destructive"}>
                             {isVinta ? "🏆 Vinta" : "❌ Persa"}
                           </span>
                         ) : "—"}
                       </td>
-                      <td className={`px-4 py-3 text-right font-black ${isGiocata ? (isVinta ? "text-success" : "text-destructive") : ""}`}>
+                      <td data-label="Variazione" className={`px-4 py-3 text-right font-black ${isGiocata ? (isVinta ? "text-success" : "text-destructive") : ""}`}>
                         {isGiocata ? (isVinta ? `+${play.puntata}` : `-${play.puntata}`) : "—"}
                       </td>
                     </tr>
