@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AnimatedEmoji } from "@/components/ui/avatar";
 import { WheelSliceText } from "@/components/WheelSliceText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1242,183 +1242,14 @@ function MarketplacePage() {
           )}
         </div>
 
-        {/* TEAM DASHBOARD METRICS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-          {/* BONUS DISPONIBILI */}
-          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
-            <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2 border-b border-border/20 pb-2">
-              <Sparkles className="size-4 text-emerald-400" /> 🎁 Bonus Acquistati
-            </h3>
-            {myBonuses.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic text-center py-4">Nessun bonus attivo.</p>
-            ) : (
-              <ul className="space-y-2">
-                {myBonuses.map((b) => {
-                  const details = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id);
-                  const isClassifica = b.item_id === "bonus_classifica";
-                  const isUsed = b.stato === "used";
-                  const itemCost = b.costo ?? b.costo_token ?? details?.costo ?? 0;
-
-                  return (
-                    <li key={b.id} className="flex flex-col gap-2 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800 text-xs">
-                      <div className="flex justify-between items-start gap-2 min-w-0">
-                        <span className="font-extrabold text-foreground min-w-0 break-words">{details?.nome || b.item_id}</span>
-                        <span className="text-[10px] text-emerald-400 font-bold shrink-0">-{itemCost} 🪙</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-zinc-500">
-                        <span>Stato: <strong className="text-zinc-300">{isUsed ? "Utilizzato" : b.stato === "blocked" ? "Bloccato" : "Attivo"}</strong></span>
-                        <span>{new Date(b.timestamp || b.data_acquisto).toLocaleDateString("it-IT")}</span>
-                      </div>
-                      {isClassifica && (
-                        <div className="flex justify-end pt-1.5 border-t border-border/5">
-                          {isUsed ? (
-                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider italic">
-                              Visualizzata 👁️
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleViewLeaderboard(b.id)}
-                              disabled={consumingId === b.id}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-black uppercase tracking-wider text-[9px] transition-all flex items-center gap-1 border border-emerald-500/20 active:scale-[0.97] cursor-pointer"
-                            >
-                              {consumingId === b.id ? (
-                                <Loader2 className="size-3 animate-spin" />
-                              ) : (
-                                <Eye className="size-3" />
-                              )}
-                              Vedi classifica live
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {/* MALUS INVIATI */}
-          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
-            <h3 className="text-sm font-black uppercase tracking-wider text-rose-400 flex items-center gap-2 border-b border-border/20 pb-2">
-              <Zap className="size-4 text-rose-400" /> ⚔️ Malus Inviati
-            </h3>
-            {mySentMaluses.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic text-center py-4">Nessun malus inviato.</p>
-            ) : (
-              <ul className="space-y-2">
-                {mySentMaluses.map((m) => {
-                  const details = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
-                  const target = teams.find((t) => t.id === m.target_team_id);
-                  const itemCost = m.costo ?? m.costo_token ?? details?.costo ?? 0;
-                  return (
-                    <li key={m.id} className="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800 text-xs space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-foreground">{details?.nome || m.item_id}</span>
-                        <span className="text-[10px] text-rose-500 font-bold">-{itemCost} 🪙</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-zinc-500">
-                        <span>Colpita: <strong className="text-rose-400/90">{target?.nome_squadra || "Sconosciuta"}</strong></span>
-                        <span>{new Date(m.timestamp || m.data_acquisto).toLocaleDateString("it-IT")}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {/* MALUS RICEVUTI */}
-          <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
-            <h3 className="text-sm font-black uppercase tracking-wider text-amber-500 flex items-center gap-2 border-b border-border/20 pb-2">
-              <AlertTriangle className="size-4 text-amber-500" /> ⚠️ Malus Ricevuti
-            </h3>
-            {myReceivedMaluses.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic text-center py-4">Nessun malus ricevuto. Siete al sicuro!</p>
-            ) : (
-              <ul className="space-y-2">
-                {myReceivedMaluses.map((m) => {
-                  const details = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
-                  const buyer = teams.find((t) => t.id === (m.buyer_team_id || m.team_id));
-                  const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
-                  return (
-                    <li key={m.id} className="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800 text-xs space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-foreground">{details?.nome || m.item_id}</span>
-                        <span className={`text-[10px] font-bold ${isBlocked ? "text-emerald-400" : "text-amber-500"}`}>
-                          {isBlocked ? "🛡️ Bloccato da Scudo" : "Ricevuto"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-zinc-500">
-                        <span>Mandato da: <strong className="text-amber-400">{buyer?.nome_squadra || "Anonimo"}</strong></span>
-                        <span>{new Date(m.timestamp || m.data_acquisto).toLocaleDateString("it-IT")}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        {/* TRANSACTIONS HISTORY LOG */}
-        <div className="surface p-5 space-y-4 border border-zinc-800 bg-zinc-950/20 rounded-2xl min-w-0">
-          <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 border-b border-border/20 pb-2">
-            <History className="size-4 text-orange-500" /> Storico Completo Acquisti Gara
-          </h2>
-          {myPurchases.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic text-center py-4">Nessuna transazione effettuata.</p>
-          ) : (
-            <div className="divide-y divide-border/10">
-              {myPurchases.map((t) => {
-                const isReward = t.item_id === "reward_stage" || (t.costo ?? t.costo_token ?? 0) < 0;
-                const details = isReward ? {
-                  nome: `🏁 RICOMPENSA TAPPA ${t.outcome?.stage_index ?? ""}`,
-                  categoria: "RICOMPENSA"
-                } : MARKETPLACE_ITEMS.find((i) => i.id === t.item_id);
-                const target = teams.find((tm) => tm.id === t.target_team_id);
-                const itemCost = t.costo ?? t.costo_token ?? (isReward ? 0 : (details as any)?.costo ?? 0);
-
-                return (
-                  <div key={t.id} className="flex justify-between items-start py-3 text-xs gap-2 min-w-0">
-                    <div className="space-y-0.5 min-w-0">
-                      <p className="font-extrabold text-foreground flex flex-wrap items-center gap-1.5 min-w-0">
-                        <span className="min-w-0 break-words">{details?.nome || t.item_id}</span>
-                        <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-black shrink-0 ${
-                          isReward 
-                            ? "bg-yellow-500/10 text-yellow-400"
-                            : details?.categoria === "BONUS"
-                            ? "bg-emerald-500/10 text-emerald-400"
-                            : "bg-red-500/10 text-red-400"
-                        }`}>
-                          {details?.categoria || "N/A"}
-                        </span>
-                      </p>
-                      <p className="text-[10px] text-zinc-500">
-                        {new Date(t.timestamp || t.data_acquisto).toLocaleString("it-IT")}
-                        {target && (
-                          <span> · Bersaglio: <strong className="text-zinc-400">{target.nome_squadra}</strong></span>
-                        )}
-                        {isReward && t.outcome && (
-                          <span> · Posizione: <strong className="text-zinc-400">{t.outcome.position}ª</strong></span>
-                        )}
-                      </p>
-                    </div>
-                    {isReward ? (
-                      <span className="font-black text-emerald-400 flex items-center gap-0.5 shrink-0">
-                        +{Math.abs(itemCost)} 🪙
-                      </span>
-                    ) : (
-                      <span className="font-black text-red-500 flex items-center gap-0.5 shrink-0">
-                        -{Math.abs(itemCost)} 🪙
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* Acquisti spostati in una voce della sidebar */}
+        <Link
+          to="/acquisti"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-secondary/40 px-4 py-3 text-xs font-black uppercase tracking-wider text-foreground transition-colors hover:bg-secondary/60"
+        >
+          <span className="flex items-center gap-2"><History className="size-4 text-orange-500" /> I miei acquisti, malus e storico</span>
+          <ChevronRight className="size-4 text-muted-foreground" />
+        </Link>
       </div>
 
       {/* TARGET TEAM SELECTION MODAL (HeroUI Drawer / Bottom Sheet Style) */}

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAcquistiRouteImport } from './routes/_authenticated/acquisti'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedClassificaRouteImport } from './routes/_authenticated/classifica'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -56,6 +57,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAcquistiRoute = AuthenticatedAcquistiRouteImport.update({
+  id: '/acquisti',
+  path: '/acquisti',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
@@ -231,6 +237,7 @@ const AuthenticatedStageStageIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/acquisti': typeof AuthenticatedAcquistiRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/classifica': typeof AuthenticatedClassificaRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/acquisti': typeof AuthenticatedAcquistiRoute
   '/classifica': typeof AuthenticatedClassificaRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/acquisti': typeof AuthenticatedAcquistiRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/classifica': typeof AuthenticatedClassificaRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -336,6 +345,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/acquisti'
     | '/admin'
     | '/classifica'
     | '/dashboard'
@@ -370,6 +380,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/acquisti'
     | '/classifica'
     | '/dashboard'
     | '/leaderboard'
@@ -404,6 +415,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/acquisti'
     | '/_authenticated/admin'
     | '/_authenticated/classifica'
     | '/_authenticated/dashboard'
@@ -464,6 +476,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/acquisti': {
+      id: '/_authenticated/acquisti'
+      path: '/acquisti'
+      fullPath: '/acquisti'
+      preLoaderRoute: typeof AuthenticatedAcquistiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
@@ -728,6 +747,7 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAcquistiRoute: typeof AuthenticatedAcquistiRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedClassificaRoute: typeof AuthenticatedClassificaRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -741,6 +761,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAcquistiRoute: AuthenticatedAcquistiRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedClassificaRoute: AuthenticatedClassificaRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,

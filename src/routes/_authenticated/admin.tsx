@@ -54,7 +54,7 @@ function AdminLayout() {
   // Fetch all marketplace transactions
   const marketplaceTransactions = useQuery({
     queryKey: ["admin-marketplace-transactions"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("marketplace_transactions")
@@ -71,7 +71,7 @@ function AdminLayout() {
   // Fetch game settings
   const gameSettings = useQuery({
     queryKey: ["game-settings"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("game_settings")
@@ -88,7 +88,7 @@ function AdminLayout() {
   // Fetch all teams with password details
   const allTeams = useQuery({
     queryKey: ["admin-teams-list"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("teams")
@@ -105,7 +105,7 @@ function AdminLayout() {
   // Fetch all submissions
   const allSubmissions = useQuery({
     queryKey: ["admin-submissions-all"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("submissions")
@@ -135,7 +135,7 @@ function AdminLayout() {
   // Fetch team progress rows for detailed view
   const allProgress = useQuery({
     queryKey: ["admin-progress-all"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("team_progress")
@@ -152,7 +152,7 @@ function AdminLayout() {
   const allCattiveria = useQuery({
     queryKey: ["admin-cattiveria-all"],
     staleTime: 0,
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("cattiveria_ledger")
@@ -170,7 +170,7 @@ function AdminLayout() {
   const allScores = useQuery({
     queryKey: ["admin-scores-all"],
     staleTime: 0,
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("scores")
@@ -189,7 +189,7 @@ function AdminLayout() {
     queryKey: ["admin-bank-state", selectedTeamId],
     enabled: Boolean(selectedTeamId),
     staleTime: 0,
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_bank_state", {
         p_team_id: selectedTeamId,
@@ -210,7 +210,7 @@ function AdminLayout() {
   const allSocialSubmissions = useQuery({
     queryKey: ["admin-social-submissions-all"],
     staleTime: 0,
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("team_social_submissions")
@@ -227,7 +227,7 @@ function AdminLayout() {
   const secretCodeDashboard = useQuery({
     queryKey: ["admin-secret-code-dashboard"],
     staleTime: 0,
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_get_secret_code_dashboard");
       if (error) throw new Error(error.message);
@@ -292,7 +292,7 @@ function AdminLayout() {
   // Fetch settings
   const settings = useQuery({
     queryKey: ["admin-settings"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("settings")
@@ -308,7 +308,7 @@ function AdminLayout() {
   // Fetch all emoji movies answers
   const allEmojiMovies = useQuery({
     queryKey: ["admin-emoji-movies-all"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("team_emoji_movies")
@@ -337,7 +337,7 @@ function AdminLayout() {
   // Fetch all team posters
   const allTeamPosters = useQuery({
     queryKey: ["admin-team-posters-all"],
-    refetchInterval: 3000,
+    refetchInterval: 6000,
     queryFn: async () => {
       const { data, error } = await supabase.from("team_posters").select("*");
       if (error) {

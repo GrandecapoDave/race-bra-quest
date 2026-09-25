@@ -43,3 +43,4 @@ public/uploads/
 
 # backup del database di produzione (dati reali, non committare)
 backups/prod_pre_game*.sql
+backups/prod_*.json

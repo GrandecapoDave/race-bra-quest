@@ -114,7 +114,7 @@ function AdminLiveLeaderboardPage() {
           <span className="leading-tight">
             <span className="block text-[11px] font-black uppercase tracking-wider text-foreground">😈 Con punti cattiveria</span>
             <span className="block text-[10px] text-muted-foreground">
-              {withMalus ? "Prove + modificatori + cattiveria" : "Come la vedono le squadre"}
+              {withMalus ? "Acceso: prove + modificatori + cattiveria" : "Spento: senza cattiveria (come nella classifica delle squadre)"}
             </span>
           </span>
         </button>

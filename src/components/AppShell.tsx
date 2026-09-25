@@ -30,6 +30,7 @@ import {
   HelpCircle,
   ShieldAlert,
   FileText,
+  Receipt,
 } from "lucide-react";
 import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
@@ -660,6 +661,7 @@ function AppShellInner({
   const summaryItems = [
     { to: "/tappe", label: "Tappe", icon: Map },
     { to: "/storico", label: "Storico", icon: History },
+    { to: "/acquisti", label: "I miei acquisti", icon: Receipt },
   ];
 
   const mobileNavItems = isAdmin
