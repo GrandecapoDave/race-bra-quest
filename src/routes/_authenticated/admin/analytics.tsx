@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAdminContext } from "../admin";
 import { Printer } from "lucide-react";
+import { challengeMaxPoints } from "@/lib/race";
 import {
   ResponsiveContainer,
   BarChart,
@@ -32,7 +33,9 @@ function AdminAnalyticsPage() {
   const totalStages = stagesList.length;
   const totalChallenges = challengesList.length;
   const activeTeams = teamsList.filter((t: any) => t.active !== false).length;
-  const totalPoints = challengesList.reduce((sum: number, c: any) => sum + (c.points ?? c.punteggio_massimo ?? 0), 0);
+  // Punti realmente ottenibili per prova (passaggi + completamento), come li vedono le squadre
+  const maxPts = (c: any) => challengeMaxPoints({ type: c.type ?? c.tipo_sfida ?? "", points: c.points ?? c.punteggio_massimo ?? 0 });
+  const totalPoints = challengesList.reduce((sum: number, c: any) => sum + maxPts(c), 0);
 
   // Avg points per team (from allScores)
   const teamIds = [...new Set(scoresList.map((s: any) => s.team_id))] as string[];
@@ -55,7 +58,7 @@ function AdminAnalyticsPage() {
   // ── 2. STAGE BREAKDOWN ────────────────────────────────────────────────────
   const stageBreakdown = stagesList.map((st: any) => {
     const stChallenges = challengesList.filter((c: any) => c.stage_id === st.id);
-    const pts = stChallenges.reduce((sum: number, c: any) => sum + (c.points ?? c.punteggio_massimo ?? 0), 0);
+    const pts = stChallenges.reduce((sum: number, c: any) => sum + maxPts(c), 0);
     const percentage = totalPoints > 0 ? ((pts / totalPoints) * 100).toFixed(2) : "0.00";
     const stageName = st.title ?? st.nome_tappa ?? `Tappa ${st.order_index ?? st.numero_tappa ?? st.ordine}`;
     return {
@@ -77,7 +80,7 @@ function AdminAnalyticsPage() {
 
   challengesList.forEach((c: any) => {
     const type = c.type ?? c.tipo_sfida ?? "";
-    const pts = c.points ?? c.punteggio_massimo ?? 0;
+    const pts = maxPts(c);
     let categorized = false;
     Object.entries(categories).forEach(([catName, catObj]) => {
       if (catObj.types.includes(type) || (catName === "Prove Abilità" && type.includes("enigma"))) {
@@ -135,7 +138,7 @@ function AdminAnalyticsPage() {
       titolo: c.title ?? c.titolo ?? "—",
       stageName,
       tipo: c.type ?? c.tipo_sfida ?? "—",
-      maxPoints: c.points ?? c.punteggio_massimo ?? 0,
+      maxPoints: maxPts(c),
       completions,
       pct,
       totalAssigned,

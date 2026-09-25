@@ -6,10 +6,10 @@ import { triggerHaptic } from "@/lib/haptics";
 import { scoreEventsQuery, myTeamQuery } from "@/lib/race";
 
 export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean | undefined }) {
-  // Only regular player teams should see notifications about admin actions on their team
-  if (isAdmin) return null;
-
-  const team = useQuery(myTeamQuery);
+  // Solo le squadre vedono gli avvisi sulle azioni della Regia. Gli hook vengono sempre chiamati nello stesso ordine
+  // (isAdmin puo' passare da undefined a true durante il caricamento): i dati non si caricano per la Regia e la
+  // funzione esce senza mostrare nulla piu' sotto, dopo tutti gli hook.
+  const team = useQuery({ ...myTeamQuery, enabled: !isAdmin });
   const teamId = team.data?.id;
 
   const scoreEvents = useQuery({
@@ -115,6 +115,8 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean | undefined 
     }
     return [];
   });
+
+  if (isAdmin) return null;
 
   // Combine unread score adjustments and token adjustments (strictly manual Admin/Regia adjustments)
   const pendingScoreDecisions = (scoreEvents.data || [])

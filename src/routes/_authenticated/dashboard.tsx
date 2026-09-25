@@ -384,12 +384,76 @@ function Dashboard() {
     })
     .filter(Boolean) as Array<{ stage: any; tx: any }>;
 
+  const bonusRowCount = [active2x, activePolizza, activeShield, activePartenza, activeClassifica, activePassaparola, pendingPassaparola, answeredPassaparola].filter(Boolean).length;
+
   return (
     <AppShell isAdmin={isAdmin.data} wide>
       <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto lg:max-w-none lg:grid lg:grid-cols-12 lg:gap-6 lg:space-y-0 lg:items-start">
         
         {/* AVVISI: compatti, chiudibili con la X */}
         <div className="lg:col-span-12 space-y-2.5 empty:hidden [&>div]:!p-3 [&>div]:!rounded-xl [&>div]:!gap-2.5 [&_button]:!px-2.5 [&_button]:!py-1.5 [&_button]:!text-[11px] [&_button]:!leading-none">
+        {/* STATI CHE COLPISCONO ORA (priorita' massima): Mercato bloccato e Dimezza punti */}
+        {/* 7. MARKETPLACE BLACKOUT NOTIFICATION */}
+        {isMarketplaceFrozen && (
+          <div className="bg-gradient-to-r from-zinc-800/40 to-stone-900/60 border border-zinc-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-black/40 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-zinc-800 border border-zinc-600 flex items-center justify-center text-zinc-300 shrink-0">
+                <Lock className="size-5 text-zinc-300" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🔒 BLACKOUT MERCATO IN CORSO</span>
+                  {blackoutTx?.buyer_team_id && (
+                    <span className="text-zinc-400 font-normal text-[11px]">
+                      (da <strong>{(allTeams.find((t: any) => t.id === blackoutTx.buyer_team_id)?.nome_squadra || "un avversario")}</strong>)
+                    </span>
+                  )}
+                </h4>
+                <p className="text-[11px] text-zinc-400">L'accesso al Marketplace è momentaneamente congelato a causa di un malus avversario.</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700 shrink-0">
+              Bloccato
+            </span>
+          </div>
+        )}
+
+        {/* 6. RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
+        {activeDimezza && (
+          <div className="bg-gradient-to-r from-rose-950/40 via-red-900/30 to-zinc-950/80 border border-rose-500/50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-red-950/30 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                <AlertTriangle className="size-5 text-rose-400 animate-bounce" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⚠️ MALUS DIMEZZA PUNTI TAPPA</span>
+                  {(activeDimezza.buyer_team_id || activeDimezza.team_id) && (
+                    <span className="text-zinc-400 font-normal">
+                      da <strong>{(allTeams.find((t: any) => t.id === (activeDimezza.buyer_team_id || activeDimezza.team_id))?.nome_squadra || activeDimezza.dettagli?.attacker_name || "un avversario")}</strong>
+                    </span>
+                  )}
+                </h4>
+                <p className="text-[11px] text-zinc-300">
+                  Attenzione: la <strong>TAPPA {activeDimezza.dettagli?.stage_number || (stages.data as any[])?.find((s: any) => s.id === activeDimezza.stage_id)?.numero_tappa || (stages.data as any[])?.find((s: any) => s.id === activeDimezza.stage_id)?.order_index || ""}</strong> è stata presa di mira! Riceverete il <strong>50% del punteggio complessivo</strong> al suo completamento.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                In Attesa
+              </span>
+              <button
+                onClick={() => handleDismissNotification(activeDimezza.id)}
+                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 text-rose-200 transition-all shrink-0 cursor-pointer"
+                title="Chiudi notifica"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* PUBLISHED FINAL RECAP CARD */}
         {isRaceCompleted && isReportPublished && (
           <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-amber-500/40 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-xl shadow-amber-950/30 animate-in slide-in-from-top-4 duration-300">
@@ -587,42 +651,6 @@ function Dashboard() {
           );
         })}
 
-        {/* 6. RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
-        {activeDimezza && (
-          <div className="bg-gradient-to-r from-rose-950/40 via-red-900/30 to-zinc-950/80 border border-rose-500/50 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-red-950/30 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
-                <AlertTriangle className="size-5 text-rose-400 animate-bounce" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>⚠️ MALUS DIMEZZA PUNTI TAPPA</span>
-                  {(activeDimezza.buyer_team_id || activeDimezza.team_id) && (
-                    <span className="text-zinc-400 font-normal">
-                      da <strong>{(allTeams.find((t: any) => t.id === (activeDimezza.buyer_team_id || activeDimezza.team_id))?.nome_squadra || activeDimezza.dettagli?.attacker_name || "un avversario")}</strong>
-                    </span>
-                  )}
-                </h4>
-                <p className="text-[11px] text-zinc-300">
-                  Attenzione: la <strong>TAPPA {activeDimezza.dettagli?.stage_number || (stages.data as any[])?.find((s: any) => s.id === activeDimezza.stage_id)?.numero_tappa || (stages.data as any[])?.find((s: any) => s.id === activeDimezza.stage_id)?.order_index || ""}</strong> è stata presa di mira! Riceverete il <strong>50% del punteggio complessivo</strong> al suo completamento.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                In Attesa
-              </span>
-              <button
-                onClick={() => handleDismissNotification(activeDimezza.id)}
-                className="text-xs font-black hover:text-white px-2.5 py-1.5 rounded-lg bg-rose-900/40 border border-rose-500/30 hover:bg-rose-800/50 text-rose-200 transition-all shrink-0 cursor-pointer"
-                title="Chiudi notifica"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* 6.B USED DIMEZZA PUNTI TAPPA CARDS */}
         {usedDimezzaList.map((tx: any) => {
           const sNum = tx.dettagli?.stage_number || (stages.data as any[])?.find((s: any) => s.id === tx.stage_id)?.numero_tappa || (stages.data as any[])?.find((s: any) => s.id === tx.stage_id)?.order_index || "Tappa";
@@ -661,31 +689,6 @@ function Dashboard() {
             </div>
           );
         })}
-
-        {/* 7. MARKETPLACE BLACKOUT NOTIFICATION */}
-        {isMarketplaceFrozen && (
-          <div className="bg-gradient-to-r from-zinc-800/40 to-stone-900/60 border border-zinc-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-black/40 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-zinc-800 border border-zinc-600 flex items-center justify-center text-zinc-300 shrink-0">
-                <Lock className="size-5 text-zinc-300" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>🔒 BLACKOUT MERCATO IN CORSO</span>
-                  {blackoutTx?.buyer_team_id && (
-                    <span className="text-zinc-400 font-normal text-[11px]">
-                      (da <strong>{(allTeams.find((t: any) => t.id === blackoutTx.buyer_team_id)?.nome_squadra || "un avversario")}</strong>)
-                    </span>
-                  )}
-                </h4>
-                <p className="text-[11px] text-zinc-400">L'accesso al Marketplace è momentaneamente congelato a causa di un malus avversario.</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700 shrink-0">
-              Bloccato
-            </span>
-          </div>
-        )}
 
         {/* 8. USED BONUS / MALUS COMPLETED SUMMARIES (DISMISSABLE) */}
         {used2xList.map((u2x) => {
@@ -837,70 +840,6 @@ function Dashboard() {
             borderColor: team.data?.color ? `${team.data.color}66` : undefined,
           }}
         >
-          {/* BADGES CONTAINER (HeroUI Chip variant="dot" style) */}
-          {(activeEnigma || solvedEnigma || activeRuota || solvedRuota || isTeamFrozen || isMarketplaceFrozen || activePassaparola || pendingPassaparola || activePartenza || usedPartenza || activeDimezza) && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-2.5 sm:absolute sm:top-5 sm:right-5 sm:mb-0 sm:flex-col sm:items-end z-10">
-              {activeDimezza && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/60 border border-red-500/40 text-red-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-red-400 animate-ping" />
-                  <AlertTriangle className="size-3 text-red-300 stroke-[3]" />
-                  <span>Dimezza Punti</span>
-                </div>
-              )}
-              {isMarketplaceFrozen && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-950/80 border border-zinc-500/40 text-zinc-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-zinc-400 animate-ping" />
-                  <Lock className="size-3 text-zinc-300 stroke-[3]" />
-                  <span>Mercato Bloccato</span>
-                </div>
-              )}
-              {activeEnigma && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-purple-400 animate-ping" />
-                  <span>🧩 Enigma Extra</span>
-                </div>
-              )}
-              {activeRuota && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-amber-400 animate-ping" />
-                  <span>🎡 Ruota Sfortunata</span>
-                </div>
-              )}
-              {isTeamFrozen && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
-                  <span>❄️ Congelato</span>
-                </div>
-              )}
-              {activePassaparola && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-950/60 border border-orange-500/40 text-orange-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-orange-400 animate-ping" />
-                  <PhoneCall className="size-3 stroke-[3]" />
-                  <span>Passaparola Disp.</span>
-                </div>
-              )}
-              {activePartenza && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-amber-400 animate-ping" />
-                  <Zap className="size-3 text-amber-300 stroke-[3]" />
-                  <span>Partenza -2m</span>
-                </div>
-              )}
-              {usedPartenza && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-600/40 text-zinc-400 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <Check className="size-3 text-zinc-400 stroke-[3]" />
-                  <span>Partenza Usata</span>
-                </div>
-              )}
-              {activeClassifica && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>👁️ Classifica</span>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* TEAM PROFILE ROW (HeroUI Avatar & Typography with Luxury Frame) */}
           <div className="flex items-center gap-4 sm:gap-5 min-w-0">
             <div
@@ -1107,119 +1046,121 @@ function Dashboard() {
             )}
           </section>
 
-          {/* I TUOI BONUS ATTIVI: effetti in corso (2X, Polizza, Scudo) e Passaparola */}
-          {(active2x || activePolizza || activeShield || activePassaparola || pendingPassaparola || answeredPassaparola) && (
+          {/* I TUOI BONUS ATTIVI: un pannello, una riga per bonus (effetti in corso e Passaparola) */}
+          {bonusRowCount > 0 && (
             <section className="space-y-2.5" aria-label="I tuoi bonus attivi">
               <div className="flex items-center justify-between pl-1">
                 <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">✨ I tuoi bonus attivi</h2>
                 <span className="min-w-6 rounded-full border border-border/50 bg-secondary/70 px-2 py-0.5 text-center text-[11px] font-black text-foreground">
-                  {[active2x, activePolizza, activeShield, activePassaparola || pendingPassaparola || answeredPassaparola].filter(Boolean).length}
+                  {bonusRowCount}
                 </span>
               </div>
-              <div className="space-y-2">
-              {active2x && (
-                <CollapsibleEffectBanner
-                  storageKey={`effect-collapsed:${active2x.id}`}
-                  tone="amber"
-                  icon={<Zap className="size-5 animate-pulse" />}
-                  title="✨ MOLTIPLICATORE 2X ATTIVO"
-                  description="I punti della prova scelta sono raddoppiati (x2)!"
-                  badge="Attivo"
-                />
-              )}
-
-              {activePolizza && (
-                <CollapsibleEffectBanner
-                  storageKey={`effect-collapsed:${activePolizza.id}`}
-                  tone="emerald"
-                  icon={<Shield className="size-5" />}
-                  title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
-                  description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
-                  badge="Pronta"
-                />
-              )}
-
-              {activeShield && (
-                <CollapsibleEffectBanner
-                  storageKey={`effect-collapsed:${activeShield.id}`}
-                  tone="blue"
-                  icon={<Shield className="size-5 animate-pulse" />}
-                  title="🛡️ SCUDO PROTETTIVO ATTIVO"
-                  description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
-                  badge="Protetto"
-                />
-              )}
-
-              {activePassaparola && (
-                <div className="hud-panel p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
-                  <div className="flex items-center gap-3">
-                    <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
-                      <PhoneCall className="size-5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
-                        📞 Bonus Passaparola Disponibile
-                      </h4>
-                      <p className="text-[11px] text-muted-foreground">
-                        Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setUsePassaparolaTx(activePassaparola)}
-                    className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
-                  >
-                    <PhoneCall className="size-4" />
-                    <span>Fai la Domanda</span>
-                  </button>
-                </div>
-              )}
-
-              {pendingPassaparola && (
-                <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                      <Clock className="size-3.5" />
-                      Passaparola: In attesa di risposta dalla Regia
-                    </span>
-                    <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
-                  </div>
-                  <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
-                    "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
-                  </div>
-                </div>
-              )}
-
-              {answeredPassaparola && (
-                <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                      <PhoneCall className="size-3.5 text-emerald-400" />
-                      Risposta Regia Passaparola
-                    </span>
-                    <span className="flex items-center gap-2">
-                    <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
-                      /^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim())
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                        : "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                    }`}>
-                      Risposta: {/^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim()) ? "✅ SÌ" : "❌ NO"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDismissNotification(answeredPassaparola.id)}
-                      aria-label="Chiudi la risposta"
-                      className="size-7 rounded-full grid place-items-center text-emerald-300 bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 cursor-pointer text-xs font-black"
-                    >
-                      ✕
-                    </button>
-                    </span>
-                  </div>
-                  <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
-                    "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
-                  </div>
-                </div>
-              )}
+              <div className="hud-panel divide-y divide-white/[0.06] overflow-hidden">
+                {active2x && (
+                  <BonusRow
+                    storageKey={`bonus-open:${active2x.id}`}
+                    tone="amber"
+                    icon={<Zap className="size-4.5" />}
+                    title="Moltiplicatore 2X"
+                    description={
+                      active2x.dettagli?.challenge_title || active2x.outcome?.challenge_title
+                        ? `Raddoppia i punti della prova «${active2x.dettagli?.challenge_title || active2x.outcome?.challenge_title}».`
+                        : "I punti della prova scelta sono raddoppiati (x2)."
+                    }
+                    badge="Attivo"
+                  />
+                )}
+                {activePolizza && (
+                  <BonusRow
+                    storageKey={`bonus-open:${activePolizza.id}`}
+                    tone="emerald"
+                    icon={<Shield className="size-4.5" />}
+                    title="Polizza rimborso 50%"
+                    description="Ti rimborsa il 50% dei punti persi con il prossimo malus subito."
+                    badge="Pronta"
+                  />
+                )}
+                {activeShield && (
+                  <BonusRow
+                    storageKey={`bonus-open:${activeShield.id}`}
+                    tone="blue"
+                    icon={<Shield className="size-4.5" />}
+                    title="Scudo protettivo"
+                    description="La squadra è immune al prossimo malus avversario."
+                    badge="Protetto"
+                  />
+                )}
+                {activePartenza && (
+                  <BonusRow
+                    storageKey={`bonus-open:${activePartenza.id}`}
+                    tone="orange"
+                    icon={<Timer className="size-4.5" />}
+                    title="Partenza anticipata"
+                    description="Il tuo tempo ufficiale parte 2 minuti prima: avvisa la Regia quando vuoi usarla."
+                    badge="−2 min"
+                  />
+                )}
+                {activeClassifica && (
+                  <BonusRow
+                    storageKey={`bonus-open:${activeClassifica.id}`}
+                    tone="cyan"
+                    icon={<Trophy className="size-4.5" />}
+                    title="Bonus Classifica"
+                    description="Puoi guardare la classifica una volta sola: usala quando ti serve."
+                    badge="Disponibile"
+                    action={
+                      <Link
+                        to="/classifica"
+                        className="inline-flex h-9 items-center justify-center rounded-xl bg-cyan-500/15 px-4 text-[11px] font-black uppercase tracking-wider text-cyan-300 border border-cyan-500/30 active:scale-95 transition-transform"
+                      >
+                        Apri la classifica
+                      </Link>
+                    }
+                  />
+                )}
+                {activePassaparola && (
+                  <BonusRow
+                    tone="orange"
+                    icon={<PhoneCall className="size-4.5" />}
+                    title="Passaparola"
+                    description="Invia una domanda alla Regia: riceverai un SÌ o un NO."
+                    badge="Disponibile"
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => setUsePassaparolaTx(activePassaparola)}
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl primary-gradient px-4 text-[11px] font-black uppercase tracking-wider text-white shadow-md active:scale-95 transition-transform cursor-pointer"
+                      >
+                        <PhoneCall className="size-3.5" /> Fai la domanda
+                      </button>
+                    }
+                  />
+                )}
+                {pendingPassaparola && (
+                  <BonusRow
+                    tone="orange"
+                    icon={<Clock className="size-4.5" />}
+                    title="Passaparola inviato"
+                    description={`"${pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"`}
+                    badge="In attesa"
+                    pulse
+                  />
+                )}
+                {answeredPassaparola && (() => {
+                  const raw = answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text;
+                  const yes = /^s[iìí]$/i.test(String(raw ?? "").trim());
+                  return (
+                    <BonusRow
+                      tone={yes ? "emerald" : "rose"}
+                      icon={<PhoneCall className="size-4.5" />}
+                      title={`Risposta della Regia: ${yes ? "✅ SÌ" : "❌ NO"}`}
+                      description={`"${answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"`}
+                      badge={yes ? "SÌ" : "NO"}
+                      onClose={() => handleDismissNotification(answeredPassaparola.id)}
+                      alwaysOpen
+                    />
+                  );
+                })()}
               </div>
             </section>
           )}
@@ -1343,67 +1284,81 @@ function Dashboard() {
   );
 }
 
-const EFFECT_TONES = {
-  amber: { card: "from-amber-500/15 to-yellow-500/10 border-amber-500/40 shadow-amber-950/20", icon: "bg-amber-500/20 border-amber-500/40 text-amber-400", title: "text-amber-400", badge: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
-  emerald: { card: "from-emerald-500/15 to-teal-500/10 border-emerald-500/40 shadow-emerald-950/20", icon: "bg-emerald-500/20 border-emerald-500/40 text-emerald-400", title: "text-emerald-400", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
-  blue: { card: "from-blue-500/15 to-cyan-500/10 border-blue-500/40 shadow-blue-950/20", icon: "bg-blue-500/20 border-blue-500/40 text-blue-400", title: "text-blue-400", badge: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
+const BONUS_TONES = {
+  amber: { tile: "bg-amber-500/15 border-amber-500/40 text-amber-400", title: "text-amber-300", badge: "bg-amber-500/15 text-amber-300 border-amber-500/30" },
+  emerald: { tile: "bg-emerald-500/15 border-emerald-500/40 text-emerald-400", title: "text-emerald-300", badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
+  blue: { tile: "bg-blue-500/15 border-blue-500/40 text-blue-400", title: "text-blue-300", badge: "bg-blue-500/15 text-blue-300 border-blue-500/30" },
+  orange: { tile: "bg-orange-500/15 border-orange-500/40 text-orange-400", title: "text-orange-300", badge: "bg-orange-500/15 text-orange-300 border-orange-500/30" },
+  cyan: { tile: "bg-cyan-500/15 border-cyan-500/40 text-cyan-400", title: "text-cyan-300", badge: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30" },
+  rose: { tile: "bg-rose-500/15 border-rose-500/40 text-rose-400", title: "text-rose-300", badge: "bg-rose-500/15 text-rose-300 border-rose-500/30" },
 } as const;
 
-/** Card di un effetto attivo: il chevron la riduce a icona + titolo. Lo stato e' ricordato per acquisto. */
-function CollapsibleEffectBanner({
-  storageKey, tone, icon, title, description, badge,
+/**
+ * Una riga del pannello "I tuoi bonus attivi": icona, nome, stato e (toccando) la spiegazione.
+ * Se ha storageKey ricorda se e' aperta o chiusa su questo telefono.
+ */
+function BonusRow({
+  tone, icon, title, description, badge, action, storageKey, onClose, alwaysOpen, pulse,
 }: {
-  storageKey: string;
-  tone: keyof typeof EFFECT_TONES;
+  tone: keyof typeof BONUS_TONES;
   icon: React.ReactNode;
   title: string;
   description: string;
   badge: string;
+  action?: React.ReactNode;
+  storageKey?: string;
+  onClose?: () => void;
+  alwaysOpen?: boolean;
+  pulse?: boolean;
 }) {
-  const t = EFFECT_TONES[tone];
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(storageKey) === "1"; } catch { return false; }
+  const t = BONUS_TONES[tone];
+  const [open, setOpen] = useState(() => {
+    if (alwaysOpen || !storageKey) return true;
+    try { return localStorage.getItem(storageKey) !== "0"; } catch { return true; }
   });
   const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
+    if (alwaysOpen) return;
+    const next = !open;
+    setOpen(next);
+    if (storageKey) { try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ } }
   };
-  const chevron = (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={collapsed ? "Espandi" : "Riduci"}
-      aria-expanded={!collapsed}
-      className={`rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer ${collapsed ? "size-7 shrink-0" : "absolute top-1 right-1 size-5"}`}
-    >
-      <ChevronDown className={`transition-transform ${collapsed ? "size-4" : "size-3.5 rotate-180"}`} />
-    </button>
-  );
-
-  if (collapsed) {
-    return (
-      <div className={`bg-gradient-to-r ${t.card} border px-3 py-2 rounded-2xl flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-4 duration-300`}>
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`size-7 rounded-xl border flex items-center justify-center shrink-0 ${t.icon}`}>{icon}</div>
-          <h4 className={`text-xs font-black uppercase tracking-wider ${t.title}`}>{title}</h4>
-        </div>
-        {chevron}
-      </div>
-    );
-  }
-
+  const canToggle = !alwaysOpen;
   return (
-    <div className={`relative bg-gradient-to-r ${t.card} border p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-4 duration-300`}>
+    <div className="px-3.5 py-3 animate-in fade-in duration-300">
       <div className="flex items-center gap-3">
-        <div className={`size-9 rounded-xl border flex items-center justify-center shrink-0 ${t.icon}`}>{icon}</div>
-        <div>
-          <h4 className={`text-xs font-black uppercase tracking-wider ${t.title}`}>{title}</h4>
-          <p className="text-[11px] text-zinc-300">{description}</p>
-        </div>
+        <div className={`size-9 shrink-0 rounded-xl border grid place-items-center ${t.tile}`}>{icon}</div>
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={!canToggle}
+          aria-expanded={open}
+          className={`min-w-0 flex-1 text-left ${canToggle ? "cursor-pointer" : "cursor-default"}`}
+        >
+          <p className={`truncate text-[13px] font-black uppercase tracking-wide ${t.title}`}>{title}</p>
+          {!open && <p className="truncate text-[11px] text-zinc-500">Tocca per i dettagli</p>}
+        </button>
+        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${t.badge} ${pulse ? "animate-pulse" : ""}`}>{badge}</span>
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Chiudi"
+            className="size-7 shrink-0 rounded-full grid place-items-center text-xs font-black text-zinc-300 bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer"
+          >
+            ✕
+          </button>
+        ) : canToggle ? (
+          <button type="button" onClick={toggle} aria-label={open ? "Riduci" : "Espandi"} className="size-7 shrink-0 rounded-lg grid place-items-center text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer">
+            <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+        ) : null}
       </div>
-      <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border shrink-0 ${t.badge}`}>{badge}</span>
-      {chevron}
+      {open && (
+        <div className="mt-2 space-y-2.5 pl-12">
+          <p className="text-[12px] leading-snug text-zinc-300">{description}</p>
+          {action}
+        </div>
+      )}
     </div>
   );
 }
