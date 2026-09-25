@@ -240,7 +240,7 @@ function AppShellInner({
 
   // Query database state to determine if Marketplace is unlocked and active
   const team = useQuery({ ...myTeamQuery, enabled: !isAdmin, refetchInterval: 3000 });
-  const sidebarBoard = useQuery({ ...leaderboardQuery, enabled: !isAdmin, refetchInterval: 5000 });
+  const sidebarBoard = useQuery({ ...leaderboardQuery, enabled: !isAdmin, refetchInterval: 10000 });
   const sidebarPoints = sidebarBoard.data?.find((r: any) => r.team_id === team.data?.id)?.total_points ?? 0;
 
   // Notifiche di gioco (premi tappa, malus subiti) valide in tutte le pagine, una sola volta per evento

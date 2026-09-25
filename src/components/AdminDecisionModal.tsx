@@ -15,14 +15,14 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean | undefined 
   const scoreEvents = useQuery({
     ...scoreEventsQuery(teamId),
     enabled: Boolean(teamId),
-    refetchInterval: 2000,
+    refetchInterval: 5000,
     staleTime: 0,
   });
 
   const tokenTransactions = useQuery({
     queryKey: ["team-admin-token-adjustments", teamId],
     enabled: Boolean(teamId),
-    refetchInterval: 2000,
+    refetchInterval: 5000,
     staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,7 +40,7 @@ export function AdminDecisionModal({ isAdmin }: { isAdmin?: boolean | undefined 
   const activityLogs = useQuery({
     queryKey: ["team-admin-token-activity-log", teamId],
     enabled: Boolean(teamId),
-    refetchInterval: 2000,
+    refetchInterval: 5000,
     staleTime: 0,
     queryFn: async () => {
       const { data, error } = await supabase
