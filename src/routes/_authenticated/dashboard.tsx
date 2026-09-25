@@ -348,6 +348,10 @@ function Dashboard() {
         toast.error(`Errore: ${error.message || "Impossibile inviare la richiesta"}`);
         return;
       }
+      if (data && data.success === false) {
+        toast.error(data.error || "Richiesta non valida o già inoltrata.");
+        return;
+      }
       toast.success("Richiesta inviata con successo alla Regia! Attendi risposta.");
       setUsePassaparolaTx(null);
       setPassaparolaText("");
