@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flag, Sparkles, Timer, Trophy, ChevronRight, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock, ArrowDownCircle, Camera, X, FileText } from "lucide-react";
+import { Flag, Sparkles, Timer, Trophy, ChevronRight, ChevronDown, Check, Coins, Loader2, Shield, Zap, PhoneCall, Clock, AlertTriangle, Lock, ArrowDownCircle, Camera, X, FileText } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProgressBar } from "@/components/ProgressBar";
 import { CircularProgress } from "@/components/ui/circular-progress";
@@ -580,58 +580,38 @@ function Dashboard() {
           );
         })}
 
-        {/* 3. ACTIVE 2X MULTIPLIER NOTIFICATION */}
+        {/* 3-5. ACTIVE EFFECT BANNERS (2X, POLIZZA, SCUDO) - comprimibili */}
         {active2x && (
-          <div className="bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border border-amber-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-amber-950/20 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                <Zap className="size-5 animate-pulse" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider">✨ MOLTIPLICATORE 2X ATTIVO</h4>
-                <p className="text-[11px] text-zinc-300">I punti della prova scelta sono raddoppiati (x2)!</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-              Attivo
-            </span>
-          </div>
+          <CollapsibleEffectBanner
+            storageKey={`effect-collapsed:${active2x.id}`}
+            tone="amber"
+            icon={<Zap className="size-5 animate-pulse" />}
+            title="✨ MOLTIPLICATORE 2X ATTIVO"
+            description="I punti della prova scelta sono raddoppiati (x2)!"
+            badge="Attivo"
+          />
         )}
 
-        {/* 4. ACTIVE POLIZZA NOTIFICATION */}
         {activePolizza && (
-          <div className="bg-gradient-to-r from-emerald-500/15 to-teal-500/10 border border-emerald-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-emerald-950/20 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-                <Shield className="size-5 text-emerald-400" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider">🛡️ POLIZZA RIMBORSO 50% ATTIVA</h4>
-                <p className="text-[11px] text-zinc-300">Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito.</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-              Pronta
-            </span>
-          </div>
+          <CollapsibleEffectBanner
+            storageKey={`effect-collapsed:${activePolizza.id}`}
+            tone="emerald"
+            icon={<Shield className="size-5" />}
+            title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
+            description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
+            badge="Pronta"
+          />
         )}
 
-        {/* 5. ACTIVE SHIELD NOTIFICATION */}
         {activeShield && (
-          <div className="bg-gradient-to-r from-blue-500/15 to-cyan-500/10 border border-blue-500/40 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-blue-950/20 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0">
-                <Shield className="size-5 text-blue-400 animate-pulse" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider">🛡️ SCUDO PROTETTIVO ATTIVO</h4>
-                <p className="text-[11px] text-zinc-300">La tua squadra è completamente immune e protetta dal prossimo Malus avversario.</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 shrink-0">
-              Protetto
-            </span>
-          </div>
+          <CollapsibleEffectBanner
+            storageKey={`effect-collapsed:${activeShield.id}`}
+            tone="blue"
+            icon={<Shield className="size-5 animate-pulse" />}
+            title="🛡️ SCUDO PROTETTIVO ATTIVO"
+            description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
+            badge="Protetto"
+          />
         )}
 
         {/* 6. RECEIVED DIMEZZA PUNTI MALUS NOTIFICATION */}
@@ -1454,6 +1434,71 @@ function Dashboard() {
 
       </div>
     </AppShell>
+  );
+}
+
+const EFFECT_TONES = {
+  amber: { card: "from-amber-500/15 to-yellow-500/10 border-amber-500/40 shadow-amber-950/20", icon: "bg-amber-500/20 border-amber-500/40 text-amber-400", title: "text-amber-400", badge: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
+  emerald: { card: "from-emerald-500/15 to-teal-500/10 border-emerald-500/40 shadow-emerald-950/20", icon: "bg-emerald-500/20 border-emerald-500/40 text-emerald-400", title: "text-emerald-400", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  blue: { card: "from-blue-500/15 to-cyan-500/10 border-blue-500/40 shadow-blue-950/20", icon: "bg-blue-500/20 border-blue-500/40 text-blue-400", title: "text-blue-400", badge: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
+} as const;
+
+/** Card di un effetto attivo: il chevron la riduce a icona + titolo. Lo stato e' ricordato per acquisto. */
+function CollapsibleEffectBanner({
+  storageKey, tone, icon, title, description, badge,
+}: {
+  storageKey: string;
+  tone: keyof typeof EFFECT_TONES;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  badge: string;
+}) {
+  const t = EFFECT_TONES[tone];
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(storageKey) === "1"; } catch { return false; }
+  });
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
+  };
+  const chevron = (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={collapsed ? "Espandi" : "Riduci"}
+      aria-expanded={!collapsed}
+      className={`rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer ${collapsed ? "size-7 shrink-0" : "absolute top-1 right-1 size-5"}`}
+    >
+      <ChevronDown className={`transition-transform ${collapsed ? "size-4" : "size-3.5 rotate-180"}`} />
+    </button>
+  );
+
+  if (collapsed) {
+    return (
+      <div className={`bg-gradient-to-r ${t.card} border px-3 py-2 rounded-2xl flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-4 duration-300`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`size-7 rounded-xl border flex items-center justify-center shrink-0 ${t.icon}`}>{icon}</div>
+          <h4 className={`text-xs font-black uppercase tracking-wider ${t.title}`}>{title}</h4>
+        </div>
+        {chevron}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative bg-gradient-to-r ${t.card} border p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-4 duration-300`}>
+      <div className="flex items-center gap-3">
+        <div className={`size-9 rounded-xl border flex items-center justify-center shrink-0 ${t.icon}`}>{icon}</div>
+        <div>
+          <h4 className={`text-xs font-black uppercase tracking-wider ${t.title}`}>{title}</h4>
+          <p className="text-[11px] text-zinc-300">{description}</p>
+        </div>
+      </div>
+      <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border shrink-0 ${t.badge}`}>{badge}</span>
+      {chevron}
+    </div>
   );
 }
 
