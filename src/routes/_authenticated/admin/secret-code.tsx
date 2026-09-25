@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -210,7 +211,7 @@ function AdminSecretCodePage() {
                 return (
                   <tr key={team.id} className="hover:bg-zinc-900/30 transition-colors">
                     <td className="py-3 pr-4 font-black text-foreground flex items-center gap-2">
-                      <span>{team.avatar_url || "🏳️"}</span>
+                      <span><AnimatedEmoji emoji={team.avatar_url || "🏳️"} /></span>
                       <span>{team.nome_squadra}</span>
                     </td>
 

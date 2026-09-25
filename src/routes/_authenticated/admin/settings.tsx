@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -164,11 +165,11 @@ function AdminSettingsPage() {
           Riepilogo Tappe e Sfide della Gara
         </h2>
         {(stages.data ?? [])
-          .sort((a: any, b: any) => a.ordine - b.ordine)
+          .sort((a: any, b: any) => (a.order_index ?? a.ordine ?? 0) - (b.order_index ?? b.ordine ?? 0))
           .map((s: any) => {
             const stageChallenges = (challenges.data ?? [])
               .filter((c: any) => c.stage_id === s.id)
-              .sort((a: any, b: any) => a.ordine - b.ordine);
+              .sort((a: any, b: any) => (a.order_index ?? a.ordine ?? 0) - (b.order_index ?? b.ordine ?? 0));
 
             const isClosed = s.stato === "closed";
 
@@ -179,10 +180,10 @@ function AdminSettingsPage() {
                 <div className="flex items-start justify-between border-b border-border/30 pb-3 flex-wrap gap-2">
                   <div>
                     <h3 className="font-extrabold text-lg text-foreground uppercase tracking-wide">
-                      {s.title || `Tappa ${s.ordine} - ${s.nome_tappa}`}
+                      {s.title || `Tappa ${s.order_index ?? s.ordine} - ${s.nome_tappa}`}
                     </h3>
                     <p className="text-xs text-muted-foreground font-semibold mt-1">
-                      Luogo: {s.location || s.nome_tappa || "Non specificato"} · Ordine: {s.ordine}
+                      Luogo: {s.location || s.nome_tappa || "Non specificato"} · Tappa {s.order_index ?? s.ordine}
                     </p>
                   </div>
                   <div>
@@ -208,14 +209,14 @@ function AdminSettingsPage() {
                       <div key={c.id} className="flex items-center justify-between py-3">
                         <div>
                           <h4 className="font-extrabold text-sm text-foreground">
-                            {index + 1}. {c.titolo}
+                            {index + 1}. {c.title ?? c.titolo}
                           </h4>
                           <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
-                            Tipo: {c.tipo_sfida} · Ordine: {c.ordine}
+                            Tipo: {c.type ?? c.tipo_sfida}
                           </p>
                         </div>
                         <span className="text-xs font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-lg">
-                          {c.punteggio_massimo} PT max
+                          {c.points ?? c.punteggio_massimo ?? 0} PT max
                         </span>
                       </div>
                     ))}
@@ -282,7 +283,7 @@ function AdminSettingsPage() {
                                         className="size-5 rounded text-xs flex items-center justify-center"
                                         style={{ backgroundColor: (row.color ?? "#f97316") + "22", border: `1px solid ${row.color ?? "#f97316"}44` }}
                                       >
-                                        {row.avatar_url ?? "🏳️"}
+                                        <AnimatedEmoji emoji={row.avatar_url ?? "🏳️"} />
                                       </span>
                                       {row.nome_squadra}
                                     </td>
@@ -326,7 +327,7 @@ function AdminSettingsPage() {
                         </button>
                       ) : (
                         <button
-                          onClick={() => setStageToClose({ id: s.id, name: s.title || s.nome_tappa, order: s.ordine })}
+                          onClick={() => setStageToClose({ id: s.id, name: s.title || s.nome_tappa, order: s.order_index ?? s.ordine })}
                           disabled={processingStageId === s.id || stageChallenges.length === 0}
                           className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
@@ -374,7 +375,7 @@ function AdminSettingsPage() {
               <option value="">Seleziona una tappa...</option>
               {(stages.data ?? []).map((s: any) => (
                 <option key={s.id} value={s.id}>
-                  Tappa {s.ordine} - {s.nome_tappa}
+                  Tappa {s.order_index ?? s.ordine} - {s.title ?? s.nome_tappa}
                 </option>
               ))}
             </select>

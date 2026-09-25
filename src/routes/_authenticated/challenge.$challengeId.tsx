@@ -264,9 +264,21 @@ function ChallengePage() {
         {state === "waiting" ? (
           <BankWaitCard />
         ) : state === "locked" ? (
-          <p className="surface flex items-center gap-2 p-5 text-sm text-muted-foreground">
-            <Lock className="size-4" /> Completa prima le prove precedenti.
-          </p>
+          <div className="surface flex flex-col items-center gap-4 rounded-3xl border border-border/50 p-8 text-center">
+            <span className="grid size-14 place-items-center rounded-2xl border border-border/60 bg-secondary/60 text-muted-foreground">
+              <Lock className="size-7" />
+            </span>
+            <div className="space-y-1">
+              <h2 className="text-lg font-display font-black uppercase tracking-wide text-foreground">Prova ancora bloccata</h2>
+              <p className="text-sm text-muted-foreground">Completa prima le prove precedenti: questa si sbloccherà da sola.</p>
+            </div>
+            <Link
+              to="/dashboard"
+              className="primary-gradient inline-flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-2xl text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-primary/25 active:scale-[0.98] transition-transform"
+            >
+              Vai alla missione attiva
+            </Link>
+          </div>
         ) : challenge.type === "team_setup" ? (
           <TeamSetupChallenge
             challenge={challenge}

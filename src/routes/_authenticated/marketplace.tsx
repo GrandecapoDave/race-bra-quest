@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { WheelSliceText } from "@/components/WheelSliceText";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -1781,7 +1782,7 @@ function MarketplacePage() {
                         className="grid size-9 shrink-0 place-items-center rounded-lg text-lg"
                         style={{ backgroundColor: `${r.color || "#f97316"}20` }}
                       >
-                        {r.avatar_url ?? "🏳️"}
+                        <AnimatedEmoji emoji={r.avatar_url ?? "🏳️"} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-extrabold text-foreground">{r.name}</p>

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -482,7 +483,7 @@ function AdminResocontoPage() {
                                 borderColor: (t.color ?? "#f97316") + "55",
                               }}
                             >
-                              {t.avatar_url ?? "🏳️"}
+                              <AnimatedEmoji emoji={t.avatar_url ?? "🏳️"} />
                             </span>
                             <div>
                               <p className="font-extrabold text-sm text-foreground uppercase tracking-wide">
@@ -604,7 +605,7 @@ function AdminResocontoPage() {
                       className="size-4 rounded text-[10px] flex items-center justify-center"
                       style={{ backgroundColor: (t.color ?? "#f97316") + "33" }}
                     >
-                      {t.avatar_url ?? "🏳️"}
+                      <AnimatedEmoji emoji={t.avatar_url ?? "🏳️"} />
                     </span>
                     {tName}
                   </button>
@@ -643,7 +644,7 @@ function AdminResocontoPage() {
                           borderColor: (team.color ?? "#f97316") + "55",
                         }}
                       >
-                        {team.avatar_url ?? "🏳️"}
+                        <AnimatedEmoji emoji={team.avatar_url ?? "🏳️"} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">

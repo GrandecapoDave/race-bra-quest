@@ -263,6 +263,33 @@
   }
 }
 
+@keyframes emoji-alive {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-5deg) scale(1.05);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg) scale(1.08);
+  }
+  75% {
+    transform: translateY(-2px) rotate(5deg) scale(1.04);
+  }
+}
+
+/* Emoji della squadra "viva": leggero galleggiamento e oscillazione, fase diversa per ogni emoji (--emoji-delay) */
+@utility emoji-alive {
+  display: inline-block;
+  animation: emoji-alive 3.6s ease-in-out infinite;
+  animation-delay: var(--emoji-delay, 0s);
+  will-change: transform;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 @utility animate-pop-in {
   animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

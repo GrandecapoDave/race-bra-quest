@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy } from "lucide-react";
 import { useEffect } from "react";
@@ -84,7 +85,7 @@ function LeaderboardPage() {
               className="grid size-11 shrink-0 place-items-center rounded-xl text-2xl"
               style={{ backgroundColor: (r.color ?? "#f97316") + "33" }}
             >
-              {r.avatar_url ?? "🏳️"}
+              <AnimatedEmoji emoji={r.avatar_url ?? "🏳️"} />
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-lg font-extrabold">{r.name}</p>

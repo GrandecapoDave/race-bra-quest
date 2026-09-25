@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo, createContext, useContext } from "react";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -749,13 +750,15 @@ function AdminLayout() {
         );
       });
     
+    const stageOrder = (s: any) => Number(s.order_index ?? s.numero_tappa ?? s.ordine ?? 0);
+    const stageLabel = (s: any) => `Tappa ${stageOrder(s)}${s.title ?? s.nome_tappa ? ` · ${s.title ?? s.nome_tappa}` : ""}`;
+    const firstStage = ((stages.data ?? []) as any[]).find((s: any) => stageOrder(s) === 1);
     if (completedStages.length > 0) {
-      const sortedCompleted = [...completedStages].sort((a: any, b: any) => b.ordine - a.ordine);
-      const nextStage = ((stages.data ?? []) as any[]).find((s: any) => s.ordine === sortedCompleted[0].ordine + 1);
-      currentStageName = nextStage ? nextStage.nome_tappa : "Terminato";
-    } else if (teamProgress.length > 0) {
-      const firstStage = ((stages.data ?? []) as any[]).find((s: any) => s.ordine === 1);
-      if (firstStage) currentStageName = firstStage.nome_tappa;
+      const lastDone = Math.max(...completedStages.map(stageOrder));
+      const nextStage = ((stages.data ?? []) as any[]).find((s: any) => stageOrder(s) === lastDone + 1);
+      currentStageName = nextStage ? stageLabel(nextStage) : "Terminato";
+    } else if ((teamProgress.length > 0 || gameStatus === "Gara attiva") && firstStage) {
+      currentStageName = stageLabel(firstStage);
     }
 
     // Determine last action
@@ -873,7 +876,27 @@ function AdminLayout() {
     <AppShell isAdmin>
       <div className="space-y-4 md:space-y-6">
         {/* HEADER SUPERIORE - STATO GARA (HUD Compatto & Mobile-Friendly) */}
-        <div className="hud-panel p-4 md:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-border/50 no-print">
+        {/* Sulle sottopagine, da telefono, basta una barretta: stato, tempo e richieste in attesa */}
+        {currentPath !== "/admin/overview" && currentPath !== "/admin" && currentPath !== "/admin/" && (
+          <div className="md:hidden flex items-center justify-between gap-3 rounded-2xl border border-border/50 bg-secondary/40 px-3.5 py-2.5 no-print">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`size-2 rounded-full shrink-0 ${
+                gameStatus === "Gara attiva" ? "bg-emerald-400 animate-pulse" : gameStatus === "Gara terminata" ? "bg-red-400" : "bg-amber-400"
+              }`} />
+              <span className="text-xs font-black uppercase tracking-wider text-foreground truncate">{gameStatus}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {pendingApprovalsCount > 0 && (
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-black text-amber-300">{pendingApprovalsCount} in attesa</span>
+              )}
+              <span className="font-mono text-xs font-black text-primary">{raceTime}</span>
+            </div>
+          </div>
+        )}
+
+        <div className={`hud-panel p-4 md:p-5 rounded-2xl flex-col md:flex-row md:items-center justify-between gap-4 border border-border/50 no-print ${
+          currentPath !== "/admin/overview" && currentPath !== "/admin" && currentPath !== "/admin/" ? "hidden md:flex" : "flex"
+        }`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="size-11 rounded-xl primary-gradient flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
@@ -1372,7 +1395,7 @@ export function LiveMap({ teams, submissions, stages }: { teams: any[]; submissi
         const lat = stg.latitude || stg.lat;
         const lon = stg.longitude || stg.lon || stg.lng;
         if (lat != null && lon != null) {
-          const stageNum = stg.order_index || stg.ordine || "";
+          const stageNum = stg.order_index || stg.numero_tappa || stg.ordine || "";
           const numberIcon = L.divIcon({
             html: `<div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background-color: #f97316; color: #fff; font-weight: 900; font-size: 11px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: sans-serif;">${stageNum}</div>`,
             className: "custom-stage-marker-icon",
@@ -1486,7 +1509,7 @@ export function PosterComparisonCard({
         <div>
           <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
             <span className="grid size-6 place-items-center rounded-full bg-primary/10 text-primary text-xs font-bold font-mono">
-              {team.avatar_url || "🏳️"}
+              <AnimatedEmoji emoji={team.avatar_url || "🏳️"} />
             </span>
             <span>{team.nome_squadra}</span>
           </h3>
@@ -1671,7 +1694,7 @@ export function SocialSubmissionCard({
         <div>
           <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
             <span className="grid size-6 place-items-center rounded-full bg-primary/10 text-primary text-xs font-bold font-mono">
-              {team.avatar_url || "🏳️"}
+              <AnimatedEmoji emoji={team.avatar_url || "🏳️"} />
             </span>
             <span>{team.nome_squadra}</span>
           </h3>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
@@ -155,7 +156,7 @@ function PartenzeAnticipateAdmin() {
                       className="size-9 rounded-xl text-xl flex items-center justify-center shrink-0"
                       style={{ backgroundColor: (team.color ?? "#f97316") + "22", border: `1px solid ${(team.color ?? "#f97316")}44` }}
                     >
-                      {team.avatar_url ?? "🏳️"}
+                      <AnimatedEmoji emoji={team.avatar_url ?? "🏳️"} />
                     </span>
                     <div className="min-w-0">
                       <h2 className="text-sm font-black uppercase tracking-wider text-foreground truncate">

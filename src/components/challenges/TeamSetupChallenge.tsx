@@ -523,7 +523,7 @@ export function TeamSetupChallenge({
                         : "border-zinc-700 bg-zinc-900 hover:border-primary/60 cursor-pointer",
                     )}
                   >
-                    <span aria-hidden="true">{a}</span>
+                    <span aria-hidden="true" className={isMine ? "emoji-alive" : undefined}>{a}</span>
                     {isTaken && (
                       <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-zinc-800 ring-1 ring-zinc-600">
                         <Lock className="size-3 text-zinc-300" />

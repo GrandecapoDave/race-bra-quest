@@ -48,9 +48,9 @@ function AdminPhotosPage() {
   const availableChallenges = useMemo(() => {
     const challengesList = (challenges.data ?? []) as any[];
     return challengesList.filter((c: any) => {
-      if (c.tipo_sfida !== "photo") return false;
-      if (c.id === "555f4e1f-7443-42e7-9d7a-115f2122888f" || (c.titolo || "").toLowerCase().includes("locandina")) return false;
-      if (c.id === "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0" || (c.titolo || "").toLowerCase().includes("social")) return false;
+      if ((c.type ?? c.tipo_sfida) !== "photo") return false;
+      if (c.id === "555f4e1f-7443-42e7-9d7a-115f2122888f" || ((c.title ?? c.titolo) || "").toLowerCase().includes("locandina")) return false;
+      if (c.id === "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0" || ((c.title ?? c.titolo) || "").toLowerCase().includes("social")) return false;
       if (selectedStageId !== "all" && c.stage_id !== selectedStageId) return false;
       return true;
     });
@@ -165,7 +165,7 @@ function AdminPhotosPage() {
             <option value="all">Tutte le Tappe</option>
             {stagesList.map((st: any) => (
               <option key={st.id} value={st.id}>
-                Tappa {st.numero_tappa || st.ordine}: {st.titolo || st.nome_tappa}
+                Tappa {st.order_index ?? st.numero_tappa ?? st.ordine}: {st.title ?? st.titolo ?? st.nome_tappa}
               </option>
             ))}
           </select>
@@ -182,7 +182,7 @@ function AdminPhotosPage() {
             <option value="all">Tutte le Sfide Foto</option>
             {availableChallenges.map((c: any) => (
               <option key={c.id} value={c.id}>
-                {c.titolo} ({c.tipo_sfida === "living_poster" ? "Locandina" : "Foto"})
+                {c.title ?? c.titolo} ({(c.type ?? c.tipo_sfida) === "living_poster" ? "Locandina" : "Foto"})
               </option>
             ))}
           </select>

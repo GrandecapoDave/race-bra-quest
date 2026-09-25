@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AnimatedEmoji } from "@/components/ui/avatar";
 import { Coins, History, Loader2, ShoppingBag, Snowflake } from "lucide-react";
 import { useAdminContext } from "../admin";
 import { useState, useEffect } from "react";
@@ -168,7 +169,7 @@ function AdminMarketplacePage() {
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-base shrink-0">{t.avatar_url ?? "🏳️"}</span>
+                      <span className="text-base shrink-0"><AnimatedEmoji emoji={t.avatar_url ?? "🏳️"} /></span>
                       <span className="font-extrabold text-sm text-foreground truncate">{t.nome_squadra}</span>
                     </div>
                     <span className="text-xs font-black bg-zinc-900 px-2 py-1 rounded border border-zinc-800 text-orange-400">

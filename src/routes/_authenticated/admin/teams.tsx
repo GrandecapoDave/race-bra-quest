@@ -663,7 +663,7 @@ function AdminTeamsPage() {
 
                   return sortedChallenges.map((c: any) => {
                     const stage = stagesList.find((s: any) => s.id === c.stage_id);
-                    const stageName = stage?.titolo || stage?.nome_tappa || (stage?.numero_tappa ? `Tappa ${stage.numero_tappa}` : "—");
+                    const stageName = stage?.title || stage?.titolo || stage?.nome_tappa || (stage?.numero_tappa ? `Tappa ${stage.numero_tappa}` : "—");
 
                     const prog = (allProgress.data ?? []).find(
                       (p: any) => p.team_id === selectedTeamId && p.challenge_id === c.id

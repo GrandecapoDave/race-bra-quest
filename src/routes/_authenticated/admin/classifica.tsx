@@ -102,7 +102,70 @@ function AdminLiveLeaderboardPage() {
             <p className="text-xs">Le squadre compariranno in questa classifica non appena si registreranno.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border/30 bg-zinc-950/40">
+          <>
+          {/* MOBILE: una scheda per squadra */}
+          <div className="space-y-2 md:hidden">
+            {leaderboard.map((row: any, index: number) => {
+              const position = index + 1;
+              const medal = position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : `#${position}`;
+              const expires = row.freeze_expires_at ? new Date(row.freeze_expires_at).getTime() : 0;
+              const frozenLeft = expires > now ? Math.max(0, Math.round((expires - now) / 1000)) : 0;
+              let statusText = "Attiva";
+              let statusClass = "bg-success/10 border-success/20 text-success";
+              if (!row.active) {
+                statusText = "Disattivata";
+                statusClass = "bg-destructive/10 border-destructive/20 text-destructive";
+              } else if (frozenLeft > 0) {
+                statusText = `Congelata ${Math.floor(frozenLeft / 60)}:${String(frozenLeft % 60).padStart(2, "0")}`;
+                statusClass = "bg-cyan-500/10 border-cyan-500/20 text-cyan-400";
+              }
+              const cat = row.cattiveria_points ?? 0;
+              return (
+                <div key={row.team_id} className="rounded-xl border border-border/40 bg-secondary/40 p-3 space-y-2.5">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-8 shrink-0 text-center font-black ${position <= 3 ? "text-xl" : "text-sm text-muted-foreground"}`}>{medal}</span>
+                    <HeroAvatar
+                      emoji={row.avatar_url || "🏳️"}
+                      color={row.color}
+                      isBordered
+                      size="sm"
+                      radius="full"
+                      className="size-9 text-lg"
+                      style={{ backgroundColor: (row.color || "#f97316") + "26" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-foreground">{row.name}</p>
+                      <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider ${statusClass}`}>{statusText}</span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-display text-xl font-black text-primary leading-none">{row.total_points}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">punti</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] font-bold">
+                    <div className="rounded-lg bg-background/50 py-1.5">
+                      <p className="text-muted-foreground uppercase tracking-wider text-[8px]">Prove</p>
+                      <p className="text-foreground">{row.completed_challenges}/14</p>
+                    </div>
+                    <div className="rounded-lg bg-background/50 py-1.5">
+                      <p className="text-muted-foreground uppercase tracking-wider text-[8px]">Sfide</p>
+                      <p className="text-foreground">{row.challenges_points ?? 0}</p>
+                    </div>
+                    <div className="rounded-lg bg-background/50 py-1.5">
+                      <p className="text-muted-foreground uppercase tracking-wider text-[8px]">😈</p>
+                      <p className={cat > 0 ? "text-purple-400" : cat < 0 ? "text-red-400" : "text-zinc-400"}>{cat > 0 ? `+${cat}` : cat}</p>
+                    </div>
+                    <div className="rounded-lg bg-background/50 py-1.5">
+                      <p className="text-muted-foreground uppercase tracking-wider text-[8px]">Tempo</p>
+                      <p className="font-mono text-foreground">{row.total_duration_seconds != null ? formatDuration(row.total_duration_seconds) : "—"}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-border/30 bg-zinc-950/40">
             <table className="w-full text-xs text-left">
               <thead className="bg-muted/10 text-muted-foreground uppercase text-[9px] tracking-wider border-b border-border/30">
                 <tr>
@@ -252,6 +315,7 @@ function AdminLiveLeaderboardPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

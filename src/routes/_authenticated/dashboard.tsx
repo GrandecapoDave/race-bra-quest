@@ -67,7 +67,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
-  const [mktTab, setMktTab] = useState<"bonus" | "sent" | "received">("bonus");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -1196,97 +1195,6 @@ function Dashboard() {
               "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
             </div>
           </div>
-        )}
-
-        {/* MARKETPLACE SUMMARY SECTION */}
-        {isMarketplaceUnlocked && (
-          <section className="space-y-3 animate-fade-in">
-            <div className="flex justify-between items-center pl-1">
-              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-                🛒 Marketplace
-              </h2>
-              <Link
-                to="/marketplace"
-                className="text-xs font-extrabold text-primary hover:underline flex items-center gap-1"
-              >
-                Vai al Negozio <ChevronRight className="size-3" />
-              </Link>
-            </div>
-
-            <div className="hud-panel p-3 rounded-2xl space-y-3">
-              <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-secondary/60 border border-border/40">
-                {([
-                  ["bonus", "🎁 Bonus", myBonuses.length, "text-emerald-400"],
-                  ["sent", "⚔️ Inviati", mySentMaluses.length, "text-rose-400"],
-                  ["received", "⚠️ Ricevuti", myReceivedMaluses.length, "text-amber-400"],
-                ] as const).map(([key, label, n, tone]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setMktTab(key)}
-                    aria-pressed={mktTab === key}
-                    className={`h-10 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      mktTab === key ? "bg-background/80 shadow-sm border border-border/60 " + tone : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span>{label}</span>
-                    <span className={`min-w-5 px-1 rounded-full text-[10px] ${mktTab === key ? "bg-white/10" : "bg-white/5"}`}>{n}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-1.5">
-                {mktTab === "bonus" && (myBonuses.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground italic font-semibold px-1 py-2">Nessun bonus attivo</p>
-                ) : myBonuses.map((b) => {
-                  const item = MARKETPLACE_ITEMS.find((i) => i.id === b.item_id);
-                  const name = item?.nome || b.item_id;
-                  const cost = b.costo ?? b.costo_token ?? (item as any)?.costo ?? 0;
-                  return (
-                    <div key={b.id} className="text-xs font-bold text-foreground bg-secondary/70 px-3 py-2.5 rounded-xl border border-border/50 flex items-center justify-between gap-2">
-                      <span className="truncate">{name}</span>
-                      <span className="text-[11px] text-emerald-400 font-black shrink-0">-{cost} 🪙</span>
-                    </div>
-                  );
-                }))}
-
-                {mktTab === "sent" && (mySentMaluses.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground italic font-semibold px-1 py-2">Nessun malus inviato</p>
-                ) : mySentMaluses.map((m) => {
-                  const item = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id);
-                  const name = item?.nome || m.item_id;
-                  const target = allTeams.find((t) => t.id === m.target_team_id)?.nome_squadra || "Sconosciuta";
-                  const cost = m.costo ?? m.costo_token ?? (item as any)?.costo ?? 0;
-                  return (
-                    <div key={m.id} className="text-xs font-bold text-foreground bg-secondary/70 px-3 py-2.5 rounded-xl border border-border/50 flex items-center justify-between gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <span className="block truncate">{name}</span>
-                        <span className="block text-[10px] text-rose-400/90 font-extrabold truncate">→ {target}</span>
-                      </div>
-                      <span className="text-[11px] text-rose-400 font-black shrink-0">-{cost} 🪙</span>
-                    </div>
-                  );
-                }))}
-
-                {mktTab === "received" && (myReceivedMaluses.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground italic font-semibold px-1 py-2">Nessun malus ricevuto</p>
-                ) : myReceivedMaluses.map((m) => {
-                  const name = MARKETPLACE_ITEMS.find((i) => i.id === m.item_id)?.nome || m.item_id;
-                  const buyer = allTeams.find((t) => t.id === (m.buyer_team_id || m.team_id))?.nome_squadra || "Sconosciuta";
-                  const isBlocked = m.stato === "expired" || (m.outcome && m.outcome.blocked_by_shield_id);
-                  return (
-                    <div key={m.id} className="text-xs font-bold text-foreground bg-secondary/70 px-3 py-2.5 rounded-xl border border-border/50 flex items-center justify-between gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <span className="block truncate">{name}</span>
-                        <span className="block text-[10px] text-amber-400 font-extrabold truncate">← {buyer}</span>
-                      </div>
-                      {isBlocked && <span className="text-[10px] text-emerald-400 font-black shrink-0">🛡️ Bloccato</span>}
-                    </div>
-                  );
-                }))}
-              </div>
-            </div>
-          </section>
         )}
 
         {/* TAPPE LIST */}

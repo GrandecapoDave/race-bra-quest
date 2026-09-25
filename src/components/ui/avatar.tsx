@@ -46,6 +46,16 @@ const colorRingClasses: Record<string, string> = {
   danger: "ring-rose-500 shadow-rose-500/30",
 };
 
+/** Emoji "viva": galleggia e oscilla piano, con fase diversa per ogni emoji. Rispetta prefers-reduced-motion. */
+export function AnimatedEmoji({ emoji, className }: { emoji: string; className?: string }) {
+  const delay = (Array.from(emoji).reduce((h, c) => h + (c.codePointAt(0) ?? 0), 0) % 36) / 10;
+  return (
+    <span className={cn("emoji-alive", className)} style={{ ["--emoji-delay" as any]: `-${delay}s` }}>
+      {emoji}
+    </span>
+  );
+}
+
 export const HeroAvatar = React.forwardRef<HTMLDivElement, HeroAvatarProps>(
   (
     {
@@ -105,7 +115,7 @@ export const HeroAvatar = React.forwardRef<HTMLDivElement, HeroAvatarProps>(
           />
         ) : emoji ? (
           <span className="flex items-center justify-center pointer-events-none drop-shadow-sm">
-            {emoji}
+            <AnimatedEmoji emoji={emoji} />
           </span>
         ) : icon ? (
           <span className="flex items-center justify-center pointer-events-none">{icon}</span>
