@@ -181,7 +181,65 @@ function TeamResocontoPage() {
           </span>
         </div>
 
-        <div className="surface rounded-2xl border border-border/50 bg-zinc-950/40 overflow-hidden shadow-xl">
+        {/* MOBILE: una scheda per squadra */}
+        <div className="space-y-2.5 md:hidden">
+          {teams.map((t: any) => {
+            const pos = t.final_rank ?? t.rank ?? t.position ?? 1;
+            const basePts = t.base_score ?? t.total_score_before_final_bonuses ?? t.challenges_points + (t.modifier_points ?? 0) + (t.cattiveria_points ?? 0);
+            const timeBonus = t.time_bonus ?? t.bonus_tempo ?? 0;
+            const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.min(10, Math.floor((t.token_balance ?? 50) / 10));
+            const finalScore = t.final_score ?? t.total_points ?? (basePts + timeBonus + tokenBonus);
+            const teamName = t.nome_squadra || t.name || t.team_name || "Squadra";
+            const medal = pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : null;
+            return (
+              <div
+                key={t.team_id}
+                className={`surface rounded-2xl border p-3.5 space-y-3 ${
+                  pos === 1 ? "border-gold/50 bg-gold/5" : pos <= 3 ? "border-border/60 bg-zinc-900/40" : "border-border/40 bg-zinc-950/40"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-8 shrink-0 text-center font-display text-lg font-black text-muted-foreground">{medal ?? `#${pos}`}</span>
+                  <HeroAvatar
+                    emoji={t.avatar_url ?? "🏳️"}
+                    color={t.color ?? "#f97316"}
+                    isBordered
+                    size="sm"
+                    radius="md"
+                    className="size-9 text-base"
+                    style={{ backgroundColor: (t.color ?? "#f97316") + "22" }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-extrabold uppercase tracking-wide text-foreground">{teamName}</p>
+                    {t.motto && <p className="truncate text-[10px] italic text-muted-foreground">"{t.motto}"</p>}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-display text-2xl font-black leading-none text-primary tabular-nums">{finalScore}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">punti finali</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 text-center">
+                  {[
+                    ["Prove", `${t.completed_challenges ?? 0}/14`, "text-zinc-200"],
+                    ["Base", `${basePts}`, "text-zinc-200"],
+                    ["Tempo", `+${timeBonus}`, "text-amber-400"],
+                    ["Token", `+${tokenBonus}`, "text-emerald-400"],
+                  ].map(([label, value, tone]) => (
+                    <div key={label} className="rounded-lg bg-background/50 py-1.5">
+                      <p className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+                      <p className={`font-mono text-[11px] font-bold ${tone}`}>{value}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center font-mono text-[10px] text-muted-foreground">
+                  Tempo totale {formatDuration(t.total_time_seconds ?? t.total_duration_seconds ?? 0)} · {t.token_balance ?? 50} 🪙 rimasti
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="surface hidden md:block rounded-2xl border border-border/50 bg-zinc-950/40 overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] text-left text-xs border-collapse">
               <thead>
@@ -270,7 +328,7 @@ function TeamResocontoPage() {
 
                       {/* PROVE */}
                       <td className="py-3.5 px-3 text-center font-mono font-bold text-zinc-300 whitespace-nowrap">
-                        {t.completed_challenges ?? 0} / 15
+                        {t.completed_challenges ?? 0} / 14
                       </td>
 
                       {/* PUNTI BASE */}

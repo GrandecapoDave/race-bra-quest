@@ -203,10 +203,12 @@ function Dashboard() {
   const position = myScore?.rank ?? (rankLeaderboard(board.data ?? []).findIndex((r) => r.team_id === team.data?.id) + 1);
 
   const allChallenges = challenges.data ?? [];
-  const allChallengeIds = new Set(allChallenges.map((c) => c.id));
+  // Il Jackpot e' facoltativo: l'avanzamento conta solo le prove obbligatorie (cosi' si arriva davvero al 100%)
+  const mandatoryChallenges = allChallenges.filter((c) => c.type !== "jackpot");
+  const mandatoryIds = new Set(mandatoryChallenges.map((c) => c.id));
   const prog = progress.data ?? [];
-  const completedCount = prog.filter((p) => p.status === "completed" && allChallengeIds.has(p.challenge_id)).length;
-  const percent = allChallenges.length ? (completedCount / allChallenges.length) * 100 : 0;
+  const completedCount = prog.filter((p) => p.status === "completed" && mandatoryIds.has(p.challenge_id)).length;
+  const percent = mandatoryChallenges.length ? (completedCount / mandatoryChallenges.length) * 100 : 0;
 
   const currentStage = (stages.data ?? []).find((s) =>
     allChallenges
@@ -383,11 +385,11 @@ function Dashboard() {
     .filter(Boolean) as Array<{ stage: any; tx: any }>;
 
   return (
-    <AppShell isAdmin={isAdmin.data}>
-      <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto">
+    <AppShell isAdmin={isAdmin.data} wide>
+      <div className="space-y-6 md:space-y-8 max-w-2xl mx-auto lg:max-w-none lg:grid lg:grid-cols-12 lg:gap-6 lg:space-y-0 lg:items-start">
         
         {/* AVVISI: compatti, chiudibili con la X */}
-        <div className="space-y-2.5 empty:hidden [&>div]:!p-3 [&>div]:!rounded-xl [&>div]:!gap-2.5 [&_button]:!px-2.5 [&_button]:!py-1.5 [&_button]:!text-[11px] [&_button]:!leading-none">
+        <div className="lg:col-span-12 space-y-2.5 empty:hidden [&>div]:!p-3 [&>div]:!rounded-xl [&>div]:!gap-2.5 [&_button]:!px-2.5 [&_button]:!py-1.5 [&_button]:!text-[11px] [&_button]:!leading-none">
         {/* PUBLISHED FINAL RECAP CARD */}
         {isRaceCompleted && isReportPublished && (
           <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-amber-500/40 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-xl shadow-amber-950/30 animate-in slide-in-from-top-4 duration-300">
@@ -827,7 +829,7 @@ function Dashboard() {
 
         {/* TEAM COCKPIT HERO (UI/UX Pro Max Edition) */}
         <section
-          className="hud-panel-glow animate-pop-in relative overflow-hidden p-4 sm:p-7 transition-all duration-300 w-full min-w-0 box-border"
+          className="hud-panel-glow animate-pop-in relative overflow-hidden p-4 sm:p-7 transition-all duration-300 w-full min-w-0 box-border lg:col-span-5 lg:sticky lg:top-20"
           style={{
             borderColor: team.data?.color ? `${team.data.color}66` : undefined,
           }}
@@ -1014,7 +1016,7 @@ function Dashboard() {
               <div className="flex items-center gap-2">
                 <span className="uppercase tracking-widest text-[10px] font-black text-muted-foreground">Avanzamento Tappe</span>
                 <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                  {completedCount}/{allChallenges.length} Prove
+                  {completedCount}/{mandatoryChallenges.length} Prove
                 </span>
               </div>
               <ProgressBar value={percent} className="h-2.5 rounded-full bg-zinc-900" />
@@ -1036,239 +1038,241 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* MEGA-CARD: MISSIONE ATTIVA (HeroUI Card isFooterBlurred & Button variant="shadow") */}
-        <section className="space-y-2.5">
-          <div className="flex items-center justify-between pl-1">
-            <h2 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
-              <span className="inline-block size-2 rounded-full bg-primary animate-ping" />
-              Missione Attiva
-            </h2>
-            {nextChallenge && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
-                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
-                +{challengeMaxPoints(nextChallenge)} Punti
-              </span>
-            )}
-          </div>
-
-          {nextChallenge && currentStage ? (
-            <div className="relative overflow-hidden rounded-3xl bg-zinc-950/70 border border-primary/30 p-5 sm:p-6 shadow-2xl shadow-black/60 space-y-4">
-              {/* Top ambient glow */}
-              <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="flex items-start justify-between gap-3 relative z-10">
-                <div className="space-y-1.5 min-w-0">
-                  <span className="text-[10px] font-black tracking-widest text-accent uppercase bg-accent/15 px-2.5 py-0.5 rounded-full border border-accent/30 inline-block">
-                    {currentStage.title}
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-black text-foreground pt-0.5 tracking-tight leading-tight">
-                    {nextChallenge.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground font-semibold leading-relaxed">
-                    {nextChallenge.description || (nextChallenge.type === "jackpot" ? "Scommessa Bonus (Facoltativa)" : "Completa la prova per sbloccare il prossimo checkpoint.")}
-                  </p>
-                </div>
-                <span className="primary-gradient grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg shadow-primary/30 border border-white/20">
-                  {nextChallenge.type === "jackpot" ? "🎰" : <Flag className="size-6" />}
-                </span>
-              </div>
-
-              {/* HEROUI ISFOOTERBLURRED ACTION BAR WITH GLOW BUTTON */}
-              <div className="relative z-10 pt-2">
-                <Link
-                  to="/challenge/$challengeId"
-                  params={{ challengeId: nextChallenge.id }}
-                  onClick={() => triggerHaptic("medium")}
-                  className="group relative w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-display font-black text-base uppercase tracking-wider shadow-lg shadow-primary/35 hover:shadow-primary/50 hover:brightness-110 active:scale-[0.97] transition-all duration-200 cursor-pointer overflow-hidden border border-white/20"
-                >
-                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                  <span>VAI ALLA PROVA</span>
-                  <ChevronRight className="size-5 stroke-[3] group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </div>
-          ) : isWaitingForGate ? (
-            <BankWaitCard />
-          ) : (
-            <div className="rounded-3xl p-6 flex items-center gap-3.5 bg-emerald-950/30 border border-emerald-500/30 shadow-lg backdrop-blur-md">
-              <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30 shadow-sm">
-                <Check className="size-5 stroke-[3]" />
-              </div>
-              <p className="text-sm font-bold text-emerald-300">
-                Tutte le prove disponibili sono state completate. Ottimo lavoro!
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* I TUOI BONUS ATTIVI: effetti in corso (2X, Polizza, Scudo) e Passaparola */}
-        {(active2x || activePolizza || activeShield || activePassaparola || pendingPassaparola || answeredPassaparola) && (
-          <section className="space-y-2.5" aria-label="I tuoi bonus attivi">
+        <div className="space-y-6 md:space-y-8 min-w-0 lg:col-span-7">
+          {/* MEGA-CARD: MISSIONE ATTIVA (HeroUI Card isFooterBlurred & Button variant="shadow") */}
+          <section className="space-y-2.5">
             <div className="flex items-center justify-between pl-1">
-              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">✨ I tuoi bonus attivi</h2>
-              <span className="min-w-6 rounded-full border border-border/50 bg-secondary/70 px-2 py-0.5 text-center text-[11px] font-black text-foreground">
-                {[active2x, activePolizza, activeShield, activePassaparola || pendingPassaparola || answeredPassaparola].filter(Boolean).length}
-              </span>
+              <h2 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <span className="inline-block size-2 rounded-full bg-primary animate-ping" />
+                Missione Attiva
+              </h2>
+              {nextChallenge && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/25">
+                  <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  +{challengeMaxPoints(nextChallenge)} Punti
+                </span>
+              )}
             </div>
-            <div className="space-y-2">
-            {active2x && (
-              <CollapsibleEffectBanner
-                storageKey={`effect-collapsed:${active2x.id}`}
-                tone="amber"
-                icon={<Zap className="size-5 animate-pulse" />}
-                title="✨ MOLTIPLICATORE 2X ATTIVO"
-                description="I punti della prova scelta sono raddoppiati (x2)!"
-                badge="Attivo"
-              />
-            )}
 
-            {activePolizza && (
-              <CollapsibleEffectBanner
-                storageKey={`effect-collapsed:${activePolizza.id}`}
-                tone="emerald"
-                icon={<Shield className="size-5" />}
-                title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
-                description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
-                badge="Pronta"
-              />
-            )}
+            {nextChallenge && currentStage ? (
+              <div className="relative overflow-hidden rounded-3xl bg-zinc-950/70 border border-primary/30 p-5 sm:p-6 shadow-2xl shadow-black/60 space-y-4">
+                {/* Top ambient glow */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-            {activeShield && (
-              <CollapsibleEffectBanner
-                storageKey={`effect-collapsed:${activeShield.id}`}
-                tone="blue"
-                icon={<Shield className="size-5 animate-pulse" />}
-                title="🛡️ SCUDO PROTETTIVO ATTIVO"
-                description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
-                badge="Protetto"
-              />
-            )}
-
-            {activePassaparola && (
-              <div className="hud-panel p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
-                    <PhoneCall className="size-5" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
-                      📞 Bonus Passaparola Disponibile
-                    </h4>
-                    <p className="text-[11px] text-muted-foreground">
-                      Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
+                <div className="flex items-start justify-between gap-3 relative z-10">
+                  <div className="space-y-1.5 min-w-0">
+                    <span className="text-[10px] font-black tracking-widest text-accent uppercase bg-accent/15 px-2.5 py-0.5 rounded-full border border-accent/30 inline-block">
+                      {currentStage.title}
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black text-foreground pt-0.5 tracking-tight leading-tight">
+                      {nextChallenge.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-semibold leading-relaxed">
+                      {nextChallenge.description || (nextChallenge.type === "jackpot" ? "Scommessa Bonus (Facoltativa)" : "Completa la prova per sbloccare il prossimo checkpoint.")}
                     </p>
                   </div>
+                  <span className="primary-gradient grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg shadow-primary/30 border border-white/20">
+                    {nextChallenge.type === "jackpot" ? "🎰" : <Flag className="size-6" />}
+                  </span>
                 </div>
-                <button
-                  onClick={() => setUsePassaparolaTx(activePassaparola)}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
-                >
-                  <PhoneCall className="size-4" />
-                  <span>Fai la Domanda</span>
-                </button>
-              </div>
-            )}
 
-            {pendingPassaparola && (
-              <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                    <Clock className="size-3.5" />
-                    Passaparola: In attesa di risposta dalla Regia
-                  </span>
-                  <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
-                </div>
-                <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
-                  "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
-                </div>
-              </div>
-            )}
-
-            {answeredPassaparola && (
-              <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                    <PhoneCall className="size-3.5 text-emerald-400" />
-                    Risposta Regia Passaparola
-                  </span>
-                  <span className="flex items-center gap-2">
-                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
-                    /^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim())
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                      : "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                  }`}>
-                    Risposta: {/^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim()) ? "✅ SÌ" : "❌ NO"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleDismissNotification(answeredPassaparola.id)}
-                    aria-label="Chiudi la risposta"
-                    className="size-7 rounded-full grid place-items-center text-emerald-300 bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 cursor-pointer text-xs font-black"
+                {/* HEROUI ISFOOTERBLURRED ACTION BAR WITH GLOW BUTTON */}
+                <div className="relative z-10 pt-2">
+                  <Link
+                    to="/challenge/$challengeId"
+                    params={{ challengeId: nextChallenge.id }}
+                    onClick={() => triggerHaptic("medium")}
+                    className="group relative w-full h-14 primary-gradient rounded-2xl flex items-center justify-center gap-2 text-white font-display font-black text-base uppercase tracking-wider shadow-lg shadow-primary/35 hover:shadow-primary/50 hover:brightness-110 active:scale-[0.97] transition-all duration-200 cursor-pointer overflow-hidden border border-white/20"
                   >
-                    ✕
-                  </button>
-                  </span>
-                </div>
-                <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
-                  "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    <span>VAI ALLA PROVA</span>
+                    <ChevronRight className="size-5 stroke-[3] group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </div>
               </div>
+            ) : isWaitingForGate ? (
+              <BankWaitCard />
+            ) : (
+              <div className="rounded-3xl p-6 flex items-center gap-3.5 bg-emerald-950/30 border border-emerald-500/30 shadow-lg backdrop-blur-md">
+                <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30 shadow-sm">
+                  <Check className="size-5 stroke-[3]" />
+                </div>
+                <p className="text-sm font-bold text-emerald-300">
+                  Tutte le prove disponibili sono state completate. Ottimo lavoro!
+                </p>
+              </div>
             )}
-            </div>
           </section>
-        )}
 
-        {/* TAPPE LIST */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground pl-1">
-            Tappe di Gara
-          </h2>
-          <div className="space-y-3">
-            {(stages.data ?? []).map((stage) => {
-              const sc = allChallenges.filter((c) => c.stage_id === stage.id);
-              const done = sc.filter(
-                (c) => challengeState(c, sc, prog, { gateClosed }) === "completed",
-              ).length;
-              const isStageDone = sc.length > 0 && done === sc.length;
+          {/* I TUOI BONUS ATTIVI: effetti in corso (2X, Polizza, Scudo) e Passaparola */}
+          {(active2x || activePolizza || activeShield || activePassaparola || pendingPassaparola || answeredPassaparola) && (
+            <section className="space-y-2.5" aria-label="I tuoi bonus attivi">
+              <div className="flex items-center justify-between pl-1">
+                <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">✨ I tuoi bonus attivi</h2>
+                <span className="min-w-6 rounded-full border border-border/50 bg-secondary/70 px-2 py-0.5 text-center text-[11px] font-black text-foreground">
+                  {[active2x, activePolizza, activeShield, activePassaparola || pendingPassaparola || answeredPassaparola].filter(Boolean).length}
+                </span>
+              </div>
+              <div className="space-y-2">
+              {active2x && (
+                <CollapsibleEffectBanner
+                  storageKey={`effect-collapsed:${active2x.id}`}
+                  tone="amber"
+                  icon={<Zap className="size-5 animate-pulse" />}
+                  title="✨ MOLTIPLICATORE 2X ATTIVO"
+                  description="I punti della prova scelta sono raddoppiati (x2)!"
+                  badge="Attivo"
+                />
+              )}
 
-              return (
-                <Link
-                  key={stage.id}
-                  to="/stage/$stageId"
-                  params={{ stageId: stage.id }}
-                  className={`hud-panel block p-4.5 transition-all duration-200 active:scale-[0.98] group ${
-                    isStageDone ? "border-emerald-500/40 bg-emerald-950/15" : "hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1 min-w-0">
-                      <p className={`text-[9px] font-black tracking-widest uppercase ${
-                        isStageDone ? "text-emerald-400" : "text-primary"
-                      }`}>
-                        Tappa {stage.order_index}
-                      </p>
-                      <p className="text-base sm:text-lg font-black text-foreground truncate group-hover:text-primary transition-colors">
-                        {stage.title}
-                      </p>
+              {activePolizza && (
+                <CollapsibleEffectBanner
+                  storageKey={`effect-collapsed:${activePolizza.id}`}
+                  tone="emerald"
+                  icon={<Shield className="size-5" />}
+                  title="🛡️ POLIZZA RIMBORSO 50% ATTIVA"
+                  description="Ti rimborserà automaticamente il 50% dei punti persi a causa del prossimo malus subito."
+                  badge="Pronta"
+                />
+              )}
+
+              {activeShield && (
+                <CollapsibleEffectBanner
+                  storageKey={`effect-collapsed:${activeShield.id}`}
+                  tone="blue"
+                  icon={<Shield className="size-5 animate-pulse" />}
+                  title="🛡️ SCUDO PROTETTIVO ATTIVO"
+                  description="La tua squadra è completamente immune e protetta dal prossimo Malus avversario."
+                  badge="Protetto"
+                />
+              )}
+
+              {activePassaparola && (
+                <div className="hud-panel p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-orange-500/10 animate-fade-in">
+                  <div className="flex items-center gap-3">
+                    <div className="size-11 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                      <PhoneCall className="size-5" />
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${
-                        isStageDone ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : "bg-secondary text-muted-foreground border-border/50"
-                      }`}>
-                        {done}/{sc.length} prove
-                      </span>
-                      <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
+                    <div className="space-y-0.5">
+                      <h4 className="text-xs font-black uppercase text-orange-400 tracking-wider">
+                        📞 Bonus Passaparola Disponibile
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        Hai un Passaparola attivo. Invia una domanda alla Regia per ricevere un <strong>SÌ</strong> o <strong>NO</strong>.
+                      </p>
                     </div>
                   </div>
-                  <ProgressBar 
-                    value={sc.length ? (done / sc.length) * 100 : 0} 
-                    className={`mt-3 h-2 ${isStageDone ? "bg-emerald-500/20" : ""}`}
-                  />
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+                  <button
+                    onClick={() => setUsePassaparolaTx(activePassaparola)}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl primary-gradient text-white font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-md flex items-center justify-center gap-2"
+                  >
+                    <PhoneCall className="size-4" />
+                    <span>Fai la Domanda</span>
+                  </button>
+                </div>
+              )}
+
+              {pendingPassaparola && (
+                <div className="hud-panel p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2 shadow-sm animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                      <Clock className="size-3.5" />
+                      Passaparola: In attesa di risposta dalla Regia
+                    </span>
+                    <span className="text-[9px] text-zinc-500 font-semibold">Inviato</span>
+                  </div>
+                  <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-foreground font-semibold italic">
+                    "{pendingPassaparola.request_text || pendingPassaparola.outcome?.request_text || pendingPassaparola.dettagli?.request_text}"
+                  </div>
+                </div>
+              )}
+
+              {answeredPassaparola && (
+                <div className="hud-panel p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5 shadow-sm animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                      <PhoneCall className="size-3.5 text-emerald-400" />
+                      Risposta Regia Passaparola
+                    </span>
+                    <span className="flex items-center gap-2">
+                    <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
+                      /^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim())
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                        : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                    }`}>
+                      Risposta: {/^s[iìí]$/i.test(String((answeredPassaparola.response_text || answeredPassaparola.outcome?.response_text || answeredPassaparola.dettagli?.response_text) ?? "").trim()) ? "✅ SÌ" : "❌ NO"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDismissNotification(answeredPassaparola.id)}
+                      aria-label="Chiudi la risposta"
+                      className="size-7 rounded-full grid place-items-center text-emerald-300 bg-emerald-900/40 border border-emerald-500/30 hover:bg-emerald-800/50 cursor-pointer text-xs font-black"
+                    >
+                      ✕
+                    </button>
+                    </span>
+                  </div>
+                  <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
+                    "{answeredPassaparola.request_text || answeredPassaparola.outcome?.request_text || answeredPassaparola.dettagli?.request_text}"
+                  </div>
+                </div>
+              )}
+              </div>
+            </section>
+          )}
+
+          {/* TAPPE LIST */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground pl-1">
+              Tappe di Gara
+            </h2>
+            <div className="space-y-3">
+              {(stages.data ?? []).map((stage) => {
+                const sc = allChallenges.filter((c) => c.stage_id === stage.id);
+                const done = sc.filter(
+                  (c) => challengeState(c, sc, prog, { gateClosed }) === "completed",
+                ).length;
+                const isStageDone = sc.length > 0 && done === sc.length;
+
+                return (
+                  <Link
+                    key={stage.id}
+                    to="/stage/$stageId"
+                    params={{ stageId: stage.id }}
+                    className={`hud-panel block p-4.5 transition-all duration-200 active:scale-[0.98] group ${
+                      isStageDone ? "border-emerald-500/40 bg-emerald-950/15" : "hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1 min-w-0">
+                        <p className={`text-[9px] font-black tracking-widest uppercase ${
+                          isStageDone ? "text-emerald-400" : "text-primary"
+                        }`}>
+                          Tappa {stage.order_index}
+                        </p>
+                        <p className="text-base sm:text-lg font-black text-foreground truncate group-hover:text-primary transition-colors">
+                          {stage.title}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${
+                          isStageDone ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : "bg-secondary text-muted-foreground border-border/50"
+                        }`}>
+                          {done}/{sc.length} prove
+                        </span>
+                        <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
+                    <ProgressBar 
+                      value={sc.length ? (done / sc.length) * 100 : 0} 
+                      className={`mt-3 h-2 ${isStageDone ? "bg-emerald-500/20" : ""}`}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        </div>
 
         {/* USE PASSAPAROLA MODAL */}
         {usePassaparolaTx && (

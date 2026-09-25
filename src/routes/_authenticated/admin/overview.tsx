@@ -19,6 +19,8 @@ function AdminOverviewPage() {
     allProgress,
   } = useAdminContext();
   const navigate = useNavigate();
+  // prove obbligatorie (il Jackpot e' facoltativo e non entra nel conteggio)
+  const totalMandatory = (challenges.data ?? []).filter((c: any) => (c.type ?? c.tipo_sfida) !== "jackpot").length;
 
   return (
     <div className="space-y-6">
@@ -55,7 +57,7 @@ function AdminOverviewPage() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground font-semibold">
                 <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full ${row.statusColor}`}>{row.statusLabel}</span>
                 <span>{row.currentStageName}</span>
-                <span className="text-primary font-bold">{row.completedCount}/{(challenges.data ?? []).length} prove</span>
+                <span className="text-primary font-bold">{row.completedCount}/{totalMandatory} prove</span>
                 <span className="font-mono">{formatDuration(row.totalDurationSeconds)}</span>
               </div>
               <p className="text-[11px] text-muted-foreground truncate">
@@ -110,7 +112,7 @@ function AdminOverviewPage() {
                     {formatDuration(row.totalDurationSeconds)}
                   </td>
                   <td className="py-3.5 text-right font-bold text-primary">
-                    {row.completedCount} / {(challenges.data ?? []).length}
+                    {row.completedCount} / {totalMandatory}
                   </td>
                 </tr>
               ))}

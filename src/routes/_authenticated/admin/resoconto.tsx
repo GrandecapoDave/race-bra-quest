@@ -500,7 +500,7 @@ function AdminResocontoPage() {
 
                         {/* COMPLETED CHALLENGES */}
                         <td className="py-3.5 px-3 text-center font-mono font-bold text-zinc-300 whitespace-nowrap">
-                          {t.completed_challenges ?? 0} / 15
+                          {t.completed_challenges ?? 0} / 14
                         </td>
 
                         {/* BASE SCORE */}
