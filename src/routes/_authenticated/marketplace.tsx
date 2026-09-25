@@ -115,11 +115,11 @@ const MARKETPLACE_ITEMS = [
   },
   {
     id: "moltiplicatore_2x",
-    nome: "MOLTIPLICATORE 2X TAPPA",
+    nome: "MOLTIPLICATORE 2X SU UNA PROVA",
     categoria: "BONUS",
     costo: 45,
-    effetto: "Raddoppia x2 il punteggio totale della tappa corrente",
-    descrizione: "Raddoppia (x2) il punteggio totale ottenuto nelle prove della tappa in cui viene attivato.",
+    effetto: "Raddoppia x2 i punti di una prova a tua scelta",
+    descrizione: "Scegli una prova ancora da fare: tutti i punti che assegna alla tua squadra vengono raddoppiati (x2).",
     icon: Zap,
     color: "from-amber-500 to-yellow-400",
   },
@@ -289,6 +289,26 @@ function MarketplacePage() {
 
   // Confirmation state for high-stakes items
   const [confirmBonusItem, setConfirmBonusItem] = useState<any | null>(null);
+  // Doppio 2X: la squadra sceglie la prova da raddoppiare
+  const [multiplierItem, setMultiplierItem] = useState<any | null>(null);
+  const [multiplierChallengeId, setMultiplierChallengeId] = useState<string>("");
+  // Blackout: squadre non colpibili (blocco in corso + 3 minuti di respiro)
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const blackoutProtection = useQuery({
+    queryKey: ["blackout-protection"],
+    enabled: selectedMalus?.id === "blackout_mercato",
+    refetchInterval: 5000,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_blackout_protection");
+      return (data || []) as Array<{ team_id: string; blocked_until: string; protected_until: string }>;
+    },
+  });
+  useEffect(() => {
+    if (selectedMalus?.id !== "blackout_mercato") return undefined;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [selectedMalus?.id]);
 
   // Trappola Animation States
   const [trapSuccessData, setTrapSuccessData] = useState<any | null>(null);
@@ -682,7 +702,7 @@ function MarketplacePage() {
         }
       } else if (itemId === "moltiplicatore_2x") {
         toast.success("✨ MOLTIPLICATORE 2X ATTIVATO!", {
-          description: "Il punteggio della prossima sfida completata sarà raddoppiato (x2)!",
+          description: `I punti di "${(data as any)?.outcome?.challenge_title ?? "la prova scelta"}" sono raddoppiati (x2)!`,
           duration: 7000,
         });
       } else if (itemId === "polizza_diretta") {
@@ -967,10 +987,19 @@ function MarketplacePage() {
                           (() => {
                             const tx = myPurchases.find((t) => t.item_id === "ruota_fortuna");
                             const outcomeLabel = tx?.outcome?.label || "Ruota utilizzata";
+                            const daveCode = tx?.outcome?.dave_code;
                             return (
                               <div className="flex flex-col gap-1 text-center bg-purple-500/5 p-2.5 rounded-xl border border-purple-500/10 justify-center">
                                 <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">🎡 Ruota Utilizzata</span>
                                 <span className="text-xs text-white font-extrabold">{outcomeLabel}</span>
+                                {daveCode && (
+                                  <>
+                                    <span className="text-[10px] font-bold text-zinc-300">Parola d&apos;ordine per Dave: <strong className="text-sm tracking-widest text-white">{daveCode}</strong></span>
+                                    <a href="tel:+393335206963" className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-[11px] font-black uppercase text-white">
+                                      📞 Chiama Dave
+                                    </a>
+                                  </>
+                                )}
                               </div>
                             );
                           })()
@@ -1075,11 +1104,11 @@ function MarketplacePage() {
                             const isUsed = tx?.stato === "used";
                             return isUsed ? (
                               <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-extrabold bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800 justify-center">
-                                <span>✨ 2X UTILIZZATO</span>
+                                <span>✨ 2X USATO SU: {tx?.outcome?.challenge_title ?? "prova scelta"}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1.5 text-xs text-amber-400 font-extrabold bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 justify-center">
-                                <span>✨ 2X ATTIVO PER LA TAPPA</span>
+                                <span>✨ 2X ATTIVO SU: {tx?.outcome?.challenge_title ?? "prova scelta"}</span>
                               </div>
                             );
                           })()
@@ -1127,6 +1156,9 @@ function MarketplacePage() {
                           onClick={() => {
                             if (item.id === "bonus_punti" || item.id === "passaparola") {
                               setConfirmBonusItem(item);
+                            } else if (item.id === "moltiplicatore_2x") {
+                              setMultiplierChallengeId("");
+                              setMultiplierItem(item);
                             } else {
                               handlePurchase(item.id);
                             }
@@ -1413,17 +1445,30 @@ function MarketplacePage() {
               <p className="text-xs text-muted-foreground">
                 Scegli la squadra avversaria da colpire con il malus: <strong className="text-red-400">{selectedMalus.nome}</strong> (costo {selectedMalus.costo} 🪙).
               </p>
+              {selectedMalus.id === "blackout_mercato" && (
+                <p className="text-[11px] font-semibold text-amber-300 leading-snug">
+                  Il Blackout non si somma: una squadra già bloccata non può essere colpita di nuovo, e dopo il blocco è protetta per altri 3 minuti.
+                </p>
+              )}
             </div>
 
             {/* TEAM SELECT LIST */}
             <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
               {teams
                 .filter((t) => t.id !== team?.id) // exclude self
-                .map((t) => (
+                .map((t) => {
+                  const prot = selectedMalus.id === "blackout_mercato"
+                    ? (blackoutProtection.data ?? []).find((x) => x.team_id === t.id && new Date(x.protected_until).getTime() > nowTick)
+                    : undefined;
+                  const secsLeft = prot ? Math.max(0, Math.ceil((new Date(prot.protected_until).getTime() - nowTick) / 1000)) : 0;
+                  const inBlackout = prot ? new Date(prot.blocked_until).getTime() > nowTick : false;
+                  return (
                   <button
                     key={t.id}
+                    disabled={!!prot}
                     onClick={() => setTargetTeamId(t.id)}
                     className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
+                      prot ? "border-zinc-800 bg-zinc-950/60 opacity-60 cursor-not-allowed text-muted-foreground" :
                       targetTeamId === t.id
                         ? "border-red-500 bg-red-500/10 shadow-md shadow-red-500/5 text-foreground"
                         : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/60 text-muted-foreground"
@@ -1433,7 +1478,15 @@ function MarketplacePage() {
                       <div className="size-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${t.color}15`, border: `1px solid ${t.color}` }}>
                         <Users className="size-3.5" style={{ color: t.color }} />
                       </div>
-                      <span className="font-extrabold text-sm text-foreground">{t.nome_squadra}</span>
+                      <div className="min-w-0">
+                        <span className="block font-extrabold text-sm text-foreground">{t.nome_squadra}</span>
+                        {prot && (
+                          <span className="block text-[10px] font-bold text-amber-400">
+                            {inBlackout ? "Blackout in corso" : "In periodo di respiro"} · di nuovo colpibile tra{" "}
+                            {String(Math.floor(secsLeft / 60)).padStart(2, "0")}:{String(secsLeft % 60).padStart(2, "0")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {targetTeamId === t.id && (
                       <span className="size-4 rounded-full bg-red-500 flex items-center justify-center shrink-0">
@@ -1441,7 +1494,8 @@ function MarketplacePage() {
                       </span>
                     )}
                   </button>
-                ))}
+                  );
+                })}
 
               {teams.filter((t) => t.id !== team?.id).length === 0 && (
                 <p className="text-xs text-muted-foreground italic text-center py-4">Nessun'altra squadra attiva presente nel gioco.</p>
@@ -1866,12 +1920,19 @@ function MarketplacePage() {
                           🧠 AIUTO EXTRA DI DAVE!
                         </h4>
                         <p className="text-xs text-muted-foreground leading-relaxed px-6">
-                          La fortuna è dalla vostra parte! Per ricevere il vostro aiuto extra dovete chiamare Dave al telefono.
+                          La fortuna è dalla vostra parte! Per ricevere il vostro aiuto extra dovete chiamare Dave al telefono e dire la parola d&apos;ordine.
                         </p>
+                        {wheelOutcome.dave_code && (
+                          <div className="mx-auto max-w-xs rounded-2xl border border-purple-500/40 bg-purple-500/10 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-purple-300">Parola d&apos;ordine da dire a Dave</p>
+                            <p className="mt-1 font-display text-3xl font-black tracking-widest text-white">{wheelOutcome.dave_code}</p>
+                            <p className="mt-1 text-[10px] text-zinc-400">Annotatela: la ritroverete anche nella scheda della Ruota della Fortuna.</p>
+                          </div>
+                        )}
                       </div>
                       <div className="pt-2">
                         <a
-                          href="tel:+393333333333"
+                          href="tel:+393335206963"
                           className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg active:scale-[0.98] cursor-pointer"
                         >
                           📞 CHIAMA DAVE
@@ -2017,6 +2078,92 @@ function MarketplacePage() {
                     setConfirmBonusItem(null);
                   }}
                   className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer"
+                >
+                  Conferma
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* DOPPIO 2X: scelta della prova da raddoppiare */}
+      {multiplierItem && (() => {
+        const doneIds = new Set(
+          (progress.data ?? []).filter((p: any) => (p.status || p.stato) === "completed").map((p: any) => p.challenge_id),
+        );
+        const stageNum = (stageId: string) => {
+          const st = (stages.data ?? []).find((x: any) => x.id === stageId);
+          return (st as any)?.numero_tappa ?? (st as any)?.order_index ?? 99;
+        };
+        const options = (challenges.data ?? [])
+          .filter((c: any) => c.type !== "jackpot" && !doneIds.has(c.id))
+          .sort((a: any, b: any) => stageNum(a.stage_id) - stageNum(b.stage_id) || a.order_index - b.order_index);
+        const chosen = options.find((c: any) => c.id === multiplierChallengeId);
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="surface relative max-w-sm w-full rounded-t-3xl sm:rounded-3xl p-6 pb-8 sm:pb-6 shadow-2xl border-t sm:border border-zinc-800 bg-[#070d1e] space-y-4">
+              <div className="w-12 h-1.5 bg-zinc-700/80 rounded-full mx-auto sm:hidden" />
+              <div className="size-14 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto border border-amber-500/30 text-amber-400">
+                <Zap className="size-7" />
+              </div>
+              <div className="space-y-1.5 text-center">
+                <h3 className="text-lg font-black uppercase tracking-wide text-foreground">Moltiplicatore 2X</h3>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Scegli la prova da raddoppiare. Tutti i punti che quella prova assegna alla tua squadra valgono il doppio.
+                </p>
+              </div>
+
+              {options.length === 0 ? (
+                <p className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-center text-xs font-semibold text-zinc-300">
+                  Non ci sono prove da raddoppiare: le hai già completate tutte (il Jackpot è escluso).
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  <label htmlFor="mult-challenge" className="text-[11px] font-black uppercase tracking-wider text-zinc-400">
+                    Prova da raddoppiare
+                  </label>
+                  <select
+                    id="mult-challenge"
+                    value={multiplierChallengeId}
+                    onChange={(e) => setMultiplierChallengeId(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-3 text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="">— Scegli una prova —</option>
+                    {options.map((c: any) => (
+                      <option key={c.id} value={c.id}>
+                        Tappa {stageNum(c.stage_id)} · {c.title} ({challengeMaxPoints(c)} PT)
+                      </option>
+                    ))}
+                  </select>
+                  {chosen && (
+                    <p className="text-[11px] font-semibold text-emerald-400">
+                      Fino a +{challengeMaxPoints(chosen)} punti in più su «{chosen.title}».
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-between rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs">
+                <span className="text-zinc-500">Costo:</span>
+                <span className="font-extrabold text-orange-400">{multiplierItem.costo} Token 🪙</span>
+              </div>
+              <p className="text-center text-[9px] font-semibold uppercase tracking-wider text-zinc-500">⚠️ Azione monouso e irreversibile</p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setMultiplierItem(null)}
+                  className="flex-1 rounded-2xl border border-zinc-800 py-3 text-xs font-black uppercase text-muted-foreground hover:bg-zinc-900"
+                >
+                  Annulla
+                </button>
+                <button
+                  disabled={!multiplierChallengeId || buyingId === "moltiplicatore_2x"}
+                  onClick={async () => {
+                    await handlePurchase("moltiplicatore_2x", undefined, multiplierChallengeId);
+                    setMultiplierItem(null);
+                  }}
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 py-3 text-xs font-black uppercase tracking-wider text-black disabled:opacity-40"
                 >
                   Conferma
                 </button>

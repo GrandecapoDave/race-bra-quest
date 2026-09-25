@@ -154,3 +154,13 @@ Prima di ogni futura modifica:
 8.  **Modificare** con cautela.
 9.  **Eseguire** i regression test.
 10. **Aggiornare** la baseline e il changelog se il comportamento cambia intenzionalmente.
+
+## Regole aggiornate (settembre 2026)
+*   **Punteggio finale** = punti prove + effetti diretti bonus/malus + punti cattiveria + **bonus tempo (0–50, continuo)** + **bonus token (1 PT ogni 10 token, massimo +10)**. Il bonus tempo va alla squadra col tempo ufficiale più basso (50) fino alla più lenta tra chi ha completato tutte le prove obbligatorie (0), in proporzione; chi non le completa prende 0.
+*   **Tempo ufficiale** = tempo effettivo (pause escluse) + penalità (Freeze +2 min, Ruota Sfortunata +2/+3 min) − 2 min per ogni Partenza Anticipata. La squadra vede il tempo effettivo e, sotto, quello ufficiale con il dettaglio.
+*   **Pausa/ripresa** (Regia): il tempo si ferma per tutti e prove, risposte e acquisti sono sospesi (controllo sul server).
+*   **Blocco Banca**: dopo La Banca (Tappa 3, sfida 1) le sfide successive (Tappa 3 sfida 2 in poi, Tappe 4 e 5) restano bloccate finché la Regia non sblocca tutte le squadre insieme; il blocco si può rimettere.
+*   **Moltiplicatore 2X**: si sceglie una prova ancora da fare (Jackpot escluso); tutti i punti positivi di quella prova, già ottenuti e futuri, valgono il doppio.
+*   **Blackout Mercato**: 6 minuti, non si somma; dopo il blocco la squadra è protetta per altri 3 minuti.
+*   **Aiuto Dave** (Ruota della Fortuna): chiamata al 333 520 6963 con una parola d'ordine diversa per squadra, visibile alla Regia.
+*   **Malus bloccanti** (Freeze, Ruota Sfortunata, Enigma Extra) sono applicati dal server: finché non sono risolti le azioni di gioco sono rifiutate.

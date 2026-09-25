@@ -201,7 +201,7 @@ function TeamResocontoPage() {
                   const pos = t.final_rank ?? t.rank ?? t.position ?? 1;
                   const basePts = t.base_score ?? t.total_score_before_final_bonuses ?? t.challenges_points + (t.modifier_points ?? 0) + (t.cattiveria_points ?? 0);
                   const timeBonus = t.time_bonus ?? t.bonus_tempo ?? 0;
-                  const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.floor((t.token_balance ?? 50) / 5);
+                  const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.min(10, Math.floor((t.token_balance ?? 50) / 10));
                   const finalScore = t.final_score ?? t.total_points ?? (basePts + timeBonus + tokenBonus);
                   const teamName = t.nome_squadra || t.name || t.team_name || "Squadra";
 
@@ -377,7 +377,7 @@ function TeamResocontoPage() {
             const balanceTokens = team.token_balance ?? 50;
             const basePts = team.base_score ?? team.challenges_points + (team.modifier_points ?? 0) + (team.cattiveria_points ?? 0);
             const timeBonus = team.time_bonus ?? 0;
-            const tokenBonus = team.token_efficiency_bonus ?? Math.floor(balanceTokens / 5);
+            const tokenBonus = team.token_efficiency_bonus ?? Math.min(10, Math.floor(balanceTokens / 10));
             const finalScore = team.final_score ?? team.total_points ?? (basePts + timeBonus + tokenBonus);
 
             return (

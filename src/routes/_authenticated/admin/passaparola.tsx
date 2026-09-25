@@ -62,6 +62,23 @@ function AdminPassaparolaPage() {
   const allTeams = teamsQuery.data ?? [];
   const transactions = transactionsQuery.data ?? [];
 
+  // Aiuto Dave (esito della Ruota della Fortuna): squadre che hanno diritto a chiamare, con la loro parola d'ordine
+  const daveQuery = useQuery({
+    queryKey: ["admin-dave-help"],
+    refetchInterval: 4000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("marketplace_transactions")
+        .select("id,team_id,data_acquisto,dettagli")
+        .eq("marketplace_item_id", "ruota_fortuna")
+        .not("dettagli->>dave_code", "is", null)
+        .order("data_acquisto", { ascending: false });
+      if (error) return [];
+      return (data ?? []) as Array<{ id: string; team_id: string; data_acquisto: string; dettagli: { dave_code: string } }>;
+    },
+  });
+  const daveRows = daveQuery.data ?? [];
+
   // Filter for Passaparola transactions
   const passaparolaTxs = transactions.filter((t: any) => t.item_id === "passaparola" || t.marketplace_item_id === "passaparola");
 
@@ -117,6 +134,28 @@ function AdminPassaparolaPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+        {/* AIUTO DAVE: parole d'ordine delle squadre che hanno vinto la chiamata alla Ruota della Fortuna */}
+        <div className="rounded-2xl border border-purple-500/30 bg-purple-500/5 p-4 space-y-2">
+          <h2 className="text-sm font-black uppercase tracking-wider text-purple-300">📞 Aiuto Dave — parole d&apos;ordine</h2>
+          <p className="text-[11px] text-muted-foreground">
+            Una squadra che chiama Dave deve dire la propria parola d&apos;ordine: se non corrisponde, non ha vinto l&apos;aiuto.
+          </p>
+          {daveRows.length === 0 ? (
+            <p className="text-xs italic text-muted-foreground">Nessuna squadra ha ancora ottenuto l&apos;Aiuto Dave.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {daveRows.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+                  <span className="text-sm font-extrabold text-foreground">
+                    {allTeams.find((t: any) => t.id === r.team_id)?.nome_squadra ?? "Squadra"}
+                  </span>
+                  <span className="font-mono text-base font-black tracking-widest text-purple-300">{r.dettagli.dave_code}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {/* Title Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">

@@ -18,6 +18,16 @@ BEGIN
     EXECUTE newdef;
   END IF;
 
+  -- Risposta della Regia al Passaparola: solo SÌ oppure NO (qualunque altro valore veniva mostrato alla squadra come NO)
+  def := pg_get_functiondef('public.respond_passaparola_request(uuid,text,text,uuid)'::regprocedure);
+  IF position('Risposta non valida' IN def) = 0 THEN
+    newdef := replace(def,
+      E'  SELECT * INTO v_tx FROM public.marketplace_transactions WHERE id = p_transaction_id FOR UPDATE;\n',
+      E'  p_response := CASE WHEN upper(trim(COALESCE(p_response, \'\'))) IN (\'SÌ\', \'SI\', \'SÍ\') THEN \'SÌ\' WHEN upper(trim(COALESCE(p_response, \'\'))) = \'NO\' THEN \'NO\' ELSE NULL END;\n  IF p_response IS NULL THEN\n    RETURN jsonb_build_object(\'success\', false, \'error\', \'Risposta non valida: usa SÌ oppure NO.\');\n  END IF;\n\n  SELECT * INTO v_tx FROM public.marketplace_transactions WHERE id = p_transaction_id FOR UPDATE;\n');
+    IF newdef = def THEN RAISE EXCEPTION 'respond_passaparola: punto di inserimento non trovato'; END IF;
+    EXECUTE newdef;
+  END IF;
+
   -- Classifica: solo Regia o report pubblicato vedono tutte le squadre (il Bonus Classifica passa dall'istantanea)
   def := pg_get_functiondef('public.get_secure_leaderboard()'::regprocedure);
   IF position('INTO v_has_bonus' IN def) > 0 THEN

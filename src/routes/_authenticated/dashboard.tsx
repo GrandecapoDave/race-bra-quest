@@ -589,7 +589,7 @@ function Dashboard() {
               </div>
               <div>
                 <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider">✨ MOLTIPLICATORE 2X ATTIVO</h4>
-                <p className="text-[11px] text-zinc-300">Il punteggio della prossima prova completata con successo sarà raddoppiato (x2)!</p>
+                <p className="text-[11px] text-zinc-300">I punti della prova scelta sono raddoppiati (x2)!</p>
               </div>
             </div>
             <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">

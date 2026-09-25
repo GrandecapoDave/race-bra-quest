@@ -383,13 +383,13 @@ function AdminResocontoPage() {
           <div className="space-y-1">
             <span className="font-bold text-zinc-400 uppercase text-[10px] tracking-wider">Bonus Tempo Dinamico</span>
             <p className="font-mono text-zinc-300 text-[11px]">
-              1°: <span className="text-amber-400">+30</span> | 2°: <span className="text-amber-400">+25</span> | 3°: <span className="text-amber-400">+20</span> | 4°: +17 | 5°: +14 ...
+              Da <span className="text-amber-400">+50</span> (tempo ufficiale più basso) a <span className="text-amber-400">0</span> (più alto), in proporzione. Solo per chi completa tutte le prove.
             </p>
           </div>
           <div className="space-y-1">
             <span className="font-bold text-zinc-400 uppercase text-[10px] tracking-wider">Bonus Efficienza Token</span>
             <p className="font-mono text-zinc-300 text-[11px]">
-              <span className="text-amber-400">+1 PT</span> ogni 5 Token rimasti (<code className="text-zinc-400">⌊Token/5⌋</code>)
+              <span className="text-amber-400">+1 PT</span> ogni 10 Token rimasti, massimo <span className="text-amber-400">+10</span> (<code className="text-zinc-400">min(10, ⌊Token/10⌋)</code>)
             </p>
           </div>
         </div>
@@ -434,7 +434,7 @@ function AdminResocontoPage() {
                     const basePts = t.base_score ?? t.total_score_before_final_bonuses ?? (t.challenges_points ?? 0) + (t.modifier_points ?? 0);
                     const cattiveriaPts = t.cattiveria_points ?? 0;
                     const timeBonus = t.time_bonus ?? t.bonus_tempo ?? 0;
-                    const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.floor((t.token_balance ?? 50) / 5);
+                    const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.min(10, Math.floor((t.token_balance ?? 50) / 10));
                     const finalScore = t.final_score ?? t.total_points ?? (basePts + cattiveriaPts + timeBonus + tokenBonus);
                     const teamName = t.nome_squadra || t.name || t.team_name || "Squadra";
 
@@ -625,7 +625,7 @@ function AdminResocontoPage() {
               const basePts = team.base_score ?? (team.challenges_points ?? 0) + (team.modifier_points ?? 0);
               const cattiveriaPts = team.cattiveria_points ?? 0;
               const timeBonus = team.time_bonus ?? 0;
-              const tokenBonus = team.token_efficiency_bonus ?? Math.floor(balanceTokens / 5);
+              const tokenBonus = team.token_efficiency_bonus ?? Math.min(10, Math.floor(balanceTokens / 10));
               const finalScore = team.final_score ?? team.total_points ?? (basePts + cattiveriaPts + timeBonus + tokenBonus);
 
               return (
