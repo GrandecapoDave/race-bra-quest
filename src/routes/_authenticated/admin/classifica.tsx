@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Trophy, Clock, ShieldAlert, Award } from "lucide-react";
-import { leaderboardQuery, formatDuration } from "@/lib/race";
+import { leaderboardQuery, formatDuration, rankLeaderboard } from "@/lib/race";
 import { HeroAvatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,6 +25,26 @@ function AdminLiveLeaderboardPage() {
     ...leaderboardQuery,
     refetchInterval: 3000,
   });
+
+  // Interruttore: mostra la classifica CON i punti cattiveria (malus/bonus usati). Di default e' quella che vedono le squadre.
+  const [withMalus, setWithMalus] = useState<boolean>(() => {
+    try { return localStorage.getItem("admin-live-with-malus") === "1"; } catch { return false; }
+  });
+  const toggleMalus = () => {
+    const next = !withMalus;
+    setWithMalus(next);
+    try { localStorage.setItem("admin-live-with-malus", next ? "1" : "0"); } catch { /* ignore */ }
+  };
+  const rows = useMemo(() => {
+    const withTotals = (leaderboard as any[]).map((r) => ({
+      ...r,
+      shown_total: Number(r.total_points ?? 0) + (withMalus ? Number(r.cattiveria_points ?? 0) : 0),
+    }));
+    if (!withMalus) return withTotals; // stesso ordine che vedono le squadre
+    // stesso criterio della classifica: prove completate, poi punti (ora con la cattiveria), poi tempo
+    const ordered = rankLeaderboard(withTotals.map((r) => ({ ...r, total_points: r.shown_total })) as any);
+    return ordered as any[];
+  }, [leaderboard, withMalus]);
 
   // Track the last updated time
   useEffect(() => {
@@ -79,6 +99,26 @@ function AdminLiveLeaderboardPage() {
           </div>
         </div>
 
+        {/* Interruttore cattiveria */}
+        <button
+          type="button"
+          onClick={toggleMalus}
+          aria-pressed={withMalus}
+          className={`flex items-center gap-2.5 self-start sm:self-center rounded-2xl border px-3.5 py-2 text-left transition-colors cursor-pointer ${
+            withMalus ? "border-purple-500/50 bg-purple-500/15" : "border-border/50 bg-secondary/40 hover:bg-secondary/60"
+          }`}
+        >
+          <span className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${withMalus ? "bg-purple-500" : "bg-zinc-700"}`}>
+            <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${withMalus ? "left-[18px]" : "left-0.5"}`} />
+          </span>
+          <span className="leading-tight">
+            <span className="block text-[11px] font-black uppercase tracking-wider text-foreground">😈 Con punti cattiveria</span>
+            <span className="block text-[10px] text-muted-foreground">
+              {withMalus ? "Prove + modificatori + cattiveria" : "Come la vedono le squadre"}
+            </span>
+          </span>
+        </button>
+
         {/* Live Indicator */}
         <div className="flex items-center gap-3 self-start sm:self-center">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/10 border border-success/20 text-success text-[10px] uppercase font-black tracking-widest animate-pulse">
@@ -93,6 +133,13 @@ function AdminLiveLeaderboardPage() {
         </div>
       </div>
 
+      {withMalus && (
+        <p className="rounded-xl border border-purple-500/25 bg-purple-500/5 px-3.5 py-2.5 text-[11px] leading-snug text-purple-200/90">
+          Classifica in corso <strong>con i punti cattiveria</strong>, aggiornata in tempo reale. I bonus tempo e token non ci sono ancora:
+          si calcolano solo a fine gara (li vedi nel Resoconto, con "Ricalcola").
+        </p>
+      )}
+
       {/* LEADERBOARD TABLE CARD */}
       <div className="surface border border-border/30 rounded-2xl p-5 space-y-4">
         {leaderboard.length === 0 ? (
@@ -105,7 +152,7 @@ function AdminLiveLeaderboardPage() {
           <>
           {/* MOBILE: una scheda per squadra */}
           <div className="space-y-2 md:hidden">
-            {leaderboard.map((row: any, index: number) => {
+            {rows.map((row: any, index: number) => {
               const position = index + 1;
               const medal = position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : `#${position}`;
               const expires = row.freeze_expires_at ? new Date(row.freeze_expires_at).getTime() : 0;
@@ -138,7 +185,7 @@ function AdminLiveLeaderboardPage() {
                       <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider ${statusClass}`}>{statusText}</span>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-display text-xl font-black text-primary leading-none">{row.total_points}</p>
+                      <p className="font-display text-xl font-black text-primary leading-none">{row.shown_total}</p>
                       <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">punti</p>
                     </div>
                   </div>
@@ -181,7 +228,7 @@ function AdminLiveLeaderboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/25">
-                {leaderboard.map((row: any, index: number) => {
+                {rows.map((row: any, index: number) => {
                   const position = index + 1;
                   const medal =
                     position === 1
@@ -292,7 +339,7 @@ function AdminLiveLeaderboardPage() {
                         {row.modifier_points > 0 ? `+${row.modifier_points}` : row.modifier_points ?? 0} PT
                       </td>
                       <td className="px-4 py-4 text-center font-black text-sm text-primary">
-                        {row.total_points} PT
+                        {row.shown_total} PT
                       </td>
                       <td className="px-4 py-4 text-center font-mono font-bold text-foreground">
                         {row.total_duration_seconds != null ? (
