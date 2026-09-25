@@ -488,13 +488,14 @@ function Dashboard() {
           return (
             <div
               key={tx.id || stage.id}
-              className="bg-yellow-500/10 border border-yellow-500/35 text-yellow-400 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-yellow-950/20"
+              className="bg-yellow-500/10 border border-yellow-500/35 text-yellow-400 p-4 rounded-2xl text-xs animate-in slide-in-from-top-4 duration-300 shadow-lg shadow-yellow-950/20"
             >
               <div className="flex items-start gap-3">
-                <span className="text-3xl shrink-0 select-none mt-0.5">{medal}</span>
-                <div className="space-y-1">
+                <span className="text-3xl shrink-0 select-none">{medal}</span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-500/80">Riepilogo</p>
                   <h4 className="text-sm font-black uppercase tracking-wider">
-                    Tappa Conclusa: {stage.title || stage.nome_tappa || outcome.stage_name}
+                    Tappa conclusa: {stage.title || stage.nome_tappa || outcome.stage_name}
                   </h4>
                   <p className="text-zinc-300 text-xs leading-relaxed">
                     La vostra squadra ha completato la tappa e si è classificata in <strong className="text-yellow-400 font-extrabold">{positionLabel}</strong> posizione.
@@ -505,16 +506,18 @@ function Dashboard() {
                     <span>Saldo: {outcome.old_balance} → <strong className="text-yellow-400 font-extrabold">🪙 {outcome.new_balance} Token</strong></span>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  aria-label="Chiudi il riepilogo"
+                  onClick={() => {
+                    handleDismissReward(stage.id);
+                    if (tx.id) handleDismissNotification(tx.id);
+                  }}
+                  className="size-7 shrink-0 rounded-full grid place-items-center text-xs font-black bg-yellow-900/40 border border-yellow-500/30 hover:bg-yellow-800/50 cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  handleDismissReward(stage.id);
-                  if (tx.id) handleDismissNotification(tx.id);
-                }}
-                className="primary-gradient glow shrink-0 px-4 py-2.5 rounded-xl text-primary-foreground font-black text-xs uppercase tracking-wider cursor-pointer hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto text-center shadow-md shadow-yellow-500/10"
-              >
-                OK, Ricevi
-              </button>
             </div>
           );
         })}

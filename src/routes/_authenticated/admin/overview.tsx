@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { signed } from "@/lib/utils";
 import { formatDuration } from "@/lib/race";
 import { useAdminContext } from "../admin";
 import { AdminRaceControls } from "@/components/AdminRaceControls";
@@ -164,7 +165,7 @@ function AdminOverviewPage() {
                   </div>
                   {log.points && (
                     <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-primary/20 text-primary shrink-0">
-                      +{log.points} PT
+                      {signed(log.points)} PT
                     </span>
                   )}
                 </div>

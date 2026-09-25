@@ -33,8 +33,10 @@ import {
 } from "lucide-react";
 import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
+import { HeroAvatar } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  leaderboardQuery,
   myTeamQuery,
   stagesQuery,
   challengesQuery,
@@ -152,9 +154,9 @@ function AppShellInner({
   // They MUST NOT override padding/size since sidebarMenuButtonVariants handles
   // those via `group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2`.
   const activeLinkClass =
-    "bg-orange-500/15 text-orange-400 font-bold rounded-lg shadow-sm";
+    "bg-orange-500/15 text-orange-300 font-bold rounded-xl ring-1 ring-orange-500/25 shadow-sm";
   const inactiveLinkClass =
-    "text-slate-400 hover:text-white hover:bg-white/6 transition-all duration-200 rounded-lg";
+    "text-slate-300 hover:text-white hover:bg-white/6 transition-all duration-200 rounded-xl";
 
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [enigmaAnswer, setEnigmaAnswer] = useState("");
@@ -238,6 +240,8 @@ function AppShellInner({
 
   // Query database state to determine if Marketplace is unlocked and active
   const team = useQuery({ ...myTeamQuery, enabled: !isAdmin, refetchInterval: 3000 });
+  const sidebarBoard = useQuery({ ...leaderboardQuery, enabled: !isAdmin, refetchInterval: 5000 });
+  const sidebarPoints = sidebarBoard.data?.find((r: any) => r.team_id === team.data?.id)?.total_points ?? 0;
 
   // Notifiche di gioco (premi tappa, malus subiti) valide in tutte le pagine, una sola volta per evento
   const { user: sessionUser } = useSession();
@@ -641,7 +645,7 @@ function AppShellInner({
           },
         ]
       : []),
-    { to: "/classifica", label: isClassificationUnlocked ? "Classifica" : "Classifica 🔒", icon: Trophy },
+    { to: "/classifica", label: "Classifica", icon: isClassificationUnlocked ? Trophy : Lock },
     ...(isReportPublished
       ? [
           {
@@ -677,7 +681,7 @@ function AppShellInner({
         className="border-r border-white/[0.08] bg-[#0c1017] text-white shadow-2xl"
       >
         {/* ── Brand header ── */}
-        <SidebarHeader className="px-3 pt-6 pb-4 safe-top group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-4">
+        <SidebarHeader style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }} className="px-3 pb-4 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-4">
           <Link
             to={isAdmin ? "/admin" : "/dashboard"}
             onClick={closeMobileMenu}
@@ -692,6 +696,32 @@ function AppShellInner({
               PECHINO <span className="text-orange-400">BRA</span>
             </span>
           </Link>
+
+          {/* Chi sei: emoji, nome, punti e token della squadra */}
+          {!isAdmin && team.data && (
+            <Link
+              to="/dashboard"
+              onClick={closeMobileMenu}
+              className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2.5 transition-colors hover:bg-white/[0.07] group-data-[collapsible=icon]:hidden"
+            >
+              <HeroAvatar
+                emoji={team.data.avatar_url ?? "🏳️"}
+                color={team.data.color ?? "#f97316"}
+                isBordered
+                radius="lg"
+                className="size-11 text-2xl"
+                style={{ backgroundColor: (team.data.color ?? "#f97316") + "26" }}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-black uppercase tracking-wide text-white">{team.data.name}</p>
+                <div className="mt-0.5 flex items-center gap-2 text-[11px] font-bold tabular-nums">
+                  <span className="text-orange-300">{sidebarPoints} PT</span>
+                  <span className="text-white/20">·</span>
+                  <span className="text-amber-300">🪙 {team.data.token_balance ?? 0}</span>
+                </div>
+              </div>
+            </Link>
+          )}
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-1">
@@ -742,7 +772,7 @@ function AppShellInner({
                   <SidebarMenu className="gap-0.5">
                     {teamNavItems.map((item) => (
                       <SidebarMenuItem key={item.to}>
-                        <SidebarMenuButton asChild tooltip={item.label}>
+                        <SidebarMenuButton asChild size="lg" tooltip={item.label}>
                           <Link
                             to={item.to}
                             onClick={async () => {
@@ -780,7 +810,7 @@ function AppShellInner({
                   <SidebarMenu className="gap-0.5">
                     {summaryItems.map((item) => (
                       <SidebarMenuItem key={item.to}>
-                        <SidebarMenuButton asChild tooltip={item.label}>
+                        <SidebarMenuButton asChild size="lg" tooltip={item.label}>
                           <Link
                             to={item.to}
                             onClick={async () => {
@@ -822,7 +852,7 @@ function AppShellInner({
                   signOut();
                 }}
                 tooltip="Esci"
-                className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 rounded-lg py-2.5"
+                size="lg" className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 rounded-xl"
               >
                 <LogOut className="size-[17px] shrink-0" strokeWidth={1.8} />
                 <span className="text-[13px] font-semibold tracking-wide group-data-[collapsible=icon]:hidden">

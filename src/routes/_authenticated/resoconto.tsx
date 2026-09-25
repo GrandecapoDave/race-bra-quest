@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { signed } from "@/lib/utils";
 import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -129,39 +130,34 @@ function TeamResocontoPage() {
       {/* PODIUM SUMMARY */}
       {/* ===================================================================== */}
       {teams.length >= 3 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* 2° POSTO */}
-          <div className="surface p-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 text-center space-y-2 order-2 sm:order-1">
-            <span className="text-3xl">🥈</span>
-            <p className="text-xs font-black uppercase text-zinc-400">2° Posto</p>
-            <h3 className="font-extrabold text-base text-foreground uppercase truncate">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end">
+          <div className="surface p-3 sm:p-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 text-center space-y-1 sm:space-y-2 min-w-0 order-1 self-start">
+            <span className="text-2xl sm:text-4xl">🥈</span>
+            <p className="text-[9px] sm:text-xs font-black uppercase text-zinc-400">2° Posto</p>
+            <h3 className="font-extrabold text-[11px] sm:text-base text-foreground uppercase truncate">
               {teams[1].nome_squadra || teams[1].name || teams[1].team_name}
             </h3>
-            <p className="text-xl font-display font-black text-primary">
+            <p className="text-base sm:text-2xl font-display font-black text-primary">
               {teams[1].final_score ?? teams[1].total_points} PT
             </p>
           </div>
-
-          {/* 1° POSTO */}
-          <div className="surface p-5 rounded-2xl border-2 border-gold/60 bg-gold/5 text-center space-y-2 order-1 sm:order-2 shadow-xl shadow-gold/5">
-            <span className="text-4xl">🥇</span>
-            <p className="text-xs font-black uppercase text-gold">Vincitori Assoluti</p>
-            <h3 className="font-extrabold text-lg text-foreground uppercase truncate">
+          <div className="surface p-3 sm:p-5 rounded-2xl border-2 border-gold/60 bg-gold/5 shadow-xl shadow-gold/5 text-center space-y-1 sm:space-y-2 min-w-0 order-2 ">
+            <span className="text-2xl sm:text-4xl">🥇</span>
+            <p className="text-[9px] sm:text-xs font-black uppercase text-gold">Vincitori</p>
+            <h3 className="font-extrabold text-[11px] sm:text-base text-foreground uppercase truncate">
               {teams[0].nome_squadra || teams[0].name || teams[0].team_name}
             </h3>
-            <p className="text-2xl font-display font-black text-gold">
+            <p className="text-base sm:text-2xl font-display font-black text-gold">
               {teams[0].final_score ?? teams[0].total_points} PT
             </p>
           </div>
-
-          {/* 3° POSTO */}
-          <div className="surface p-4 rounded-2xl border border-amber-900/60 bg-zinc-950/40 text-center space-y-2 order-3">
-            <span className="text-3xl">🥉</span>
-            <p className="text-xs font-black uppercase text-amber-600">3° Posto</p>
-            <h3 className="font-extrabold text-base text-foreground uppercase truncate">
+          <div className="surface p-3 sm:p-4 rounded-2xl border border-amber-900/60 bg-zinc-950/40 text-center space-y-1 sm:space-y-2 min-w-0 order-3 self-start">
+            <span className="text-2xl sm:text-4xl">🥉</span>
+            <p className="text-[9px] sm:text-xs font-black uppercase text-amber-600">3° Posto</p>
+            <h3 className="font-extrabold text-[11px] sm:text-base text-foreground uppercase truncate">
               {teams[2].nome_squadra || teams[2].name || teams[2].team_name}
             </h3>
-            <p className="text-xl font-display font-black text-primary">
+            <p className="text-base sm:text-2xl font-display font-black text-primary">
               {teams[2].final_score ?? teams[2].total_points} PT
             </p>
           </div>
@@ -180,6 +176,10 @@ function TeamResocontoPage() {
             {teams.length} Squadre
           </span>
         </div>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          <strong className="text-foreground/80">Punti Base</strong> = punti delle prove + modificatori + cattiveria.{" "}
+          <strong className="text-foreground/80">Punti Finali</strong> = Punti Base + Bonus Tempo + Bonus Token.
+        </p>
 
         {/* MOBILE: una scheda per squadra */}
         <div className="space-y-2.5 md:hidden">
@@ -232,7 +232,7 @@ function TeamResocontoPage() {
                   ))}
                 </div>
                 <p className="text-center font-mono text-[10px] text-muted-foreground">
-                  Tempo totale {formatDuration(t.total_time_seconds ?? t.total_duration_seconds ?? 0)} · {t.token_balance ?? 50} 🪙 rimasti
+                  Tempo totale {formatDuration(Math.max(0, t.total_time_seconds ?? t.total_duration_seconds ?? 0))} · {t.token_balance ?? 50} 🪙 rimasti
                 </p>
               </div>
             );
@@ -338,7 +338,7 @@ function TeamResocontoPage() {
 
                       {/* TEMPO */}
                       <td className="py-3.5 px-3 text-center font-mono text-[11px] text-zinc-400 whitespace-nowrap">
-                        <div>{formatDuration(t.total_time_seconds ?? t.total_duration_seconds ?? 0)}</div>
+                        <div>{formatDuration(Math.max(0, t.total_time_seconds ?? t.total_duration_seconds ?? 0))}</div>
                         <span className="text-[9px] text-muted-foreground uppercase font-bold">
                           #{t.time_rank ?? pos} tempo
                         </span>
@@ -431,9 +431,13 @@ function TeamResocontoPage() {
             const teamPos = team.final_rank ?? team.position ?? team.rank ?? 1;
             const teamName = team.nome_squadra || team.name || team.team_name || "Squadra";
             const initialTokens = team.tokens_initial ?? 50;
-            const gainedTokens = team.tokens_gained_rewards ?? team.tokens_gained_stage_rewards ?? 0;
-            const spentTokens = team.tokens_spent_marketplace ?? 0;
-            const balanceTokens = team.token_balance ?? 50;
+                                    const balanceTokens = team.token_balance ?? 50;
+                        // Token spesi = somma dei costi degli acquisti (bonus e malus) di tutte le tappe; il resto sono premi di tappa e variazioni della Regia
+                        const spentTokens = team.tokens_spent_marketplace ?? (team.stages_breakdown ?? []).reduce(
+                          (sum: number, sb: any) => sum + [...(sb.bonuses_used ?? []), ...(sb.maluses_used ?? [])].reduce((a: number, x: any) => a + Number(x.cost_tokens ?? 0), 0),
+                          0,
+                        );
+                        const gainedTokens = team.tokens_gained_rewards ?? team.tokens_gained_stage_rewards ?? (balanceTokens - initialTokens + spentTokens);
             const basePts = team.base_score ?? team.challenges_points + (team.modifier_points ?? 0) + (team.cattiveria_points ?? 0);
             const timeBonus = team.time_bonus ?? 0;
             const tokenBonus = team.token_efficiency_bonus ?? Math.min(10, Math.floor(balanceTokens / 10));
@@ -504,7 +508,7 @@ function TeamResocontoPage() {
                       <p className="font-mono font-bold text-zinc-300">+{initialTokens} TK</p>
                     </div>
                     <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
-                      <p className="text-[9px] text-muted-foreground uppercase font-bold">Guadagnati Fine Tappa</p>
+                      <p className="text-[9px] text-muted-foreground uppercase font-bold">Premi e bonus ricevuti</p>
                       <p className="font-mono font-bold text-emerald-400">+{gainedTokens} TK</p>
                     </div>
                     <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
@@ -636,7 +640,7 @@ function TeamResocontoPage() {
                                         </div>
                                         <div className="flex items-center gap-3 font-mono text-[11px]">
                                           <span className="text-amber-400">-{m.cost_tokens} TK</span>
-                                          <span className="text-purple-400">+{m.cattiveria_delta} 😈</span>
+                                          <span className="text-purple-400">{signed(m.cattiveria_delta)} 😈</span>
                                         </div>
                                       </div>
                                     ))}

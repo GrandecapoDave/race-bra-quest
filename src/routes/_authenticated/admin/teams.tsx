@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { signed } from "@/lib/utils";
 import { useAdminContext } from "../admin";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -787,7 +788,7 @@ function AdminTeamsPage() {
                         <td className="py-3 pr-4">
                           {score && score.punti !== undefined && score.punti !== null ? (
                             <span className="font-mono font-black text-amber-400 text-sm">
-                              +{score.punti}{" "}
+                              {signed(score.punti)}{" "}
                               <span className="text-[10px] text-zinc-500 font-normal">/ {maxPoints} PT</span>
                             </span>
                           ) : isCompleted ? (

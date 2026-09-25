@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { signed } from "@/lib/utils";
 import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -432,7 +433,8 @@ function AdminResocontoPage() {
                 <tbody className="divide-y divide-border/20">
                   {teams.map((t: any) => {
                     const pos = t.final_rank ?? t.rank ?? t.position ?? 1;
-                    const basePts = t.base_score ?? t.total_score_before_final_bonuses ?? (t.challenges_points ?? 0) + (t.modifier_points ?? 0);
+                    // base_score include gia' la cattiveria: qui mostriamo prove + modificatori, cosi' le colonne si sommano al totale
+                    const basePts = (t.challenges_points ?? 0) + (t.modifier_points ?? 0);
                     const cattiveriaPts = t.cattiveria_points ?? 0;
                     const timeBonus = t.time_bonus ?? t.bonus_tempo ?? 0;
                     const tokenBonus = t.token_efficiency_bonus ?? t.bonus_token ?? Math.min(10, Math.floor((t.token_balance ?? 50) / 10));
@@ -515,7 +517,7 @@ function AdminResocontoPage() {
 
                         {/* TOTAL TIME */}
                         <td className="py-3.5 px-3 text-center font-mono text-[11px] text-zinc-400 whitespace-nowrap">
-                          <div>{formatDuration(t.total_time_seconds ?? t.total_duration_seconds ?? 0)}</div>
+                          <div>{formatDuration(Math.max(0, t.total_time_seconds ?? t.total_duration_seconds ?? 0))}</div>
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">
                             #{t.time_rank ?? pos} tempo
                           </span>
@@ -620,10 +622,14 @@ function AdminResocontoPage() {
               const teamPos = team.final_rank ?? team.position ?? team.rank ?? 1;
               const teamName = team.nome_squadra || team.name || team.team_name || "Squadra";
               const initialTokens = team.tokens_initial ?? 50;
-              const gainedTokens = team.tokens_gained_rewards ?? team.tokens_gained_stage_rewards ?? 0;
-              const spentTokens = team.tokens_spent_marketplace ?? 0;
-              const balanceTokens = team.token_balance ?? 50;
-              const basePts = team.base_score ?? (team.challenges_points ?? 0) + (team.modifier_points ?? 0);
+                                          const balanceTokens = team.token_balance ?? 50;
+                            // Token spesi = somma dei costi degli acquisti (bonus e malus) di tutte le tappe; il resto sono premi di tappa e variazioni della Regia
+                            const spentTokens = team.tokens_spent_marketplace ?? (team.stages_breakdown ?? []).reduce(
+                              (sum: number, sb: any) => sum + [...(sb.bonuses_used ?? []), ...(sb.maluses_used ?? [])].reduce((a: number, x: any) => a + Number(x.cost_tokens ?? 0), 0),
+                              0,
+                            );
+                            const gainedTokens = team.tokens_gained_rewards ?? team.tokens_gained_stage_rewards ?? (balanceTokens - initialTokens + spentTokens);
+              const basePts = (team.challenges_points ?? 0) + (team.modifier_points ?? 0);
               const cattiveriaPts = team.cattiveria_points ?? 0;
               const timeBonus = team.time_bonus ?? 0;
               const tokenBonus = team.token_efficiency_bonus ?? Math.min(10, Math.floor(balanceTokens / 10));
@@ -657,7 +663,7 @@ function AdminResocontoPage() {
                         </div>
                         <p className="text-xs text-muted-foreground font-semibold mt-1">
                           {team.motto ? `"${team.motto}" · ` : ""}
-                          Prove: {team.completed_challenges ?? 0}/15 · Tempo: {formatDuration(team.total_time_seconds ?? team.total_duration_seconds ?? 0)} (#{team.time_rank ?? teamPos} tempo)
+                          Prove: {team.completed_challenges ?? 0}/14 · Tempo: {formatDuration(Math.max(0, team.total_time_seconds ?? team.total_duration_seconds ?? 0))} (#{team.time_rank ?? teamPos} tempo)
                         </p>
                       </div>
                     </div>
@@ -676,7 +682,7 @@ function AdminResocontoPage() {
                         <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-tight text-purple-400 truncate w-full flex items-center justify-center gap-1">
                           <span>😈</span> <span>Cattiveria</span>
                         </span>
-                        <p className="text-base sm:text-lg font-mono font-black text-purple-400 truncate mt-0.5">+{cattiveriaPts} PT</p>
+                        <p className="text-base sm:text-lg font-mono font-black text-purple-400 truncate mt-0.5">{signed(cattiveriaPts)} PT</p>
                       </div>
                       <div className="bg-zinc-900/60 p-2.5 sm:p-3 rounded-xl border border-zinc-800 text-center flex flex-col items-center justify-center min-w-0 overflow-hidden">
                         <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate w-full">Bonus Tempo</span>
@@ -700,7 +706,7 @@ function AdminResocontoPage() {
                         <p className="font-mono font-bold text-zinc-300">+{initialTokens} TK</p>
                       </div>
                       <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
-                        <p className="text-[9px] text-muted-foreground uppercase font-bold">Guadagnati Fine Tappa</p>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold">Premi e bonus ricevuti</p>
                         <p className="font-mono font-bold text-emerald-400">+{gainedTokens} TK</p>
                       </div>
                       <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
@@ -832,7 +838,7 @@ function AdminResocontoPage() {
                                           </div>
                                           <div className="flex items-center gap-3 font-mono text-[11px]">
                                             <span className="text-amber-400">-{m.cost_tokens} TK</span>
-                                            <span className="text-purple-400">+{m.cattiveria_delta} 😈</span>
+                                            <span className="text-purple-400">{signed(m.cattiveria_delta)} 😈</span>
                                           </div>
                                         </div>
                                       ))}
