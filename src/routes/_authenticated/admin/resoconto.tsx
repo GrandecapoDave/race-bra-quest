@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { signed } from "@/lib/utils";
 import { AnimatedEmoji } from "@/components/ui/avatar";
 import { useState } from "react";
+import { challengeMaxPoints, challengesQuery } from "@/lib/race";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +57,12 @@ function AdminResocontoPage() {
 
   const reportStatus = useQuery(reportStatusQuery);
   const reportQuery = useQuery(gameReportQuery(user?.id));
+  // massimo REALE per prova (passaggi + completamento), come lo vedono le squadre nelle prove
+  const challengesForMax = useQuery(challengesQuery);
+  const realMax = (challengeId: string, fallback: number) => {
+    const c = (challengesForMax.data ?? []).find((x: any) => x.id === challengeId);
+    return c ? challengeMaxPoints({ type: c.type, points: c.points }) : fallback;
+  };
 
   const status = reportStatus.data?.status || reportQuery.data?.status || "NOT_CALCULATED";
   const isCalculated = status === "CALCULATED" || status === "PUBLISHED";
@@ -694,6 +701,19 @@ function AdminResocontoPage() {
                       </div>
                     </div>
                   </div>
+                  {(() => {
+                    const stageSum = (team.stages_breakdown ?? []).reduce((a: number, sb: any) => a + Number(sb.stage_total_points ?? 0), 0);
+                    const catt = Number(team.cattiveria_points ?? 0);
+                    const baseFull = Number(team.base_score ?? 0);
+                    const other = baseFull - catt - stageSum;
+                    return (
+                      <p className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2 text-[11px] leading-relaxed text-zinc-400">
+                        <strong className="text-zinc-200">Base + cattiveria = {baseFull}</strong> = punti delle tappe {stageSum}
+                        {other !== 0 && <> {signed(other)} altri aggiustamenti (senza tappa)</>}
+                        {catt !== 0 && <> {signed(catt)} cattiveria</>}.
+                      </p>
+                    );
+                  })()}
 
                   {/* MOVIMENTO TOKEN */}
                   <div className="bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/80 space-y-2">
@@ -789,7 +809,7 @@ function AdminResocontoPage() {
                                           )}
                                         </div>
                                         <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono">
-                                          <span>Max: {c.max_points} PT</span>
+                                          <span>Max: {realMax(c.challenge_id, c.max_points)} PT</span>
                                           <span className="font-bold text-foreground">
                                             Ottenuti: {c.points_awarded} PT
                                           </span>

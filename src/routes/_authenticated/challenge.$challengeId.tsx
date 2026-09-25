@@ -61,7 +61,9 @@ function ChallengePage() {
   const isEnigma = challenge?.type === "enigma_musicale" || challenge?.type === "enigma_testo" || challenge?.type === "lucchetto_direzionale" || challenge?.type === "enigma_coordinate";
 
   useEffect(() => {
-    if (team.data && challenge && state === "available" && !started && !start.isPending) {
+    // Cornhole e Boxe sono tornei fisici: se la finale e' gia' stata registrata, start_challenge allinea la prova anche a chi ha gia' una riga "in corso"
+    const isTournament = challenge?.type === "cornhole" || challenge?.type === "boxe";
+    if (team.data && challenge && state === "available" && (!started || isTournament) && !start.isPending) {
       if (challenge.type === "emoji_movies") return;
       if (isRebusVisivo) return;
       if (isEnigma) return; // Enigma challenges self-manage their start via submit_enigma_answer

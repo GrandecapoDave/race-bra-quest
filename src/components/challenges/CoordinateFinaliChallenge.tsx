@@ -116,11 +116,26 @@ export function CoordinateFinaliChallenge({ challenge, team, completed: initComp
         scrollWheelZoom: false,
       }).setView([START_LAT, START_LNG], 14);
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-      }).addTo(map);
+      // Mattonelle senza chiave: OpenStreetMap; se non si caricano passa da solo a Esri (CARTO ora richiede una chiave e mostra "API KEY REQUIRED")
+      const osmLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      });
+      const esriLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+        attribution: "Tiles &copy; Esri",
+        maxZoom: 19,
+      });
+      let osmErrors = 0;
+      let usingEsri = false;
+      osmLayer.on("tileerror", () => {
+        osmErrors += 1;
+        if (osmErrors >= 3 && !usingEsri) {
+          usingEsri = true;
+          map.removeLayer(osmLayer);
+          esriLayer.addTo(map);
+        }
+      });
+      osmLayer.addTo(map);
 
       leafletMapRef.current = map;
 

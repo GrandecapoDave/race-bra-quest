@@ -1373,11 +1373,26 @@ export function LiveMap({ teams, submissions, stages }: { teams: any[]; submissi
         scrollWheelZoom: false
       }).setView([44.6982, 7.8507], 14);
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(map);
+      // Mattonelle senza chiave: OpenStreetMap, con passaggio automatico a Esri se non si caricano (CARTO richiede ora una chiave)
+      const osmLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      });
+      const esriLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+      });
+      let osmErrors = 0;
+      let usingEsri = false;
+      osmLayer.on("tileerror", () => {
+        osmErrors += 1;
+        if (osmErrors >= 3 && !usingEsri) {
+          usingEsri = true;
+          map.removeLayer(osmLayer);
+          esriLayer.addTo(map);
+        }
+      });
+      osmLayer.addTo(map);
 
       leafletMapRef.current = map;
       updateMarkers();
