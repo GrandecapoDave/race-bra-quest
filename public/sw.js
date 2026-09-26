@@ -1,5 +1,5 @@
 // Service Worker — Pechino Express Bra PWA
-const CACHE_VERSION = "pechino-bra-v1.1.0";
+const CACHE_VERSION = "pechino-bra-v1.2.0";
 const STATIC_CACHE_NAME = `static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `dynamic-${CACHE_VERSION}`;
 
@@ -59,6 +59,30 @@ self.addEventListener("fetch", (event) => {
 
   // 1. Non-GET requests (mutations, uploads, RPCs): ALWAYS Network-Only
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  // 1b. Richieste verso altri domini (Supabase, foto firmate, font): le gestisce il browser da solo.
+  // Prima le foto delle squadre venivano scaricate due volte e accumulate nella cache del telefono
+  // (ogni foto ha un indirizzo firmato diverso), e su rete debole comparivano a meta'.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // 1c. Locandine: file che non cambiano mai, prima dalla cache (nessun secondo download in background)
+  if (url.pathname.startsWith("/POSTER/")) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(STATIC_CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        });
+      })
+    );
     return;
   }
 

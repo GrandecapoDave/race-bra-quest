@@ -5,6 +5,7 @@ import { Camera, Check, Loader2, X, Sparkles, FlipHorizontal, RotateCw } from "l
 import { supabase } from "@/integrations/supabase/client";
 import type { Challenge, Team } from "@/lib/race";
 import { transformImageFile } from "@/lib/imageUtils";
+import { RobustImage } from "@/components/ui/robust-image";
 
 export function SocialChallenge({
   challenge,
@@ -250,7 +251,7 @@ export function SocialChallenge({
             <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img1Url ? (
                 <>
-                  <img
+                  <RobustImage
                     src={img1Url}
                     alt="Foto 1 approvata"
                     className="h-full w-full object-cover transition-transform duration-200"
@@ -286,7 +287,7 @@ export function SocialChallenge({
             <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img2Url ? (
                 <>
-                  <img
+                  <RobustImage
                     src={img2Url}
                     alt="Foto 2 approvata"
                     className="h-full w-full object-cover transition-transform duration-200"
@@ -347,7 +348,7 @@ export function SocialChallenge({
             <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img1Url ? (
                 <>
-                  <img
+                  <RobustImage
                     src={img1Url}
                     alt="Foto 1 inviata"
                     className="h-full w-full object-cover transition-transform duration-200"
@@ -383,7 +384,7 @@ export function SocialChallenge({
             <div className="relative overflow-hidden rounded-xl border border-zinc-800/40 bg-zinc-900/40 h-36 flex justify-center items-center">
               {img2Url ? (
                 <>
-                  <img
+                  <RobustImage
                     src={img2Url}
                     alt="Foto 2 inviata"
                     className="h-full w-full object-cover transition-transform duration-200"
@@ -441,7 +442,7 @@ export function SocialChallenge({
                 {preview1 ? (
                   <div className="space-y-2 w-full flex flex-col items-center">
                     <div className="relative h-32 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-1">
-                      <img
+                      <RobustImage
                         src={preview1}
                         alt="Anteprima 1"
                         className="h-full w-auto object-contain transition-transform duration-200"
@@ -513,7 +514,7 @@ export function SocialChallenge({
                 {preview2 ? (
                   <div className="space-y-2 w-full flex flex-col items-center">
                     <div className="relative h-32 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-1">
-                      <img
+                      <RobustImage
                         src={preview2}
                         alt="Anteprima 2"
                         className="h-full w-auto object-contain transition-transform duration-200"

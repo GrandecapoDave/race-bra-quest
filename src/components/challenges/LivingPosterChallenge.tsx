@@ -5,6 +5,7 @@ import { Camera, Check, Loader2, MapPin, Film, Sparkles, FlipHorizontal, RotateC
 import { supabase } from "@/integrations/supabase/client";
 import type { Challenge, Team } from "@/lib/race";
 import { transformImageFile } from "@/lib/imageUtils";
+import { RobustImage } from "@/components/ui/robust-image";
 
 export function LivingPosterChallenge({
   challenge,
@@ -245,7 +246,7 @@ export function LivingPosterChallenge({
           </div>
 
           <div className="flex justify-center max-w-md mx-auto rounded-2xl border border-red-950/60 shadow-2xl bg-zinc-950 p-2">
-            <img
+            <RobustImage
               src={`/POSTER/${poster.file_name}`}
               alt="Locandina Assegnata"
               className="w-auto max-w-full max-h-[70vh] sm:max-h-[550px] object-contain rounded-xl mx-auto shadow-lg"
@@ -266,7 +267,7 @@ export function LivingPosterChallenge({
               <div className="space-y-2 flex flex-col">
                 <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider text-center">Locandina Originale</p>
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-3 min-h-[320px] max-h-[500px] overflow-hidden shadow-inner flex-1">
-                  <img
+                  <RobustImage
                     src={`/POSTER/${poster?.file_name}`}
                     alt="Locandina Originale"
                     className="max-h-[460px] max-w-full w-auto h-auto object-contain rounded-xl mx-auto block shadow-md"
@@ -280,7 +281,7 @@ export function LivingPosterChallenge({
                 <div className="relative rounded-2xl border border-zinc-800 bg-zinc-950 flex items-center justify-center p-3 min-h-[320px] max-h-[500px] overflow-hidden shadow-inner flex-1">
                   {subPhotoUrl ? (
                     <>
-                      <img
+                      <RobustImage
                         src={subPhotoUrl}
                         alt="Vostra ricostruzione"
                         className="max-h-[460px] max-w-full w-auto h-auto object-contain rounded-xl mx-auto block shadow-md transition-transform duration-200"
@@ -372,7 +373,7 @@ export function LivingPosterChallenge({
             ) : (
               <div className="space-y-4">
                 <div className="relative max-w-sm mx-auto overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 flex justify-center p-2">
-                  <img
+                  <RobustImage
                     src={previewUrl}
                     alt="Anteprima caricamento"
                     className="max-h-[300px] object-contain transition-transform duration-200"

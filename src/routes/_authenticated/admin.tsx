@@ -21,6 +21,7 @@ import { AppShell } from "@/components/AppShell";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { challengesQuery, leaderboardQuery, stagesQuery, formatDuration } from "@/lib/race";
+import { RobustImage } from "@/components/ui/robust-image";
 
 export const AdminContext = createContext<any>(null);
 export const useAdminContext = () => useContext(AdminContext);
@@ -1255,7 +1256,7 @@ export function ApprovalCard({
           <div className="md:col-span-1">
             {url ? (
               <div className="relative rounded-lg overflow-hidden border border-border/40 shadow-md bg-muted">
-                <img
+                <RobustImage
                   src={url}
                   alt="Allegato prova"
                   className="w-full h-44 object-cover transition-transform duration-200"
@@ -1560,7 +1561,7 @@ export function PosterComparisonCard({
             </p>
             <div className="rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col justify-center items-center min-h-[340px] p-2 text-center">
               {originalPosterUrl ? (
-                <img
+                <RobustImage
                   src={originalPosterUrl}
                   alt={poster?.titolo || "Locandina Originale"}
                   onError={(e) => {
@@ -1591,7 +1592,7 @@ export function PosterComparisonCard({
               {submission ? (
                 teamPhotoUrl ? (
                   <>
-                    <img
+                    <RobustImage
                       src={teamPhotoUrl}
                       alt="Ricostruzione Squadra"
                       className="w-auto max-w-full max-h-[420px] object-contain rounded-lg shadow-lg transition-transform duration-200 mx-auto"
@@ -1745,7 +1746,7 @@ export function SocialSubmissionCard({
               <div className="relative overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[220px] p-1.5">
                 {photo1Url ? (
                   <>
-                    <img
+                    <RobustImage
                       src={photo1Url}
                       alt="Foto 1"
                       className="h-full w-full object-cover rounded-lg shadow transition-transform duration-200"
@@ -1785,7 +1786,7 @@ export function SocialSubmissionCard({
               <div className="relative overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950 flex justify-center items-center h-[220px] p-1.5">
                 {photo2Url ? (
                   <>
-                    <img
+                    <RobustImage
                       src={photo2Url}
                       alt="Foto 2"
                       className="h-full w-full object-cover rounded-lg shadow transition-transform duration-200"

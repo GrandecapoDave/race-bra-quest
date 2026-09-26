@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { mediaQuery, type Challenge, type Team } from "@/lib/race";
 import { transformImageFile } from "@/lib/imageUtils";
 import { triggerHaptic } from "@/lib/haptics";
+import { RobustImage } from "@/components/ui/robust-image";
 
 export function PhotoChallenge({
   challenge,
@@ -224,7 +225,7 @@ export function PhotoChallenge({
           </div>
 
           <div className="relative rounded-xl overflow-hidden bg-black/80 flex items-center justify-center min-h-[220px] max-h-[360px] border border-border/30">
-            <img
+            <RobustImage
               src={previewUrl}
               alt="Anteprima scatto"
               className="max-h-[340px] w-auto object-contain transition-transform duration-200"
@@ -357,7 +358,7 @@ function PhotoCard({
     <figure className="surface animate-pop-in overflow-hidden rounded-xl border border-border/40 bg-zinc-950/40 relative group">
       {url ? (
         <div className="relative h-40 w-full overflow-hidden bg-black/60 flex items-center justify-center">
-          <img
+          <RobustImage
             src={url}
             alt="Foto ufficiale della squadra"
             className="h-full w-full object-cover transition-transform duration-200"
