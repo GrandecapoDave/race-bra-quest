@@ -454,14 +454,12 @@ export const membersQuery = (teamId: string | undefined) =>
 
 /**
  * Sfide bloccate dopo La Banca finché la Regia non dà il via: Tappa 3 dalla sfida 2 (Missione Social, Codice Segreto)
- * e tutte le sfide delle Tappe 4 e 5. Lo stesso elenco è applicato dal database (is_bank_gated_challenge).
+ * e tutte le sfide della Tappa 5. La Tappa 4 ha un blocco suo, indipendente (STAGE4_GATED_CHALLENGE_IDS più sotto).
+ * Lo stesso elenco è applicato dal database (is_bank_gated_challenge).
  */
 export const BANK_GATED_CHALLENGE_IDS = new Set<string>([
   "c2c3c4c5-c6c7-c8c9-d0d1-d2d3d4d5d6d7",
   "d3d4d5d6-d7d8-d9d0-e1e2-e3e4e5e6e7e8",
-  "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
-  "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
-  "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
   "d5d5d5d5-e6e6-f7f7-f8f8-b9b9b0b0b0b0",
   "f5f5f5f5-a6a6-47e7-b8b8-c9c9c0c0c0c0",
   "c5c5c5c5-d6d6-e7e7-f8f8-a9a9a0a0a0a0",
@@ -472,12 +470,21 @@ export const BANK_CHALLENGE_ID = "b1b2b3b4-b5b6-b7b8-b9b0-b1b2b3b4b5b6";
 export const BANK_WAIT_MESSAGE =
   "Giocatori recatevi presso la banca BPER in Via Principi di Piemonte, 12 e fermatevi lì in attesa di tutti gli altri giocatori.";
 
+/** Le 3 sfide della Tappa 4 (Enigmi): bloccate finché la Regia non le sblocca apposta, indipendentemente dalla Banca. */
+export const STAGE4_GATED_CHALLENGE_IDS = new Set<string>([
+  "e1e1e1e1-f2f2-f3f3-f4f4-f5f5f6f6f7f7",
+  "e2e2e2e2-f3f3-f4f4-f5f5-f6f6f7f7f8f8",
+  "e3e3e3e3-f4f4-f5f5-f6f6-f7f7f8f8f9f9",
+]);
+
+export const STAGE4_WAIT_MESSAGE = "La Tappa 4 (Enigmi) non è ancora aperta: attendete il via della Regia.";
+
 export function challengeState(
   challenge: Challenge,
   stageChallenges: Challenge[],
   progress: Progress[],
-  opts?: { gateClosed?: boolean },
-): "locked" | "available" | "completed" | "waiting" {
+  opts?: { gateClosed?: boolean; stage4GateClosed?: boolean },
+): "locked" | "available" | "completed" | "waiting" | "waiting_stage4" {
   // Accept both 'status' (aliased) and 'stato' (raw DB field) for resilience
   const isCompleted = (p: any) => (p.status || p.stato) === "completed";
   const done = new Set(
@@ -488,6 +495,8 @@ export function challengeState(
   if (!earlier.every((c) => done.has(c.id))) return "locked";
   // sequenza rispettata, ma la Regia non ha ancora dato il via dopo La Banca
   if (opts?.gateClosed && BANK_GATED_CHALLENGE_IDS.has(challenge.id) && done.has(BANK_CHALLENGE_ID)) return "waiting";
+  // Banca già aperta, ma la Tappa 4 ha il suo blocco separato: la Regia non l'ha ancora sbloccata
+  if (opts?.stage4GateClosed && STAGE4_GATED_CHALLENGE_IDS.has(challenge.id)) return "waiting_stage4";
   return "available";
 }
 
@@ -495,6 +504,12 @@ export function challengeState(
 export function useBankGateClosed(): boolean {
   const settings = useQuery(gameSettingsQuery);
   return (settings.data as any)?.bank_gate_open !== true;
+}
+
+/** true finché la Regia non ha sbloccato la Tappa 4 (Enigmi), indipendentemente dal blocco della Banca. */
+export function useStage4GateClosed(): boolean {
+  const settings = useQuery(gameSettingsQuery);
+  return (settings.data as any)?.stage4_gate_open !== true;
 }
 
 export function formatDuration(seconds: number | null | undefined): string {

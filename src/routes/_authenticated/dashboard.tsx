@@ -10,6 +10,7 @@ import { RaceTimer } from "@/components/RaceTimer";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { useRaceClock } from "@/hooks/useRaceClock";
 import { BankWaitCard } from "@/components/BankWaitCard";
+import { Stage4WaitCard } from "@/components/Stage4WaitCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { triggerHaptic } from "@/lib/haptics";
@@ -29,6 +30,7 @@ import {
   reportStatusQuery,
   gameSettingsQuery,
   useBankGateClosed,
+  useStage4GateClosed,
 } from "@/lib/race";
 
 
@@ -131,6 +133,7 @@ function Dashboard() {
 
   const gameSettings = useQuery(gameSettingsQuery);
   const gateClosed = useBankGateClosed();
+  const stage4GateClosed = useStage4GateClosed();
 
   const reportStatus = useQuery({ ...reportStatusQuery, refetchInterval: 3000 });
 
@@ -213,14 +216,16 @@ function Dashboard() {
   const currentStage = (stages.data ?? []).find((s) =>
     allChallenges
       .filter((c) => c.stage_id === s.id)
-      .some((c) => challengeState(c, allChallenges.filter((x) => x.stage_id === s.id), prog, { gateClosed }) !== "completed"),
+      .some((c) => challengeState(c, allChallenges.filter((x) => x.stage_id === s.id), prog, { gateClosed, stage4GateClosed }) !== "completed"),
   );
   const stageChallenges = allChallenges.filter((c) => c.stage_id === currentStage?.id);
   const nextChallenge = stageChallenges.find(
-    (c) => challengeState(c, stageChallenges, prog, { gateClosed }) === "available",
+    (c) => challengeState(c, stageChallenges, prog, { gateClosed, stage4GateClosed }) === "available",
   );
   const isWaitingForGate =
-    !nextChallenge && stageChallenges.some((c) => challengeState(c, stageChallenges, prog, { gateClosed }) === "waiting");
+    !nextChallenge && stageChallenges.some((c) => challengeState(c, stageChallenges, prog, { gateClosed, stage4GateClosed }) === "waiting");
+  const isWaitingForStage4Gate =
+    !nextChallenge && stageChallenges.some((c) => challengeState(c, stageChallenges, prog, { gateClosed, stage4GateClosed }) === "waiting_stage4");
   const activeSession = (sessions.data ?? []).find((s) => s.stage_id === currentStage?.id);
 
   const stage3 = stages.data?.find((s) => s.id === "3a3c3d3e-4f4a-4b4b-8c8c-9c9c9c9c9c9c");
@@ -1034,6 +1039,8 @@ function Dashboard() {
               </div>
             ) : isWaitingForGate ? (
               <BankWaitCard />
+            ) : isWaitingForStage4Gate ? (
+              <Stage4WaitCard />
             ) : (
               <div className="rounded-3xl p-6 flex items-center gap-3.5 bg-emerald-950/30 border border-emerald-500/30 shadow-lg backdrop-blur-md">
                 <div className="size-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30 shadow-sm">

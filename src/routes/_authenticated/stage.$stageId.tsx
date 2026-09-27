@@ -12,7 +12,8 @@ import {
   progressQuery,
   stagesQuery,
   isStageUnlocked,
- useBankGateClosed } from "@/lib/race";
+ useBankGateClosed,
+  useStage4GateClosed } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/stage/$stageId")({
   head: () => ({
@@ -39,7 +40,8 @@ function StagePage() {
   const stageChallenges = (challenges.data ?? []).filter((c) => c.stage_id === stageId);
   const prog = progress.data ?? [];
   const gateClosed = useBankGateClosed();
-  const done = stageChallenges.filter((c) => challengeState(c, stageChallenges, prog, { gateClosed }) === "completed");
+  const stage4GateClosed = useStage4GateClosed();
+  const done = stageChallenges.filter((c) => challengeState(c, stageChallenges, prog, { gateClosed, stage4GateClosed }) === "completed");
 
   const unlocked = stage ? isStageUnlocked(stage, stages.data ?? [], challenges.data ?? [], prog) : true;
 
@@ -87,7 +89,7 @@ function StagePage() {
 
       <div className="mt-5 space-y-3 w-full min-w-0">
         {stageChallenges.map((c, i) => {
-          const state = challengeState(c, stageChallenges, prog, { gateClosed });
+          const state = challengeState(c, stageChallenges, prog, { gateClosed, stage4GateClosed });
           const isJackpot = c.type === "jackpot";
 
           const circleColorClass = state === "completed"
@@ -105,7 +107,7 @@ function StagePage() {
               >
                 {state === "completed" ? (
                   <Check className="size-4 sm:size-5" />
-                ) : state === "locked" || state === "waiting" ? (
+                ) : state === "locked" || state === "waiting" || state === "waiting_stage4" ? (
                   <Lock className="size-3.5 sm:size-4" />
                 ) : isJackpot ? (
                   "🎰"
@@ -133,11 +135,14 @@ function StagePage() {
             </div>
           );
 
-          return state === "locked" || state === "waiting" ? (
+          return state === "locked" || state === "waiting" || state === "waiting_stage4" ? (
             <div key={c.id} className="surface p-3.5 sm:p-4 opacity-50 w-full min-w-0 box-border overflow-hidden">
               {content}
               {state === "waiting" && (
                 <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-amber-400">In attesa del via della Regia</p>
+              )}
+              {state === "waiting_stage4" && (
+                <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-indigo-400">Tappa 4 in attesa del via della Regia</p>
               )}
             </div>
           ) : (

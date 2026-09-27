@@ -1,4 +1,5 @@
 import { BankWaitCard } from "@/components/BankWaitCard";
+import { Stage4WaitCard } from "@/components/Stage4WaitCard";
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +22,7 @@ import { BoxeChallenge } from "@/components/challenges/BoxeChallenge";
 import JackpotChallenge from "@/components/challenges/JackpotChallenge";
 import { useIsAdmin, useSession } from "@/hooks/useAuth";
 import { useCompleteChallenge, useStartChallenge } from "@/hooks/useChallengeActions";
-import { challengeMaxPoints, challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery, useBankGateClosed } from "@/lib/race";
+import { challengeMaxPoints, challengeState, challengesQuery, myTeamQuery, progressQuery, gameSettingsQuery, useBankGateClosed, useStage4GateClosed } from "@/lib/race";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/challenge/$challengeId")({
@@ -53,7 +54,8 @@ function ChallengePage() {
   const stageChallenges = (challenges.data ?? []).filter((c) => c.stage_id === challenge?.stage_id);
   const prog = progress.data ?? [];
   const gateClosed = useBankGateClosed();
-  const state = challenge ? challengeState(challenge, stageChallenges, prog, { gateClosed }) : "locked";
+  const stage4GateClosed = useStage4GateClosed();
+  const state = challenge ? challengeState(challenge, stageChallenges, prog, { gateClosed, stage4GateClosed }) : "locked";
   const started = prog.some((p) => p.challenge_id === challengeId);
 
   const gameSettings = useQuery(gameSettingsQuery);
@@ -265,6 +267,8 @@ function ChallengePage() {
       <div className="mt-6 w-full min-w-0">
         {state === "waiting" ? (
           <BankWaitCard />
+        ) : state === "waiting_stage4" ? (
+          <Stage4WaitCard />
         ) : state === "locked" ? (
           <div className="surface flex flex-col items-center gap-4 rounded-3xl border border-border/50 p-8 text-center">
             <span className="grid size-14 place-items-center rounded-2xl border border-border/60 bg-secondary/60 text-muted-foreground">

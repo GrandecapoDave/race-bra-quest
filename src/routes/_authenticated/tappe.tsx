@@ -15,7 +15,7 @@ import {
   progressQuery,
   sessionsQuery,
   stagesQuery,
-  isStageUnlocked, useBankGateClosed } from "@/lib/race";
+  isStageUnlocked, useBankGateClosed, useStage4GateClosed } from "@/lib/race";
 
 export const Route = createFileRoute("/_authenticated/tappe")({
   head: () => ({
@@ -47,6 +47,7 @@ function TappePage() {
   const all = challenges.data ?? [];
   const prog = progress.data ?? [];
   const gateClosed = useBankGateClosed();
+  const stage4GateClosed = useStage4GateClosed();
   const qs = questions.data ?? [];
   const ans = answers.data ?? [];
 
@@ -72,7 +73,7 @@ function TappePage() {
             const sc = all
               .filter((c) => c.stage_id === stage.id)
               .sort((a, b) => a.order_index - b.order_index);
-            const done = sc.filter((c) => challengeState(c, sc, prog, { gateClosed }) === "completed").length;
+            const done = sc.filter((c) => challengeState(c, sc, prog, { gateClosed, stage4GateClosed }) === "completed").length;
             const isStageDone = sc.length > 0 && done === sc.length;
             const session = (sessions.data ?? []).find((s) => s.stage_id === stage.id);
             const unlocked = isStageUnlocked(stage, stages.data ?? [], all, prog);
@@ -134,7 +135,7 @@ function TappePage() {
                 {/* CHALLENGES MINI-LIST */}
                 <div className="mt-4 space-y-2.5 pt-3 border-t border-border/40">
                   {sc.map((c) => {
-                    const state = challengeState(c, sc, prog, { gateClosed });
+                    const state = challengeState(c, sc, prog, { gateClosed, stage4GateClosed });
                     const cQs = qs
                       .filter((q) => q.challenge_id === c.id)
                       .sort((a, b) => a.order_index - b.order_index);
@@ -159,7 +160,7 @@ function TappePage() {
                               ? "Fatta"
                               : state === "available"
                               ? "Attiva"
-                              : state === "waiting"
+                              : state === "waiting" || state === "waiting_stage4"
                               ? "In attesa"
                               : "Bloccata"}
                           </span>
