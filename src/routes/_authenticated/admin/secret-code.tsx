@@ -258,9 +258,12 @@ function AdminSecretCodePage() {
                         <input
                           type="number"
                           min={1}
-                          max={5}
+                          max={6}
                           value={editCost}
-                          onChange={(e) => setEditCost(parseInt(e.target.value) || 3)}
+                          onChange={(e) => {
+                            const raw = parseInt(e.target.value);
+                            setEditCost(Number.isFinite(raw) ? Math.max(1, Math.min(6, raw)) : 3);
+                          }}
                           className="bg-zinc-900 border border-zinc-800 text-xs rounded p-1 text-foreground w-16 text-center"
                         />
                       ) : match ? (
